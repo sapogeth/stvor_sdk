@@ -58,7 +58,10 @@ export default async function e2eRoutes(app) {
         if (user.publicKeys) {
             return { user_id, publicKeys: user.publicKeys };
         }
-        body = req.body;
+        return { user_id, publicKey: user.publicKey };
+    });
+    app.post('/send', async (req, reply) => {
+        const body = req.body;
         const { from, to, ciphertext, nonce, header } = body;
         if (typeof from !== 'string' ||
             typeof to !== 'string' ||
@@ -79,41 +82,34 @@ export default async function e2eRoutes(app) {
         else {
             return errorResponse(reply, 'INVALID_INPUT', 'Either nonce or header required');
         }
-    });
-    {
-        return errorResponse(reply, 'INVALID_INPUT', 'Invalid input: from, to, ciphertext, nonce (strings) required');
-    }
-    if (!messages.has(to))
-        messages.set(to, []);
-    messages.get(to).push({ from, ciphertext, nonce });
-    // Demo bot auto-reply (stable identity)
-    if (to === 'bot') {
-        try {
-            const bot = users.get('bot');
-            const user = users.get(from);
-            if (!bot || !bot.privateKey || !user?.publicKey)
-                return;
-            const userPub = await webcrypto.subtle.importKey('jwk', user.publicKey, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
-            const sharedKey = await webcrypto.subtle.deriveKey({ name: 'ECDH', public: userPub }, bot.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
-            const plaintext = new TextEncoder().encode('Hello! This is a demo E2E reply.');
-            const iv = randomBytes(12);
-            const encrypted = await webcrypto.subtle.encrypt({ name: 'AES-GCM', iv }, sharedKey, plaintext);
-            if (!messages.has(from))
-                messages.set(from, []);
-            messages.get(from).push({
-                from: 'bot',
-                ciphertext: Buffer.from(encrypted).toString('base64'),
-                nonce: iv.toString('base64'),
-            });
+        // Demo bot auto-reply (stable identity)
+        if (to === 'bot') {
+            try {
+                const bot = users.get('bot');
+                const user = users.get(from);
+                if (!bot || !bot.privateKey || !user?.publicKey)
+                    return;
+                const userPub = await webcrypto.subtle.importKey('jwk', user.publicKey, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+                const sharedKey = await webcrypto.subtle.deriveKey({ name: 'ECDH', public: userPub }, bot.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+                const plaintext = new TextEncoder().encode('Hello! This is a demo E2E reply.');
+                const iv = randomBytes(12);
+                const encrypted = await webcrypto.subtle.encrypt({ name: 'AES-GCM', iv }, sharedKey, plaintext);
+                if (!messages.has(from))
+                    messages.set(from, []);
+                messages.get(from).push({
+                    from: 'bot',
+                    ciphertext: Buffer.from(encrypted).toString('base64'),
+                    nonce: iv.toString('base64'),
+                });
+            }
+            catch { }
         }
-        catch { }
-    }
-    return { ok: true };
+        return { ok: true };
+    });
+    app.get('/messages/:user_id', async (req, reply) => {
+        const { user_id } = req.params;
+        const msgs = messages.get(user_id) || [];
+        messages.set(user_id, []);
+        return { messages: msgs };
+    });
 }
-;
-app.get('/messages/:user_id', async (req, reply) => {
-    const { user_id } = req.params;
-    const msgs = messages.get(user_id) || [];
-    messages.set(user_id, []);
-    return { messages: msgs };
-});

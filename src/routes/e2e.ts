@@ -104,7 +104,13 @@ export default async function e2eRoutes(app: FastifyInstance) {
     // Return new format if available, otherwise legacy
     if (user.publicKeys) {
       return { user_id, publicKeys: user.publicKeys };
-    }body = req.body as any;
+    }
+    
+    return { user_id, publicKey: user.publicKey };
+  });
+
+  app.post('/send', async (req, reply) => {
+    const body = req.body as any;
     const { from, to, ciphertext, nonce, header } = body;
     
     if (
@@ -127,11 +133,6 @@ export default async function e2eRoutes(app: FastifyInstance) {
     } else {
       return errorResponse(reply, 'INVALID_INPUT', 'Either nonce or header required');
     }
-    ) {
-      return errorResponse(reply, 'INVALID_INPUT', 'Invalid input: from, to, ciphertext, nonce (strings) required');
-    }
-    if (!messages.has(to)) messages.set(to, []);
-    messages.get(to)!.push({ from, ciphertext, nonce });
 
     // Demo bot auto-reply (stable identity)
     if (to === 'bot') {
