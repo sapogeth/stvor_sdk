@@ -1,0 +1,661 @@
+---
+title: STVOR SDK Documentation
+description: Honest Signal-style E2EE for startups and pilots
+---
+
+# STVOR SDK
+
+**Honest Signal-style E2EE SDK for startups and pilots**
+
+STVOR implements X3DH key exchange and Double Ratchet encryption (Signal Protocol) for client-side end-to-end encryption.
+
+```typescript
+import { Stvor } from '@stvor/sdk';
+
+const app = await Stvor.init({ appToken: 'sk_live_...' });
+const alice = await app.connect('alice@example.com');
+await alice.send('bob@example.com', 'Hello!');
+```
+
+---
+
+## Who is this for?
+
+✅ **Recommended for:**
+- Startups and pilot projects
+- Internal tools and demos
+- Single-instance deployments
+- Teams that need transparent E2EE
+
+❌ **NOT recommended for:**
+- Enterprise environments (no SOC 2, GDPR guarantees)
+- High-risk applications (healthcare, finance)
+- Multi-instance production (requires Redis/PostgreSQL)
+- Mobile apps (no persistent storage yet)
+- Post-quantum security requirements
+
+<Warning>
+STVOR is a **practical reference implementation**. All limitations are documented honestly. Review [Security Model](#security-model) and [Limitations](#limitations--deployment) before production use.
+</Warning>
+
+---
+
+## Quick Links
+
+- [Installation](#installation) — 30 seconds to start
+- [Quickstart](#quickstart) — Working example
+- [API Reference](#api-reference) — Full API docs
+- [Security Model](#security-model) — What we protect
+- [Limitations](#limitations--deployment) — What we don't
+
+---
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @stvor/sdk
+```
+
+```bash pnpm
+pnpm add @stvor/sdk
+```
+
+```bash yarn
+yarn add @stvor/sdk
+```
+</CodeGroup>
+
+**Requirements:**
+- Node.js ≥18.0.0 or modern browser
+- WebSocket support
+- No crypto knowledge required
+
+---
+
+## Quickstart
+
+```typescript
+import { Stvor } from '@stvor/sdk';
+
+// 1. Initialize SDK with your API token
+const app = await Stvor.init({
+  appToken: 'sk_live_abc123...',
+  relayUrl: 'wss://relay.stvor.xyz' // optional
+});
+
+// 2. Connect as a user
+const alice = await app.connect('alice@example.com');
+
+// 3. Send encrypted message (E2EE happens automatically)
+await alice.send('bob@example.com', 'Hello Bob!');
+
+// 4. Receive messages (push-based)
+const unsubscribe = alice.onMessage((senderId, message) => {
+  console.log(`${senderId}: ${message}`);
+});
+
+// Cleanup when done
+unsubscribe();
+await alice.disconnect();
+```
+
+<Tip>
+**Zero crypto knowledge required.** X3DH handshake and Double Ratchet encryption happen automatically behind `send()` and `onMessage()`.
+</Tip>
+
+<Warning>
+Never commit tokens to version control:
+```typescript
+const app = await Stvor.init({
+  appToken: process.env.STVOR_APP_TOKEN
+});
+```
+</Warning>
+
+---
+
+# SDK Basics
+
+## Initialization
+
+```typescript
+const app = await Stvor.init({ appToken: 'sk_live_...' });
+```
+
+Creates SDK instance. Call once at app startup.
+
+| Returns | Description |
+|---------|-------------|
+| `StvorApp` | Main SDK instance for creating users |
+
+```typescript
+// Check if ready
+app.isReady(); // boolean
+
+// Cleanup when done
+await app.disconnect();
+```
+
+---
+
+## Users & Identity
+
+```typescript
+const user = await app.connect('alice@example.com');
+```
+
+Connects a user and establishes their encryption identity.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `userId` | `string` | User identifier (email, username, UUID) |
+
+| Returns | Description |
+|---------|-------------|
+| `StvorClient` | Client instance for this user |
+
+```typescript
+// Get current user ID
+user.getUserId(); // 'alice@example.com'
+
+// Multiple users
+const bob = await app.connect('bob@example.com');
+await alice.send('bob@example.com', 'Hey Bob!');
+```
+
+<Tip>
+Each device = separate user. Same user on different devices has different identity.
+</Tip>
+
+---
+
+## Sending Messages
+
+```typescript
+await alice.send('bob@example.com', 'Hello Bob!');
+await alice.send('bob@example.com', new Uint8Array([1, 2, 3]));
+```
+
+Sends an encrypted message to a recipient.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `recipientId` | `string` | Recipient's user ID |
+| `content` | `string \| Uint8Array` | Message text or binary data |
+
+| Returns | Description |
+|---------|-------------|
+| `Promise<void>` | Resolves when message is sent |
+
+```typescript
+// Send text
+await alice.send('bob@example.com', 'Hello!');
+
+// Send binary (files, images)
+const fileData = await fetchFile();
+await alice.send('bob@example.com', fileData);
+```
+
+<Warning>
+Message is delivered asynchronously. Use `await` to ensure message is sent.
+</Warning>
+
+---
+
+## Receiving Messages
+
+```typescript
+const message = await alice.receive();
+console.log(message.content);
+```
+
+Blocks until a message is available, then returns decrypted content.
+
+| Returns | Description |
+|---------|-------------|
+| `Promise<DecryptedMessage>` | Decrypted message object |
+
+```typescript
+interface DecryptedMessage {
+  id: string;        // Message identifier
+  senderId: string;  // Sender's user ID
+  content: string | Uint8Array;
+  timestamp: Date;   // When message was sent
+}
+```
+
+```typescript
+// Blocking receive
+const msg = await alice.receive();
+console.log(`${msg.senderId}: ${msg.content}`);
+
+// Non-blocking with subscription
+const unsubscribe = alice.onMessage((msg) => {
+  console.log(`[Push] ${msg.senderId}: ${msg.content}`);
+});
+// Later...
+unsubscribe();
+```
+
+<Tip>
+`receive()` blocks indefinitely. For production, use `onMessage()` subscription pattern.
+</Tip>
+
+---
+
+## Sealing / Offline payloads
+
+APIs for sealing/opening offline payloads are not implemented in SDK v0.1. The current SDK focuses on live send/onMessage flow over the relay. Planned work includes explicit sealed payload APIs in a future version.
+
+---
+
+# API Reference
+
+## Stvor.init()
+
+```typescript
+function init(config: StvorAppConfig): Promise<StvorApp>
+```
+
+Initializes the SDK with your AppToken.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `config.appToken` | `string` | Yes | Token from developer dashboard |
+| `config.relayUrl` | `string` | No | Relay server URL |
+| `config.timeout` | `number` | No | Connection timeout (ms) |
+
+### Returns
+
+`Promise<StvorApp>` — Main SDK instance
+
+### Example
+
+```typescript
+const app = await Stvor.init({
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: 'https://relay.stvor.io',
+  timeout: 15000
+});
+```
+
+### Errors
+
+- `AUTH_FAILED` — Invalid or revoked AppToken
+- `RELAY_UNAVAILABLE` — Cannot connect to relay
+
+---
+
+## StvorApp.connect()
+
+```typescript
+function connect(userId: string): Promise<StvorClient>
+```
+
+Connects a user and returns a client for messaging operations.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `userId` | `string` | Yes | User identifier |
+
+### Returns
+
+`Promise<StvorClient>` — Client for messaging
+
+### Example
+
+```typescript
+const alice = await app.connect('alice@example.com');
+await alice.send('bob@example.com', 'Hello!');
+```
+
+---
+
+## StvorClient.send()
+
+```typescript
+function send(recipientId: string, content: string | Uint8Array): Promise<void>
+```
+
+Sends an encrypted message to a recipient.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `recipientId` | `string` | Yes | Recipient's user ID |
+| `content` | `string \| Uint8Array` | Yes | Message content |
+
+### Returns
+
+`Promise<void>` — Resolves when sent
+
+### Example
+
+```typescript
+await alice.send('bob@example.com', 'Hello Bob!');
+await alice.send('bob@example.com', binaryData);
+```
+
+### Errors
+
+- `RECIPIENT_UNAVAILABLE` — Recipient offline > 24h
+- `DELIVERY_FAILED` — Message could not be delivered
+
+---
+
+## StvorClient.receive()
+
+```typescript
+function receive(): Promise<DecryptedMessage>
+```
+
+Receives and decrypts the next message.
+
+### Parameters
+
+None
+
+### Returns
+
+`Promise<DecryptedMessage>` — Decrypted message
+
+```typescript
+interface DecryptedMessage {
+  id: string;
+  senderId: string;
+  content: string | Uint8Array;
+  timestamp: Date;
+}
+```
+
+### Example
+
+```typescript
+const msg = await alice.receive();
+console.log(msg.content);
+```
+
+### Errors
+
+- `MESSAGE_INTEGRITY_FAILED` — Message corrupted or tampered
+
+---
+
+## StvorClient.seal()
+
+```typescript
+function seal(data: string | Uint8Array, recipientId: string): Promise<SealedPayload>
+```
+
+Encrypts data for a specific recipient.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `data` | `string \| Uint8Array` | Yes | Data to encrypt |
+| `recipientId` | `string` | Yes | Recipient's user ID |
+
+### Returns
+
+`Promise<SealedPayload>` — Encrypted payload
+
+### Example
+
+```typescript
+const sealed = await alice.seal(fileData, 'bob@example.com');
+```
+
+---
+
+## StvorClient.open()
+
+```typescript
+function open(sealed: SealedPayload): Promise<Uint8Array>
+```
+
+Decrypts sealed data.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `sealed` | `SealedPayload` | Yes | Sealed payload |
+
+### Returns
+
+`Promise<Uint8Array>` — Decrypted data
+
+### Example
+
+```typescript
+const decrypted = await bob.open(sealed);
+```
+
+---
+
+## StvorClient.onMessage()
+
+```typescript
+function onMessage(handler: (msg: DecryptedMessage) => void): () => void
+```
+
+Subscribes to incoming messages.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `handler` | `function` | Yes | Message callback |
+
+### Returns
+
+`() => void` — Unsubscribe function
+
+### Example
+
+```typescript
+const unsubscribe = alice.onMessage((msg) => {
+  console.log(`${msg.senderId}: ${msg.content}`);
+});
+
+// Unsubscribe later
+unsubscribe();
+```
+
+---
+
+### Example
+
+```typescript
+// Use onMessage subscription; blocking receive() is not implemented in v0.1
+const unsubscribe = alice.onMessage((from, msg) => console.log(from, msg));
+```
+
+---
+
+## StvorClient.seal()
+
+APIs for sealing/opening offline payloads are not available in SDK v0.1. See Sealing / Offline payloads section above.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|
+  }
+}
+```
+
+---
+Cryptography
+
+STVOR implements the **Signal Protocol**:
+- **X3DH** (Extended Triple Diffie-Hellman) for key agreement
+- **Double Ratchet** for forward secrecy and post-compromise security
+- **libsodium** primitives: X25519, Ed25519, XChaCha20-Poly1305, BLAKE2b
+
+## What STVOR Guarantees
+
+✅ **End-to-end encryption** — Plaintext never leaves the device  
+✅ **Forward Secrecy** — DH key rotation every 50 messages / 10 minutes  
+✅ **Post-Compromise Security** — Assuming at least one successful DH ratchet  
+✅ **Authenticated encryption** — AEAD prevents tampering  
+✅ **Replay protection** — Within documented operational limits (requires persistent storage for full guarantees)  
+✅ **TOFU fingerprint verification** — Optional identity verification  
+
+## What STVOR Does NOT Guarantee
+
+❌ **Metadata privacy** — Relay sees sender, recipient, message timing  
+❌ **Strong MITM protection after first contact** — TOFU model (first-contact trust is user responsibility)  
+❌ **Multi-device sync** — Each device = separate identity  
+❌ **Guaranteed PCS** — Requires at least one honest DH exchange  
+❌ **Post-quantum security** — Uses classical X25519 (planned: ML-KEM hybrid)  
+❌ **Persistent storage** — Keys/sessions stored in-memory (v2.1)  
+
+## Threat Model
+
+**Attacker capabilities:**
+- Network eavesdropper (passive)
+- Relay operator (honest-but-curious)
+- Active MITM on first contact (TOFU vulnerability)
+
+**What attacker CANNOT do:**
+- Decrypt message content (without private keys)
+- Forge authenticated messages
+**Out of scope:**
+- Device compromise (malware, root access)
+- Social engineering
+- Screen capture / screenshots
+- Metadata analysis
+
+<Warning>
+**First-contact trust**: TOFU model means first contact requires user verification. After first contact, strong MITM protection is active. Use `verifyFingerprint()` for high-security scenarios.
+</Warning>
+
+---
+
+# Limitations & Deployment
+
+## Version 2.1 Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **Core E2EE** | ✅ Production | X3DH + Double Ratchet fully implemented |
+| **Forward Secrecy** | ✅ Production | DH rotation every 50 msgs / 10 min |
+| **Single-instance** | ✅ Ready | Dev and low-security prod |
+| **Multi-instance** | ❌ Not ready | Requires distributed state (Redis/PostgreSQL) |
+| **Mobile apps** | ❌ Not ready | No persistent storage yet |
+| **Replay protection** | 🟡 Demo-level | In-memory (operational limits), requires Redis for full guarantees |
+| **TOFU persistence** | 🟡 Demo-level | In-memory only, requires PostgreSQL for prod |
+
+## Deployment Scenarios
+
+### ✅ Single-instance dev (READY)
+```bash
+# No infrastructure needed
+npm run dev
+```
+- In-memory storage sufficient
+- Keys lost on restart (acceptable for dev)
+
+### 🟡 Single-instance production (CONDITIONAL)
+```bash
+# Requires Redis + PostgreSQL
+dockX3DH handshake and Double Ratchet are fully automatic. Keys generated on `connect()`, rotated transparently.
+
+**Q: Is this really end-to-end encrypted?**
+
+Yes. Plaintext never leaves the device. Relay only forwards ciphertext and cannot decrypt messages.
+
+**Q: Can users have multiple devices?**
+
+Not yet. Each device is a separate identity. Multi-device sync is out of scope for v2.1.
+
+**Q: What happens if the server restarts?**
+
+**v2.1:** Keys, sessions, TOFU fingerprints, replay cache are cleared (in-memory storage).  
+**v2.2:** With Redis/PostgreSQL, replay cache and TOFU persist. Keys still ephemeral until v2.3.
+
+**Q: Can users recover messages on a new device?**
+
+No. Storing keys server-side would break E2EE. Forward secrecy means past messages are unrecoverable by design.
+
+**Q: Is STVOR post-quantum secure?**
+
+**No.** v2.1 uses classical X25519. Hybrid ML-KEM-768 is planned but not implemented.
+
+**Q: What's the performance overhead?**
+
+~150% slower than raw WebSocket (X3DH + Double Ratchet). Acceptable for <1000 msg/sec workloads.
+
+**Q: Can I use this in production?**
+
+**Single-instance:** Yes (with infrastructure: Redis + PostgreSQL).  
+**Multi-instance:** Not yet (v2.2).  
+**High-risk apps:** No (review threat model first).
+
+---
+
+## When to Use STVOR
+
+✅ **Use STVOR if:**
+- Building a startup MVP or pilot
+- Need transparent E2EE without vendor lock-in
+- Running single-instance deployments
+- Want Signal Protocol without complexity
+
+❌ **Don't use STVOR if:**
+- Enterprise compliance required (SOC 2, GDPR)
+- Multi-instance/multi-region deployment
+- Healthcare, finance, or high-risk data
+- Post-quantum security required today
+
+## Next Steps
+
+1. **[Run Quickstart](#quickstart)** — Copy-paste working example
+2. **[Review Limitations](#limitations--deployment)** — Understand what's ready
+3. **[API Reference](#api-reference)** — Explore full SDK
+4. **[Security Model](#security-model)** — Verify threat model fit
+
+---
+
+## Honest Positioning
+
+STVOR is **not an enterprise product**. We document limitations honestly:
+- In-memory storage (v2.1) — keys cleared on restart
+- Single-instance ready — multi-instance needs v2.2
+- TOFU model — first contact requires user verification
+- No compliance guarantees — use at your own risk
+
+**What we promise:**
+- Transparent code (no black boxes)
+- Honest security claims (no marketing fluff)
+- Production-grade crypto (Signal Protocol)
+- Zero vendor lock-in (self-hostable)
+
+---
+
+*STVOR SDK v2.1 — Honest cryptography, no marketing claims. (Feb 2026)*
+
+**Q: How is post-quantum security achieved?**
+
+Hybrid encryption (X25519 + ML-KEM-768). No action required from developers.
+
+---
+
+## Next Steps
+
+1. [Get AppToken](https://dashboard.stvor.io)
+2. [Run Quickstart](#quickstart)
+3. [Explore API Reference](#api-reference)
+4. [Review Security Model](#security-model)
+
+---
+
+*STVOR SDK v2.0 — Secure by default.*

@@ -1,0 +1,51 @@
+{
+  "name": "@stvor/sdk",
+  "version": "2.3.2",
+  "description": "Stvor DX Facade - Simple E2EE SDK for client-side encryption",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "e2ee",
+    "encryption",
+    "security",
+    "cryptography",
+    "end-to-end",
+    "x3dh",
+    "double-ratchet",
+    "libsodium"
+  ],
+  "author": "Stvor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/izahii/stvor-api.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/izahii/stvor-api/issues"
+  },
+  "homepage": "https://stvor.xyz",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "ws": "^8.13.0",
+    "libsodium-wrappers": "^0.7.13",
+    "prom-client": "^14.0.0"
+  },
+  "peerDependencies": {}
+}

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STVOR Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .layout { display: flex; min-height: 100vh; }
+    
+    .sidebar {
+      width: 260px;
+      background: #1e293b;
+      padding: 24px;
+      border-right: 1px solid #334155;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .logo span { color: #3b82f6; }
+    .logo-sub { font-size: 12px; color: #64748b; margin-bottom: 32px; }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: #334155;
+      color: #fff;
+    }
+    .nav-item svg { margin-right: 12px; width: 20px; height: 20px; }
+    
+    .main { flex: 1; padding: 32px; max-width: 900px; }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+    .header h1 { font-size: 28px; font-weight: 700; }
+    
+    .plan-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+    .plan-badge.free { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 { font-size: 18px; margin-bottom: 16px; color: #f8fafc; }
+    .card h3 { font-size: 14px; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-card h4 {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .stat-sub {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .stat-card.warning .stat-value { color: #fbbf24; }
+    .stat-card.danger .stat-value { color: #ef4444; }
+    .stat-card.success .stat-value { color: #10b981; }
+    
+    .progress-bar {
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .progress-fill.warning { background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%); }
+    .progress-fill.danger { background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%); }
+    
+    .api-key-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .api-key-value {
+      flex: 1;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 14px;
+      color: #3b82f6;
+      word-break: break-all;
+    }
+    .api-key-hidden {
+      color: #64748b;
+    }
+    
+    .copy-btn {
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #475569; color: #fff; }
+    .copy-btn.copied { background: #059669; color: #fff; }
+    
+    .project-list {
+      margin-top: 16px;
+    }
+    .project-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .project-name {
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .project-created {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal h2 { margin-bottom: 24px; }
+    .modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .modal-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    
+    .warning-banner {
+      background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
+      border: 1px solid #c2410c;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .warning-banner .icon { font-size: 24px; }
+    .warning-banner .text { color: #fed7aa; }
+    .warning-banner .text strong { color: #fff; }
+    
+    .success-banner {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+      border: 1px solid #059669;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .success-banner .icon { font-size: 24px; }
+    .success-banner .text { color: #a7f3d0; }
+    .success-banner .text strong { color: #ecfdf5; }
+    
+    .upgrade-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border: 1px solid #4f46e5;
+    }
+    .upgrade-card h2 { color: #c7d2fe; }
+    .upgrade-features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .upgrade-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #a5b4fc;
+      font-size: 14px;
+    }
+    .upgrade-feature .check { color: #34d399; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="logo">STVOR<span>.</span></div>
+      <div class="logo-sub">Developer Dashboard</div>
+      
+      <a href="/" class="nav-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Documentation
+      </a>
+      <a href="/dashboard.html" class="nav-item active">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        Dashboard
+      </a>
+      <a href="https://github.com/izahii/stvor-api" target="_blank" class="nav-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        GitHub
+      </a>
+    </nav>
+    
+    <!-- MAIN -->
+    <main class="main">
+      <div class="header">
+        <h1>Dashboard</h1>
+        <div class="plan-badge free">✨ Free Plan</div>
+      </div>
+      
+      <!-- USAGE STATS -->
+      <div class="stats-grid">
+        <div class="stat-card" id="messages-stat">
+          <h4>Messages This Month</h4>
+          <div class="stat-value" id="messages-used">0</div>
+          <div class="stat-sub">of <span id="messages-limit">1,000</span> messages</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="messages-progress" style="width: 0%"></div>
+          </div>
+        </div>
+        
+        <div class="stat-card success">
+          <h4>Days Remaining</h4>
+          <div class="stat-value" id="days-remaining">30</div>
+          <div class="stat-sub">until limit reset</div>
+        </div>
+        
+        <div class="stat-card">
+          <h4>Registered Projects</h4>
+          <div class="stat-value" id="projects-count">0</div>
+          <div class="stat-sub">of 3 max (Free)</div>
+        </div>
+      </div>
+      
+      <!-- WARNING BANNER (hidden by default) -->
+      <div class="warning-banner" id="limit-warning" style="display: none;">
+        <span class="icon">⚠️</span>
+        <div class="text">
+          <strong>Approaching message limit!</strong> You've used over 80% of your monthly quota.
+        </div>
+      </div>
+      
+      <!-- RELAY STATUS -->
+      <div class="card" id="relay-status-card" style="border-color: #475569;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">🔌</span>
+            <div>
+              <h3 style="margin: 0; color: #f8fafc; font-weight: 600;">Relay Connection</h3>
+              <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">
+                Required for messaging to work
+              </p>
+            </div>
+          </div>
+          <div id="relay-status" style="display: flex; align-items: center; gap: 8px;">
+            <span id="relay-status-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #64748b;"></span>
+            <span id="relay-status-text" style="color: #94a3b8; font-size: 14px;">Checking...</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- IMPORTANT DISCLAIMER -->
+      <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: #475569;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="font-size: 24px;">ℹ️</span>
+          <div>
+            <h3 style="margin: 0 0 8px 0; color: #94a3b8; font-weight: 600;">Configuration vs Runtime</h3>
+            <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">
+              This dashboard shows <strong style="color: #e2e8f0;">project configuration</strong> (tokens, quotas), 
+              not runtime availability. Having a valid API key does not guarantee messaging will work — 
+              both sender and recipient must be connected to the relay at runtime.
+              <br><br>
+              Use <code style="background: #334155; padding: 2px 6px; border-radius: 4px; color: #3b82f6;">await client.waitForUser(recipientId)</code> 
+              in your code to ensure recipient is available before sending.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- API KEYS -->
+      <div class="card">
+        <h2>🔑 API Keys</h2>
+        <p style="color: #94a3b8; margin-bottom: 16px;">Generate keys for your projects. Each key is unique and can be revoked anytime.</p>
+        
+        <div id="projects-list" class="project-list">
+          <!-- Projects will be rendered here -->
+        </div>
+        
+        <button class="btn btn-primary" onclick="openModal()" style="margin-top: 16px;">
+          + Create New Project
+        </button>
+      </div>
+      
+      <!-- UPGRADE -->
+      <div class="card upgrade-card">
+        <h2>🚀 Upgrade to Pro</h2>
+        <p style="color: #a5b4fc;">Unlock unlimited messages and premium features.</p>
+        
+        <div class="upgrade-features">
+          <div class="upgrade-feature"><span class="check">✓</span> Unlimited messages</div>
+          <div class="upgrade-feature"><span class="check">✓</span> 10 projects</div>
+          <div class="upgrade-feature"><span class="check">✓</span> Priority support</div>
+          <div class="upgrade-feature"><span class="check">✓</span> Custom relay server</div>
+        </div>
+        
+        <button class="btn" style="background: #6366f1; color: white;">
+          Upgrade — $29/mo
+        </button>
+      </div>
+      
+      <!-- QUICK START -->
+      <div class="card">
+        <h2>📖 Quick Start (v2.3.0)</h2>
+        <p style="color: #94a3b8; margin-bottom: 16px;">The SDK now auto-waits for recipients. No more timing hacks!</p>
+        
+        <div class="api-key-box" style="background: #0f172a;">
+          <pre style="margin: 0; color: #e2e8f0; font-size: 13px; overflow-x: auto;"><code>import { createApp } from '@stvor/sdk';
+
+const app = await createApp({
+  appToken: '<span id="code-token" style="color: #3b82f6;">YOUR_API_KEY</span>',
+  relayUrl: 'ws://localhost:8080'
+});
+
+const alice = await app.connect('alice@example.com');
+const bob = await app.connect('bob@example.com');
+
+// Option A: Auto-wait (recommended)
+await alice.send('bob@example.com', 'Hello!');
+
+// Option B: Explicit wait (more control)
+await alice.waitForUser('bob@example.com');
+await alice.send('bob@example.com', 'Hello!');</code></pre>
+        </div>
+        
+        <a href="/" class="btn btn-secondary" style="margin-top: 8px;">
+          View Full Documentation →
+        </a>
+      </div>
+      
+    </main>
+  </div>
+  
+  <!-- CREATE PROJECT MODAL -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2>Create New Project</h2>
+      <input type="text" class="modal-input" id="project-name" placeholder="Project name (e.g., my-chat-app)">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- NEW KEY MODAL -->
+  <div class="modal-overlay" id="key-modal">
+    <div class="modal">
+      <h2>🎉 Project Created!</h2>
+      <p style="color: #94a3b8; margin-bottom: 16px;">Copy your API key now. You won't be able to see it again.</p>
+      
+      <div class="api-key-box">
+        <span class="api-key-value" id="new-key-value">stvor_xxxxxxxxxxxxxxxx</span>
+        <button class="copy-btn" onclick="copyNewKey()">Copy</button>
+      </div>
+      
+      <div class="modal-actions" style="margin-top: 24px;">
+        <button class="btn btn-primary" onclick="closeKeyModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let projects = JSON.parse(localStorage.getItem('stvor_projects') || '[]');
+    let usage = JSON.parse(localStorage.getItem('stvor_usage') || '{"messages": 0, "resetDate": null}');
+    
+    // Initialize reset date
+    if (!usage.resetDate) {
+      const now = new Date();
+      usage.resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+      saveUsage();
+    }
+    
+    // Generate API key
+    function generateApiKey() {
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let key = 'stvor_';
+      for (let i = 0; i < 24; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return key;
+    }
+    
+    // Save to localStorage
+    function saveProjects() {
+      localStorage.setItem('stvor_projects', JSON.stringify(projects));
+    }
+    
+    function saveUsage() {
+      localStorage.setItem('stvor_usage', JSON.stringify(usage));
+    }
+    
+    // Render projects
+    function renderProjects() {
+      const container = document.getElementById('projects-list');
+      
+      if (projects.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 32px; color: #64748b;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+            <div>No projects yet. Create one to get started!</div>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = projects.map((project, index) => `
+        <div class="project-item">
+          <div>
+            <div class="project-name">${project.name}</div>
+            <div class="project-created">Created ${new Date(project.created).toLocaleDateString()}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="api-key-box" style="margin: 0; padding: 8px 12px;">
+              <span class="api-key-value api-key-hidden">${project.key.slice(0, 12)}••••••••••••</span>
+              <button class="copy-btn" onclick="copyKey('${project.key}', this)">Copy</button>
+            </div>
+            <button class="btn btn-danger" onclick="revokeKey(${index})" style="padding: 8px 12px;">Revoke</button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Update code example with first key
+      if (projects.length > 0) {
+        document.getElementById('code-token').textContent = projects[0].key;
+      }
+    }
+    
+    // Update stats
+    function updateStats() {
+      const messagesUsed = usage.messages;
+      const messagesLimit = 1000;
+      const percentage = Math.min((messagesUsed / messagesLimit) * 100, 100);
+      
+      document.getElementById('messages-used').textContent = messagesUsed.toLocaleString();
+      document.getElementById('messages-progress').style.width = percentage + '%';
+      document.getElementById('projects-count').textContent = projects.length;
+      
+      // Days remaining
+      const resetDate = new Date(usage.resetDate);
+      const now = new Date();
+      const daysRemaining = Math.max(0, Math.ceil((resetDate - now) / (1000 * 60 * 60 * 24)));
+      document.getElementById('days-remaining').textContent = daysRemaining;
+      
+      // Warning states
+      const progressBar = document.getElementById('messages-progress');
+      const statCard = document.getElementById('messages-stat');
+      const warningBanner = document.getElementById('limit-warning');
+      
+      if (percentage >= 100) {
+        progressBar.classList.add('danger');
+        statCard.classList.add('danger');
+        warningBanner.style.display = 'flex';
+        warningBanner.querySelector('strong').textContent = 'Message limit reached!';
+        warningBanner.querySelector('.text').innerHTML = '<strong>Message limit reached!</strong> Upgrade to Pro for unlimited messages.';
+      } else if (percentage >= 80) {
+        progressBar.classList.add('warning');
+        statCard.classList.add('warning');
+        warningBanner.style.display = 'flex';
+      } else {
+        progressBar.classList.remove('warning', 'danger');
+        statCard.classList.remove('warning', 'danger');
+        warningBanner.style.display = 'none';
+      }
+    }
+    
+    // Modal controls
+    function openModal() {
+      if (projects.length >= 3) {
+        alert('Free plan allows maximum 3 projects. Upgrade to Pro for more!');
+        return;
+      }
+      document.getElementById('modal').classList.add('active');
+      document.getElementById('project-name').focus();
+    }
+    
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+      document.getElementById('project-name').value = '';
+    }
+    
+    function closeKeyModal() {
+      document.getElementById('key-modal').classList.remove('active');
+    }
+    
+    // Create project
+    function createProject() {
+      const name = document.getElementById('project-name').value.trim();
+      if (!name) {
+        alert('Please enter a project name');
+        return;
+      }
+      
+      const key = generateApiKey();
+      projects.push({
+        name,
+        key,
+        created: new Date().toISOString()
+      });
+      
+      saveProjects();
+      renderProjects();
+      updateStats();
+      closeModal();
+      
+      // Show new key
+      document.getElementById('new-key-value').textContent = key;
+      document.getElementById('key-modal').classList.add('active');
+    }
+    
+    // Copy key
+    function copyKey(key, btn) {
+      navigator.clipboard.writeText(key).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+    
+    function copyNewKey() {
+      const key = document.getElementById('new-key-value').textContent;
+      const btn = document.querySelector('#key-modal .copy-btn');
+      copyKey(key, btn);
+    }
+    
+    // Revoke key
+    function revokeKey(index) {
+      if (confirm('Are you sure you want to revoke this API key? This cannot be undone.')) {
+        projects.splice(index, 1);
+        saveProjects();
+        renderProjects();
+        updateStats();
+      }
+    }
+    
+    // Simulate usage (for demo)
+    function simulateUsage() {
+      // Random usage between 0-400 for demo
+      if (usage.messages === 0) {
+        usage.messages = Math.floor(Math.random() * 400);
+        saveUsage();
+      }
+    }
+    
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+    
+    // Enter key to submit
+    document.getElementById('project-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createProject();
+    });
+    
+    // Relay health check
+    async function checkRelayHealth() {
+      const dot = document.getElementById('relay-status-dot');
+      const text = document.getElementById('relay-status-text');
+      const card = document.getElementById('relay-status-card');
+      
+      try {
+        // Try to connect to relay (will fail without valid API key, which is expected)
+        const relayUrl = 'ws://localhost:3002';
+        
+        // For health check, we just try HTTP endpoint if available
+        const response = await fetch('http://localhost:3002/health', { 
+          method: 'GET',
+          signal: AbortSignal.timeout(3000)
+        }).catch(() => null);
+        
+        if (response && response.ok) {
+          dot.style.background = '#10b981';
+          text.textContent = 'Relay reachable';
+          text.style.color = '#10b981';
+          card.style.borderColor = '#059669';
+        } else {
+          // Try WebSocket ping (without auth)
+          await testWebSocketReachable(relayUrl, dot, text, card);
+        }
+      } catch (e) {
+        dot.style.background = '#64748b';
+        text.textContent = 'Unknown';
+        text.style.color = '#94a3b8';
+        card.style.borderColor = '#475569';
+      }
+    }
+    
+    async function testWebSocketReachable(url, dot, text, card) {
+      return new Promise((resolve) => {
+        try {
+          const ws = new WebSocket(url);
+          const timeout = setTimeout(() => {
+            ws.close();
+            dot.style.background = '#f59e0b';
+            text.textContent = 'Not reachable';
+            text.style.color = '#f59e0b';
+            card.style.borderColor = '#d97706';
+            resolve(false);
+          }, 3000);
+          
+          ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            // Connected but will be rejected without API key - relay is UP
+            dot.style.background = '#10b981';
+            text.textContent = 'Relay reachable';
+            text.style.color = '#10b981';
+            card.style.borderColor = '#059669';
+            resolve(true);
+          };
+          
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            dot.style.background = '#ef4444';
+            text.textContent = 'Not reachable';
+            text.style.color = '#ef4444';
+            card.style.borderColor = '#dc2626';
+            resolve(false);
+          };
+          
+          ws.onclose = (e) => {
+            clearTimeout(timeout);
+            // 401 = relay is up but rejected auth (expected without key)
+            if (e.code === 4001 || e.code === 4002 || e.code === 1006) {
+              dot.style.background = '#10b981';
+              text.textContent = 'Relay reachable';
+              text.style.color = '#10b981';
+              card.style.borderColor = '#059669';
+            }
+            resolve(true);
+          };
+        } catch (e) {
+          dot.style.background = '#64748b';
+          text.textContent = 'Unknown';
+          text.style.color = '#94a3b8';
+          card.style.borderColor = '#475569';
+          resolve(false);
+        }
+      });
+    }
+    
+    // Initialize
+    simulateUsage();
+    renderProjects();
+    updateStats();
+    checkRelayHealth();
+    
+    // Recheck every 30s
+    setInterval(checkRelayHealth, 30000);
+  </script>
+</body>
+</html>

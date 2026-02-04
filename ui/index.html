@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STVOR SDK — Documentation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.7;
+      color: #1a1a2e;
+      background: #fafafa;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+    .tagline {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 48px 0 16px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      color: #0f172a;
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 24px 0 12px;
+      color: #334155;
+    }
+    p {
+      margin-bottom: 16px;
+      color: #475569;
+    }
+    ul {
+      margin: 0 0 16px 24px;
+      color: #475569;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 16px 0;
+    }
+    code {
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+    .inline-code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+      margin-left: 8px;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+    .token-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .token-display {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 16px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 12px 0;
+      word-break: break-all;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #1e40af;
+    }
+    .warning {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #92400e;
+    }
+    .guarantee {
+      color: #059669;
+    }
+    .no-guarantee {
+      color: #dc2626;
+    }
+    .section-intro {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <h1>STVOR SDK</h1>
+      <p class="tagline">Honest Signal-style E2EE SDK for startups and pilots</p>
+    </header>
+
+    <div class="section-intro">
+      <p><strong>STVOR</strong> is a client-side end-to-end encryption SDK inspired by the Signal Protocol. It implements X3DH key exchange and Double Ratchet for forward secrecy.</p>
+      <p><strong>For:</strong> Startups, pilot projects, internal tools that need honest, transparent E2EE.</p>
+      <p><strong>Not for:</strong> Enterprise environments, high-risk applications, or scenarios requiring post-quantum security.</p>
+    </div>
+
+    <!-- INSTALLATION -->
+    <h2>Installation</h2>
+    <p>Install the SDK in your client application. The server never participates in encryption.</p>
+    <p>The relay only forwards ciphertext and cannot decrypt messages.</p>
+    <pre><code>npm install @stvor/sdk</code></pre>
+
+    <!-- DASHBOARD LINK -->
+    <div class="token-box" style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border: 1px solid #3b82f6;">
+      <h3 style="margin-top: 0; color: #fff;">🚀 Ready to start?</h3>
+      <p style="color: #94a3b8;">Create a project and get your API token in the Dashboard.</p>
+      <a href="/dashboard.html" class="btn btn-primary" style="text-decoration: none;">Open Dashboard</a>
+    </div>
+
+    <!-- API TOKEN -->
+    <h2>Generate App Token (local demo)</h2>
+    <div class="token-box">
+      <p>Click to generate a local demo token:</p>
+      <button class="btn btn-primary" id="generateBtn">Generate token</button>
+      <button class="btn btn-secondary" id="copyBtn" style="display: none;">Copy</button>
+      <div class="token-display" id="tokenDisplay">—</div>
+    </div>
+
+    <!-- QUOTA DISPLAY -->
+    <div id="quotaSection" class="token-box" style="display: none;">
+      <h3 style="margin-top: 0;">📊 Quota Status</h3>
+      <div style="display: flex; gap: 24px; margin-top: 12px;">
+        <div>
+          <span style="color: #64748b; font-size: 12px;">PLAN</span>
+          <div id="quotaPlan" style="font-weight: 600; font-size: 18px;">free</div>
+        </div>
+        <div>
+          <span style="color: #64748b; font-size: 12px;">USED</span>
+          <div id="quotaUsed" style="font-weight: 600; font-size: 18px;">0</div>
+        </div>
+        <div>
+          <span style="color: #64748b; font-size: 12px;">LIMIT</span>
+          <div id="quotaLimit" style="font-weight: 600; font-size: 18px;">1,000</div>
+        </div>
+      </div>
+      <div style="margin-top: 12px; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+        <div id="quotaBar" style="height: 100%; background: #2563eb; width: 0%; transition: width 0.3s;"></div>
+      </div>
+      <p style="margin-top: 8px; font-size: 12px; color: #64748b;">
+        <span id="quotaLocalNote">Local tokens have no quota limits.</span>
+      </p>
+    </div>
+
+    <div class="note">
+      This is a local demo token generated in your browser. Production tokens are issued via the STVOR Dashboard.
+    </div>
+    </div>
+
+    <!-- QUICK START -->
+    <h2>Quick Start</h2>
+    <p>Copy this code to start using STVOR. The token is automatically inserted when you generate one above.</p>
+    <pre><code id="quickstartCode">import { Stvor } from '@stvor/sdk';
+
+const app = await Stvor.init({
+  appToken: 'YOUR_TOKEN_HERE'
+});
+
+const alice = await app.connect('alice@example.com');
+await alice.send('bob@example.com', 'Hello Bob!');</code></pre>
+
+    <!-- SECURITY -->
+    <h2>Security Model</h2>
+
+    <h3 class="guarantee">✅ What STVOR guarantees</h3>
+    <ul>
+      <li>End-to-end encryption (plaintext never leaves the device)</li>
+      <li>Forward Secrecy via Double Ratchet</li>
+      <li>Post-Compromise Security after an honest DH ratchet</li>
+      <li>Replay protection</li>
+      <li>Authenticated encryption (AEAD)</li>
+    </ul>
+
+    <h3 class="no-guarantee">❌ What STVOR does NOT guarantee</h3>
+    <ul>
+      <li>MITM protection on first contact (TOFU model)</li>
+      <li>Metadata privacy — relay sees sender, recipient, timing</li>
+      <li>Guaranteed PCS if DH messages are blocked</li>
+      <li>Post-quantum security</li>
+      <li>Multi-device support</li>
+    </ul>
+
+    <h3>Threat model summary</h3>
+    <ul>
+      <li>Relay is honest-but-curious</li>
+      <li>Clients must store session state securely</li>
+      <li>PCS requires at least one honest DH exchange</li>
+    </ul>
+
+    <!-- LIMITATIONS -->
+    <h2>Limitations &amp; Positioning</h2>
+    <ul>
+      <li>STVOR is <strong>not</strong> an enterprise product</li>
+      <li>Designed for startups, pilots, and internal tools</li>
+      <li>No GDPR, SOC 2, or compliance guarantees</li>
+      <li>All limitations are documented honestly</li>
+    </ul>
+    <div class="warning">
+      STVOR is a reference implementation. For production use, ensure you understand the threat model and limitations.
+    </div>
+
+    <footer>
+      STVOR SDK — Honest cryptography, no marketing claims. (Feb 2026)
+    </footer>
+
+  </div>
+
+  <script>
+    const generateBtn = document.getElementById('generateBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const tokenDisplay = document.getElementById('tokenDisplay');
+    const quickstartCode = document.getElementById('quickstartCode');
+    const quotaSection = document.getElementById('quotaSection');
+    const quotaPlan = document.getElementById('quotaPlan');
+    const quotaUsed = document.getElementById('quotaUsed');
+    const quotaLimit = document.getElementById('quotaLimit');
+    const quotaBar = document.getElementById('quotaBar');
+    const quotaLocalNote = document.getElementById('quotaLocalNote');
+
+    let currentToken = '';
+
+    generateBtn.addEventListener('click', function() {
+      currentToken = 'stvor_local_' + Math.random().toString(36).slice(2, 12);
+      tokenDisplay.textContent = currentToken;
+      copyBtn.style.display = 'inline-block';
+
+      // Show quota section with local token info
+      quotaSection.style.display = 'block';
+      quotaPlan.textContent = 'local';
+      quotaUsed.textContent = '∞';
+      quotaLimit.textContent = '∞';
+      quotaBar.style.width = '0%';
+      quotaBar.style.background = '#10b981';
+      quotaLocalNote.textContent = 'Local tokens have no quota limits. Production tokens enforce limits.';
+
+      quickstartCode.textContent = `import { Stvor } from '@stvor/sdk';
+
+const app = await Stvor.init({
+  appToken: '${currentToken}'
+});
+
+const alice = await app.connect('alice@example.com');
+await alice.send('bob@example.com', 'Hello Bob!');`;
+    });
+
+    copyBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText(currentToken).then(function() {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function() {
+          copyBtn.textContent = 'Copy';
+        }, 1500);
+      });
+    });
+
+    // For production tokens, this would fetch from API:
+    // async function checkQuota(token) {
+    //   const res = await fetch('/usage', { headers: { Authorization: `Bearer ${token}` }});
+    //   const data = await res.json();
+    //   quotaPlan.textContent = data.plan;
+    //   quotaUsed.textContent = data.used.toLocaleString();
+    //   quotaLimit.textContent = data.limit === -1 ? '∞' : data.limit.toLocaleString();
+    //   quotaBar.style.width = data.limit === -1 ? '0%' : `${(data.used / data.limit) * 100}%`;
+    // }
+  </script>
+</body>
+</html>

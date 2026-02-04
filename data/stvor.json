@@ -1,0 +1,11 @@
+{
+  "projects": {},
+  "api_keys": {
+    "stvor_live_c88560370c2fffd9ffa6105287255fcb": {
+      "project_id": "user-project",
+      "created_at": 1769655216889,
+      "revoked_at": null,
+      "status": "active"
+    }
+  }
+}

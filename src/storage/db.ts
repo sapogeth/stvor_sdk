@@ -1,0 +1,155 @@
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// PostgreSQL connection pool
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'stvor',
+  password: process.env.DB_PASSWORD || 'stvor123',
+  port: parseInt(process.env.DB_PORT || '5432'),
+});
+
+let isDbAvailable = false;
+
+// Initialize database connection
+export async function initDb(): Promise<void> {
+  try {
+    const client = await pool.connect();
+    console.log('✅ Database connected');
+    isDbAvailable = true;
+    client.release();
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    isDbAvailable = false;
+    throw error;
+  }
+}
+
+export function isDatabaseAvailable(): boolean {
+  return isDbAvailable;
+}
+
+// Query helper
+export async function query(text: string, params?: any[]) {
+  return pool.query(text, params);
+}
+
+// Token operations
+export async function getToken(token: string) {
+  const { rows } = await pool.query(
+    `SELECT token, project_id, plan, used_messages, monthly_message_limit, reset_at
+     FROM app_tokens
+     WHERE token = $1`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+export async function createToken(projectId: number, plan: 'free' | 'starter' | 'unlimited' = 'free') {
+  const token = `stvor_live_${Math.random().toString(36).slice(2, 14)}`;
+  const limits = {
+    free: 1000,
+    starter: 10000,
+    unlimited: -1,
+  };
+
+  await pool.query(
+    `INSERT INTO app_tokens (token, project_id, plan, used_messages, monthly_message_limit, reset_at)
+     VALUES ($1, $2, $3, 0, $4, DATE_TRUNC('month', NOW()) + INTERVAL '1 month')`,
+    [token, projectId, plan, limits[plan]]
+  );
+
+  return token;
+}
+
+export async function incrementUsage(token: string): Promise<{ used: number; limit: number } | null> {
+  const { rows } = await pool.query(
+    `UPDATE app_tokens
+     SET used_messages = used_messages + 1
+     WHERE token = $1
+       AND (plan = 'unlimited' OR used_messages < monthly_message_limit)
+     RETURNING used_messages AS used, monthly_message_limit AS limit`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+export async function getUsage(token: string) {
+  if (!isDbAvailable) {
+    // Fallback: return mock data for development
+    return {
+      plan: 'free',
+      used: 0,
+      limit: 1000,
+      reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+  }
+  const { rows } = await pool.query(
+    `SELECT plan, used_messages AS used, monthly_message_limit AS limit, reset_at
+     FROM app_tokens
+     WHERE token = $1`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+export async function getLimits(token: string) {
+  if (!isDbAvailable) {
+    // Fallback: return mock data for development
+    return {
+      plan: 'free',
+      limit: 1000,
+      reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+  }
+  const { rows } = await pool.query(
+    `SELECT plan, monthly_message_limit AS limit, reset_at
+     FROM app_tokens
+     WHERE token = $1`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+// Project operations
+export async function createProject(name: string) {
+  const { rows } = await pool.query(
+    `INSERT INTO projects (name) VALUES ($1) RETURNING id, name, created_at`,
+    [name]
+  );
+  return rows[0];
+}
+
+export async function getProject(id: number) {
+  const { rows } = await pool.query(
+    `SELECT id, name, created_at FROM projects WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+// Reset monthly quotas (run via cron job)
+export async function resetMonthlyQuotas() {
+  await pool.query(
+    `UPDATE app_tokens
+     SET used_messages = 0, reset_at = DATE_TRUNC('month', NOW()) + INTERVAL '1 month'
+     WHERE reset_at <= NOW()`
+  );
+}
+
+export const db = {
+  query,
+  getToken,
+  createToken,
+  incrementUsage,
+  getUsage,
+  getLimits,
+  createProject,
+  getProject,
+  resetMonthlyQuotas,
+};
+
+export default db;
