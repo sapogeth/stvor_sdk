@@ -6,63 +6,86 @@
   <title>STVOR Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --font-size-base: clamp(13px, 2vw, 14px);
+      --font-size-h1: clamp(20px, 4vw, 28px);
+      --font-size-h2: clamp(14px, 3vw, 18px);
+      --padding-main: clamp(12px, 3vw, 32px);
+      --gap-main: clamp(12px, 2vw, 20px);
+      --border-radius: clamp(6px, 1.5vw, 12px);
+    }
+    
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0f172a;
       color: #e2e8f0;
       min-height: 100vh;
+      font-size: var(--font-size-base);
+      line-height: clamp(1.4, 0.3vw + 1.4, 1.6);
     }
     .layout { display: flex; min-height: 100vh; }
     
     .sidebar {
-      width: 260px;
+      width: clamp(180px, 18vw, 260px);
       background: #1e293b;
-      padding: 24px;
+      padding: clamp(12px, 2vw, 24px);
       border-right: 1px solid #334155;
     }
     .logo {
-      font-size: 24px;
+      font-size: clamp(18px, 3vw, 24px);
       font-weight: 800;
       color: #fff;
-      margin-bottom: 8px;
+      margin-bottom: clamp(4px, 1vw, 8px);
     }
     .logo span { color: #3b82f6; }
-    .logo-sub { font-size: 12px; color: #64748b; margin-bottom: 32px; }
+    .logo-sub { font-size: clamp(10px, 1.5vw, 12px); color: #64748b; margin-bottom: clamp(16px, 2vw, 32px); }
     
     .nav-item {
       display: flex;
       align-items: center;
-      padding: 12px 16px;
-      border-radius: 8px;
+      padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 16px);
+      border-radius: clamp(6px, 1vw, 8px);
       color: #94a3b8;
       text-decoration: none;
-      margin-bottom: 4px;
+      margin-bottom: clamp(2px, 0.5vw, 4px);
       cursor: pointer;
       transition: all 0.2s;
+      font-size: clamp(12px, 1.8vw, 14px);
     }
     .nav-item:hover, .nav-item.active {
       background: #334155;
       color: #fff;
     }
-    .nav-item svg { margin-right: 12px; width: 20px; height: 20px; }
+    .nav-item svg { margin-right: clamp(8px, 1.5vw, 12px); width: clamp(18px, 2vw, 20px); height: clamp(18px, 2vw, 20px); }
     
-    .main { flex: 1; padding: 32px; max-width: 900px; }
+    .main { 
+      flex: 1; 
+      padding: clamp(12px, 3vw, 32px);
+      max-width: 100%;
+      overflow-y: auto;
+    }
     
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
+      margin-bottom: clamp(16px, 3vw, 32px);
+      flex-wrap: wrap;
+      gap: var(--gap-main);
     }
-    .header h1 { font-size: 28px; font-weight: 700; }
+    .header h1 { 
+      font-size: var(--font-size-h1);
+      font-weight: 700;
+    }
     
     .plan-badge {
       display: inline-flex;
       align-items: center;
-      padding: 6px 12px;
+      padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
       background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      border-radius: 20px;
-      font-size: 12px;
+      border-radius: clamp(16px, 2vw, 20px);
+      font-size: clamp(10px, 1.5vw, 12px);
       font-weight: 600;
       color: white;
     }
@@ -71,13 +94,14 @@
     .btn {
       display: inline-flex;
       align-items: center;
-      padding: 10px 20px;
-      font-size: 14px;
+      padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 20px);
+      font-size: clamp(12px, 1.8vw, 14px);
       font-weight: 600;
       border: none;
-      border-radius: 8px;
+      border-radius: clamp(6px, 1vw, 8px);
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .btn-primary { background: #3b82f6; color: white; }
     .btn-primary:hover { background: #2563eb; }
@@ -89,52 +113,61 @@
     .card {
       background: #1e293b;
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
+      border-radius: var(--border-radius);
+      padding: clamp(12px, 2.5vw, 24px);
+      margin-bottom: clamp(12px, 2vw, 24px);
     }
-    .card h2 { font-size: 18px; margin-bottom: 16px; color: #f8fafc; }
-    .card h3 { font-size: 14px; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+    .card h2 { 
+      font-size: var(--font-size-h2);
+      margin-bottom: clamp(10px, 2vw, 16px);
+      color: #f8fafc;
+    }
+    .card h3 { 
+      font-size: clamp(12px, 1.8vw, 14px);
+      color: #94a3b8;
+      margin-bottom: clamp(6px, 1.5vw, 8px);
+      font-weight: 500;
+    }
     
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(clamp(150px, 25vw, 250px), 1fr));
+      gap: var(--gap-main);
+      margin-bottom: clamp(16px, 2vw, 24px);
     }
     .stat-card {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: var(--border-radius);
+      padding: clamp(12px, 2vw, 20px);
     }
     .stat-card h4 {
-      font-size: 12px;
+      font-size: clamp(10px, 1.5vw, 12px);
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      margin-bottom: clamp(6px, 1vw, 8px);
     }
     .stat-value {
-      font-size: 32px;
+      font-size: clamp(20px, 5vw, 32px);
       font-weight: 700;
       color: #f8fafc;
     }
     .stat-sub {
-      font-size: 13px;
+      font-size: clamp(11px, 1.5vw, 13px);
       color: #94a3b8;
-      margin-top: 4px;
+      margin-top: clamp(2px, 0.5vw, 4px);
     }
     .stat-card.warning .stat-value { color: #fbbf24; }
     .stat-card.danger .stat-value { color: #ef4444; }
     .stat-card.success .stat-value { color: #10b981; }
     
     .progress-bar {
-      height: 8px;
+      height: clamp(6px, 1.5vw, 8px);
       background: #334155;
       border-radius: 4px;
       overflow: hidden;
-      margin-top: 12px;
+      margin-top: clamp(8px, 1.5vw, 12px);
     }
     .progress-fill {
       height: 100%;
@@ -148,19 +181,21 @@
     .api-key-box {
       background: #0f172a;
       border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 16px;
+      border-radius: clamp(6px, 1vw, 8px);
+      padding: clamp(10px, 2vw, 16px);
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin: 16px 0;
+      gap: clamp(8px, 1.5vw, 12px);
+      margin: clamp(10px, 2vw, 16px) 0;
+      flex-wrap: wrap;
     }
     .api-key-value {
       flex: 1;
       font-family: 'SF Mono', Monaco, monospace;
-      font-size: 14px;
+      font-size: clamp(11px, 1.8vw, 14px);
       color: #3b82f6;
       word-break: break-all;
+      min-width: 150px;
     }
     .api-key-hidden {
       color: #64748b;
@@ -170,35 +205,39 @@
       background: #334155;
       color: #94a3b8;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: clamp(6px, 1.2vw, 8px) clamp(10px, 1.8vw, 16px);
+      border-radius: clamp(4px, 0.8vw, 6px);
       cursor: pointer;
-      font-size: 13px;
+      font-size: clamp(11px, 1.5vw, 13px);
       font-weight: 500;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .copy-btn:hover { background: #475569; color: #fff; }
     .copy-btn.copied { background: #059669; color: #fff; }
     
     .project-list {
-      margin-top: 16px;
+      margin-top: clamp(12px, 2vw, 16px);
     }
     .project-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px;
+      padding: clamp(12px, 2vw, 16px);
       background: #0f172a;
       border: 1px solid #334155;
-      border-radius: 8px;
-      margin-bottom: 8px;
+      border-radius: clamp(6px, 1.2vw, 8px);
+      margin-bottom: clamp(6px, 1vw, 8px);
+      flex-wrap: wrap;
+      gap: var(--gap-main);
     }
     .project-name {
       font-weight: 600;
       color: #f8fafc;
+      font-size: clamp(12px, 1.8vw, 14px);
     }
     .project-created {
-      font-size: 12px;
+      font-size: clamp(10px, 1.5vw, 12px);
       color: #64748b;
     }
     
@@ -213,26 +252,30 @@
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      padding: var(--gap-main);
     }
     .modal-overlay.active { display: flex; }
     .modal {
       background: #1e293b;
       border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 32px;
+      border-radius: var(--border-radius);
+      padding: clamp(20px, 4vw, 32px);
       width: 100%;
-      max-width: 480px;
+      max-width: clamp(280px, 80vw, 480px);
     }
-    .modal h2 { margin-bottom: 24px; }
+    .modal h2 { 
+      margin-bottom: clamp(16px, 2vw, 24px);
+      font-size: var(--font-size-h2);
+    }
     .modal-input {
       width: 100%;
-      padding: 12px 16px;
+      padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 16px);
       background: #0f172a;
       border: 1px solid #334155;
-      border-radius: 8px;
+      border-radius: clamp(6px, 1vw, 8px);
       color: #e2e8f0;
-      font-size: 14px;
-      margin-bottom: 16px;
+      font-size: clamp(12px, 1.8vw, 14px);
+      margin-bottom: clamp(12px, 2vw, 16px);
     }
     .modal-input:focus {
       outline: none;
@@ -240,36 +283,43 @@
     }
     .modal-actions {
       display: flex;
-      gap: 12px;
+      gap: clamp(8px, 1.5vw, 12px);
       justify-content: flex-end;
+      flex-wrap: wrap;
     }
     
     .warning-banner {
       background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
       border: 1px solid #c2410c;
-      border-radius: 8px;
-      padding: 16px 20px;
+      border-radius: var(--border-radius);
+      padding: clamp(12px, 2vw, 16px) clamp(14px, 2.5vw, 20px);
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: clamp(10px, 2vw, 12px);
+      margin-bottom: clamp(16px, 2vw, 24px);
     }
-    .warning-banner .icon { font-size: 24px; }
-    .warning-banner .text { color: #fed7aa; }
+    .warning-banner .icon { font-size: clamp(18px, 3vw, 24px); }
+    .warning-banner .text { 
+      color: #fed7aa;
+      font-size: clamp(12px, 1.8vw, 14px);
+    }
     .warning-banner .text strong { color: #fff; }
     
     .success-banner {
       background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
       border: 1px solid #059669;
-      border-radius: 8px;
-      padding: 16px 20px;
+      border-radius: var(--border-radius);
+      padding: clamp(12px, 2vw, 16px) clamp(14px, 2.5vw, 20px);
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
+      gap: clamp(10px, 2vw, 12px);
+      margin-bottom: clamp(16px, 2vw, 24px);
     }
-    .success-banner .icon { font-size: 24px; }
-    .success-banner .text { color: #a7f3d0; }
+    .success-banner .icon { font-size: clamp(18px, 3vw, 24px); }
+    .success-banner .text { 
+      color: #a7f3d0;
+      font-size: clamp(12px, 1.8vw, 14px);
+    }
     .success-banner .text strong { color: #ecfdf5; }
     
     .upgrade-card {
@@ -279,18 +329,377 @@
     .upgrade-card h2 { color: #c7d2fe; }
     .upgrade-features {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 16px 0 24px;
+      grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 40vw, 180px), 1fr));
+      gap: clamp(8px, 1.5vw, 12px);
+      margin: clamp(12px, 2vw, 16px) 0 clamp(16px, 2.5vw, 24px);
     }
     .upgrade-feature {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: clamp(6px, 1vw, 8px);
       color: #a5b4fc;
-      font-size: 14px;
+      font-size: clamp(11px, 1.5vw, 14px);
     }
     .upgrade-feature .check { color: #34d399; }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+    
+    /* Tablets 1024px and below */
+    @media (max-width: 1024px) {
+      .main {
+        padding: 24px;
+        max-width: 100%;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      
+      .stat-value {
+        font-size: 24px;
+      }
+    }
+
+    /* Tablets 768px and below */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 200px;
+        padding: 16px;
+      }
+      
+      .logo {
+        font-size: 20px;
+        margin-bottom: 6px;
+      }
+      
+      .logo-sub {
+        font-size: 11px;
+        margin-bottom: 16px;
+      }
+      
+      .nav-item {
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+      
+      .nav-item svg {
+        width: 18px;
+        height: 18px;
+      }
+      
+      .main {
+        padding: 20px;
+        max-width: 100%;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      
+      .stat-value {
+        font-size: 28px;
+      }
+      
+      .card {
+        padding: 16px;
+        margin-bottom: 16px;
+        border-radius: 8px;
+      }
+      
+      .card h2 {
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      
+      .btn {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+      
+      .upgrade-features {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+
+    /* Mobile phones 480px and below */
+    @media (max-width: 480px) {
+      .layout {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        position: fixed;
+        left: -200px;
+        top: 0;
+        width: 200px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+      }
+      
+      .sidebar.open {
+        left: 0;
+      }
+      
+      .main {
+        padding: 12px;
+        max-width: 100%;
+        flex: 1;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      
+      .plan-badge {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      
+      .stat-card {
+        padding: 12px;
+        border-radius: 8px;
+      }
+      
+      .stat-card h4 {
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      
+      .stat-sub {
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      
+      .progress-bar {
+        height: 6px;
+        margin-top: 8px;
+      }
+      
+      .card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      
+      .card h2 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      
+      .card h3 {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+      }
+      
+      .card p {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 8px;
+      }
+      
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-primary {
+        background: #3b82f6;
+        color: white;
+        margin-bottom: 8px;
+      }
+      
+      .btn-secondary {
+        background: #334155;
+        color: #e2e8f0;
+        margin-bottom: 8px;
+      }
+      
+      .btn-danger {
+        background: #dc2626;
+        color: white;
+      }
+      
+      .api-key-box {
+        padding: 10px;
+        gap: 8px;
+        margin: 8px 0;
+      }
+      
+      .api-key-value {
+        font-size: 11px;
+      }
+      
+      .copy-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      
+      .project-item {
+        flex-direction: column;
+        padding: 12px;
+        gap: 8px;
+      }
+      
+      .project-name {
+        font-size: 13px;
+      }
+      
+      .project-created {
+        font-size: 11px;
+      }
+      
+      .modal {
+        width: 90%;
+        padding: 20px;
+      }
+      
+      .modal h2 {
+        font-size: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .modal-input {
+        padding: 10px 12px;
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+      
+      .modal-actions {
+        gap: 8px;
+      }
+      
+      .warning-banner {
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      
+      .warning-banner .icon {
+        font-size: 18px;
+      }
+      
+      .warning-banner .text {
+        font-size: 12px;
+      }
+      
+      .success-banner {
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      
+      .success-banner .icon {
+        font-size: 18px;
+      }
+      
+      .success-banner .text {
+        font-size: 12px;
+      }
+      
+      .upgrade-card {
+        padding: 16px;
+      }
+      
+      .upgrade-features {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .upgrade-feature {
+        font-size: 12px;
+      }
+      
+      /* Hide sidebar toggle for larger screens */
+      .menu-toggle {
+        display: none;
+      }
+    }
+
+    /* Extra small phones 360px and below */
+    @media (max-width: 360px) {
+      .main {
+        padding: 10px;
+      }
+      
+      .header h1 {
+        font-size: 18px;
+      }
+      
+      .stat-value {
+        font-size: 18px;
+      }
+      
+      .card {
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      
+      .card h2 {
+        font-size: 13px;
+      }
+      
+      .btn {
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+      
+      .modal {
+        width: 95%;
+        padding: 16px;
+      }
+      
+      .api-key-box {
+        flex-direction: column;
+      }
+      
+      .copy-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>

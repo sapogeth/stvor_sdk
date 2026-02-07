@@ -19,15 +19,22 @@
       --success: #059669;
       --danger: #dc2626;
       --warning: #f59e0b;
-      --sidebar-width: 280px;
+      --sidebar-width: clamp(200px, 20vw, 280px);
+      --font-size-base: clamp(13px, 2vw, 16px);
+      --font-size-h1: clamp(24px, 6vw, 48px);
+      --font-size-h2: clamp(20px, 4vw, 28px);
+      --font-size-h3: clamp(16px, 3vw, 18px);
+      --padding-mobile: clamp(12px, 3vw, 24px);
+      --padding-content: clamp(16px, 4vw, 32px);
     }
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6;
+      line-height: clamp(1.5, 0.5vw + 1.5, 1.8);
       color: var(--text-primary);
       background: var(--bg-secondary);
       margin: 0;
+      font-size: var(--font-size-base);
     }
     
     .layout { display: flex; min-height: 100vh; }
@@ -47,7 +54,7 @@
       margin-bottom: 24px;
     }
     .logo {
-      font-size: 24px;
+      font-size: clamp(20px, 5vw, 24px);
       font-weight: 800;
       color: var(--text-primary);
       text-decoration: none;
@@ -55,25 +62,25 @@
       margin-bottom: 4px;
     }
     .logo-tagline {
-      font-size: 12px;
+      font-size: clamp(10px, 1.5vw, 12px);
       color: var(--text-muted);
       font-weight: 500;
     }
-    .nav-section { margin-bottom: 24px; }
+    .nav-section { margin-bottom: clamp(16px, 2vw, 24px); }
     .nav-title {
-      font-size: 11px;
+      font-size: clamp(9px, 1.2vw, 11px);
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-muted);
-      padding: 0 24px 8px;
+      padding: 0 clamp(12px, 2vw, 24px) clamp(4px, 1vw, 8px);
       letter-spacing: 0.5px;
     }
     .nav-item {
       display: block;
-      padding: 8px 24px;
+      padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 24px);
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 14px;
+      font-size: clamp(12px, 1.8vw, 14px);
       transition: all 0.2s;
       border-left: 3px solid transparent;
     }
@@ -94,15 +101,15 @@
     .topbar {
       background: var(--bg-main);
       border-bottom: 1px solid var(--border);
-      padding: 12px 32px;
+      padding: clamp(8px, 2vw, 12px) clamp(16px, 3vw, 32px);
       position: sticky;
       top: 0;
       z-index: 10;
     }
-    .tabs { display: flex; gap: 24px; }
+    .tabs { display: flex; gap: clamp(12px, 3vw, 24px); }
     .tab {
-      padding: 8px 0;
-      font-size: 14px;
+      padding: clamp(4px, 1.2vw, 8px) 0;
+      font-size: clamp(12px, 1.8vw, 14px);
       color: var(--text-muted);
       text-decoration: none;
       border-bottom: 2px solid transparent;
@@ -110,57 +117,57 @@
     .tab:hover { color: var(--text-primary); }
     .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
     
-    .content { max-width: 900px; padding: 48px 32px; }
+    .content { max-width: 900px; padding: clamp(24px, 5vw, 48px) var(--padding-content); }
     
-    header { margin-bottom: 40px; }
-    header h1 { font-size: 48px; font-weight: 800; margin-bottom: 12px; }
-    .tagline { font-size: 20px; color: var(--text-secondary); }
+    header { margin-bottom: clamp(24px, 4vw, 40px); }
+    header h1 { font-size: var(--font-size-h1); font-weight: 800; margin-bottom: clamp(8px, 2vw, 12px); }
+    .tagline { font-size: clamp(16px, 3vw, 20px); color: var(--text-secondary); }
     
     .intro-card {
       background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
       border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 40px;
+      border-radius: clamp(8px, 2vw, 12px);
+      padding: clamp(16px, 3vw, 24px);
+      margin-bottom: clamp(24px, 4vw, 40px);
     }
     
     h2 {
-      font-size: 28px;
+      font-size: var(--font-size-h2);
       font-weight: 700;
-      margin: 48px 0 16px 0;
-      padding-top: 16px;
+      margin: clamp(32px, 5vw, 48px) 0 clamp(10px, 2vw, 16px) 0;
+      padding-top: clamp(12px, 2vw, 16px);
       border-top: 1px solid var(--border);
     }
     h2:first-of-type { border-top: none; margin-top: 0; }
-    h3 { font-size: 18px; margin: 24px 0 12px 0; }
-    p { margin: 0 0 16px 0; color: var(--text-secondary); }
+    h3 { font-size: var(--font-size-h3); margin: clamp(16px, 2.5vw, 24px) 0 clamp(8px, 1.5vw, 12px) 0; }
+    p { margin: 0 0 clamp(10px, 2vw, 16px) 0; color: var(--text-secondary); }
     
     .card {
       background: white;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      margin: 16px 0;
+      border-radius: clamp(6px, 1.5vw, 8px);
+      padding: clamp(16px, 3vw, 24px);
+      margin: clamp(12px, 2vw, 16px) 0;
     }
     
-    ul { margin: 0 0 20px 0; padding-left: 24px; color: #475569; }
-    li { margin-bottom: 8px; }
+    ul { margin: 0 0 clamp(12px, 2vw, 20px) 0; padding-left: clamp(16px, 3vw, 24px); color: #475569; }
+    li { margin-bottom: clamp(4px, 1vw, 8px); }
     
     .code-block {
       position: relative;
-      margin: 16px 0;
+      margin: clamp(12px, 2vw, 16px) 0;
     }
     .copy-btn {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: clamp(8px, 2vw, 12px);
+      right: clamp(8px, 2vw, 12px);
       background: #334155;
       color: #e2e8f0;
       border: none;
-      padding: 6px 12px;
+      padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
       border-radius: 4px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: clamp(10px, 1.5vw, 12px);
       opacity: 0.8;
       transition: all 0.2s;
     }
@@ -170,22 +177,22 @@
     pre {
       background: #0f172a;
       color: #e2e8f0;
-      padding: 20px;
+      padding: clamp(12px, 2.5vw, 20px);
       border-radius: 8px;
       overflow-x: auto;
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: clamp(11px, 1.8vw, 14px);
+      line-height: clamp(1.4, 0.5vw + 1.4, 1.8);
       margin: 0;
     }
     code { font-family: 'SF Mono', Monaco, 'Courier New', monospace; }
     
     .btn {
       display: inline-block;
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 24px);
+      font-size: clamp(12px, 1.8vw, 14px);
       font-weight: 600;
       border: none;
-      border-radius: 6px;
+      border-radius: clamp(4px, 1vw, 6px);
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
@@ -198,32 +205,32 @@
     .warning {
       background: #fef3c7;
       border-left: 4px solid #f59e0b;
-      padding: 12px 16px;
+      padding: clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
       border-radius: 0 6px 6px 0;
-      margin: 16px 0;
-      font-size: 14px;
+      margin: clamp(12px, 2vw, 16px) 0;
+      font-size: clamp(12px, 1.8vw, 14px);
       color: #92400e;
     }
     .success-box {
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       border-radius: 8px;
-      padding: 24px;
-      margin: 16px 0;
+      padding: clamp(16px, 3vw, 24px);
+      margin: clamp(12px, 2vw, 16px) 0;
     }
     
     .step {
       display: flex;
-      gap: 16px;
-      margin: 24px 0;
-      padding: 20px;
+      gap: clamp(12px, 2vw, 16px);
+      margin: clamp(16px, 2.5vw, 24px) 0;
+      padding: clamp(12px, 2.5vw, 20px);
       background: white;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: clamp(6px, 1.5vw, 8px);
     }
     .step-number {
-      width: 32px;
-      height: 32px;
+      width: clamp(28px, 4vw, 32px);
+      height: clamp(28px, 4vw, 32px);
       background: var(--primary);
       color: white;
       border-radius: 50%;
@@ -232,17 +239,305 @@
       justify-content: center;
       font-weight: 700;
       flex-shrink: 0;
+      font-size: clamp(14px, 2vw, 16px);
     }
     .step-content { flex: 1; }
-    .step-content h4 { margin: 0 0 8px 0; }
+    .step-content h4 { margin: 0 0 clamp(6px, 1vw, 8px) 0; }
     
     footer {
-      margin-top: 64px;
-      padding-top: 24px;
+      margin-top: clamp(32px, 5vw, 64px);
+      padding-top: clamp(12px, 2vw, 24px);
       border-top: 1px solid #e2e8f0;
       text-align: center;
       color: #94a3b8;
-      font-size: 14px;
+      font-size: clamp(11px, 1.5vw, 14px);
+    }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+    
+    /* Tablets and below 1024px */
+    @media (max-width: 1024px) {
+      :root { --sidebar-width: 240px; }
+      .content { padding: 32px 24px; }
+      header h1 { font-size: 36px; }
+      h2 { font-size: 24px; }
+      .intro-card { padding: 16px; }
+      .intro-card > div { grid-template-columns: 1fr; }
+      pre { font-size: 12px; }
+    }
+
+    /* Small tablets 768px and below */
+    @media (max-width: 768px) {
+      :root { --sidebar-width: 0; }
+      
+      .layout { flex-direction: column; }
+      
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      }
+      
+      .sidebar.open { left: 0; }
+      
+      .main-content {
+        margin-left: 0;
+        width: 100%;
+      }
+      
+      .topbar {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .tabs { gap: 16px; font-size: 13px; }
+      .tab { padding: 6px 0; }
+      
+      .content { padding: 24px 16px; }
+      
+      header h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+      
+      .tagline { font-size: 16px; }
+      
+      h2 {
+        font-size: 20px;
+        margin: 32px 0 12px 0;
+        padding-top: 12px;
+      }
+      
+      h3 { font-size: 16px; margin: 16px 0 8px 0; }
+      
+      .intro-card { padding: 12px; margin-bottom: 24px; }
+      .intro-card > div { 
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      
+      .step {
+        flex-direction: column;
+        padding: 16px;
+        gap: 12px;
+      }
+      
+      .step-number { 
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+      }
+      
+      .code-block { margin: 12px 0; }
+      pre { 
+        padding: 12px;
+        font-size: 11px;
+        overflow-x: auto;
+      }
+      
+      .copy-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+        top: 8px;
+        right: 8px;
+      }
+      
+      .btn {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+      
+      .btn-primary { padding: 8px 12px; font-size: 13px; }
+      .btn-secondary { margin-left: 0; margin-top: 8px; }
+      
+      .warning { font-size: 13px; padding: 10px 12px; }
+      
+      .success-box { padding: 16px; margin: 12px 0; }
+      
+      .intro-card > div { grid-template-columns: 1fr; }
+      
+      footer { margin-top: 32px; font-size: 12px; }
+    }
+
+    /* Mobile phones 480px and below */
+    @media (max-width: 480px) {
+      :root {
+        --sidebar-width: 0;
+        --text-primary: #0f172a;
+      }
+      
+      body { font-size: 14px; }
+      
+      .main-content { width: 100%; }
+      
+      .topbar {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px 12px;
+      }
+      
+      .tabs {
+        gap: 8px;
+        width: 100%;
+      }
+      
+      .tab { font-size: 12px; padding: 4px 0; }
+      
+      .content { 
+        padding: 16px 12px;
+        max-width: 100%;
+      }
+      
+      header h1 {
+        font-size: 24px;
+        margin-bottom: 6px;
+      }
+      
+      .tagline { 
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      
+      h2 {
+        font-size: 18px;
+        margin: 24px 0 10px 0;
+        padding-top: 12px;
+      }
+      
+      h3 { 
+        font-size: 15px;
+        margin: 12px 0 6px 0;
+      }
+      
+      p { 
+        margin-bottom: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      
+      ul { margin: 0 0 12px 16px; font-size: 13px; }
+      li { margin-bottom: 4px; }
+      
+      .intro-card {
+        padding: 12px;
+        margin-bottom: 16px;
+        border-radius: 6px;
+      }
+      
+      .intro-card > div { 
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .intro-card ul { margin: 4px 0 0 16px; padding: 0; }
+      
+      .card {
+        padding: 16px;
+        margin: 12px 0;
+        border-radius: 6px;
+      }
+      
+      .step {
+        flex-direction: column;
+        padding: 12px;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      
+      .step-number {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      
+      .code-block { 
+        margin: 8px 0;
+        position: relative;
+      }
+      
+      pre {
+        padding: 10px;
+        font-size: 10px;
+        line-height: 1.4;
+        overflow-x: auto;
+      }
+      
+      code { font-size: 10px; }
+      
+      .copy-btn {
+        padding: 4px 6px;
+        font-size: 10px;
+        top: 6px;
+        right: 6px;
+      }
+      
+      .btn {
+        padding: 10px 12px;
+        font-size: 12px;
+        border-radius: 4px;
+        width: 100%;
+        text-align: center;
+      }
+      
+      .btn-secondary { 
+        margin-left: 0;
+        margin-top: 6px;
+        width: 100%;
+      }
+      
+      .warning {
+        font-size: 12px;
+        padding: 10px 12px;
+        border-left-width: 3px;
+        margin: 12px 0;
+      }
+      
+      .success-box {
+        padding: 12px;
+        margin: 12px 0;
+        border-radius: 6px;
+      }
+      
+      .success-box h4 { font-size: 13px; }
+      .success-box pre { 
+        font-size: 9px;
+        padding: 8px;
+        margin: 8px 0 0 0;
+      }
+      
+      footer {
+        margin-top: 24px;
+        padding-top: 12px;
+        font-size: 11px;
+      }
+    }
+
+    /* Extra small phones 360px and below */
+    @media (max-width: 360px) {
+      header h1 {
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+      
+      .tagline { font-size: 12px; }
+      
+      h2 { font-size: 16px; }
+      h3 { font-size: 14px; }
+      
+      .content { padding: 12px 10px; }
+      
+      pre { font-size: 9px; }
+      code { font-size: 9px; }
+      
+      .btn { padding: 8px 10px; font-size: 11px; }
     }
   </style>
 </head>
