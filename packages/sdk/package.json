@@ -28,13 +28,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/izahii/stvor-api.git"
+    "url": "git+https://github.com/sapogeth/stvor_sdk.git"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "bugs": {
-    "url": "https://github.com/izahii/stvor-api/issues"
+    "url": "https://github.com/sapogeth/stvor_sdk/issues"
   },
   "homepage": "https://stvor.xyz",
   "scripts": {

@@ -291,7 +291,7 @@ Legacy Web Crypto implementation still available in `legacy.ts`.
 
 - **Security Concerns:** See [SECURITY.md](SECURITY.md)
 - **API Docs:** See [docs/index.mdx](docs/index.mdx)
-- **Issues:** https://github.com/izahii/stvor-api/issues
+- **Issues:** https://github.com/sapogeth/stvor_sdk/issues
 
 ---
 
