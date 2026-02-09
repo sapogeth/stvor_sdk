@@ -7,6 +7,7 @@
  * - Post-Compromise Security via forced ratchet steps
  * - TOFU (Trust On First Use) for identity verification
  * - Replay protection via nonce validation
+ * - Cryptographically verified metrics (HMAC-SHA256)
  * - libsodium for all cryptographic operations
  */
 
@@ -20,6 +21,7 @@ import { Counter, Gauge, register } from 'prom-client';
 import { CryptoSessionManager } from './crypto-session';
 import { verifyFingerprint } from './tofu-manager';
 import { validateMessageWithNonce } from './replay-manager';
+import { MetricsAttestationEngine, MetricsAttestation } from './metrics-attestation';
 import sodium from 'libsodium-wrappers';
 
 // Define Prometheus metrics
@@ -50,14 +52,67 @@ export class StvorApp {
   private relay: RelayClient;
   private config: Required<StvorAppConfig>;
   private connectedClients: Map<UserId, StvorFacadeClient> = new Map();
+  private metricsAttestation: MetricsAttestationEngine;
+  private backendUrl: string;
+  private appToken: string;
 
   constructor(config: Required<StvorAppConfig>) {
     this.config = config;
     this.relay = new RelayClient(config.relayUrl, config.appToken, config.timeout);
+    this.metricsAttestation = new MetricsAttestationEngine(config.appToken);
+    this.appToken = config.appToken;
+    this.backendUrl = (config as any).backendUrl || 'http://localhost:3000';
   }
 
   isReady(): boolean {
     return this.relay.isConnected();
+  }
+
+  /**
+   * Get attestation engine for recording metrics
+   */
+  getMetricsAttestationEngine(): MetricsAttestationEngine {
+    return this.metricsAttestation;
+  }
+
+  /**
+   * Periodically send metrics attestations to backend
+   * Backend verifies and stores only valid attestations
+   */
+  async sendMetricsAttestation(): Promise<void> {
+    const attestation = this.metricsAttestation.createAttestation();
+
+    try {
+      const response = await fetch(`${this.backendUrl}/api/metrics/attest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appToken: this.appToken,
+          attestation,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('[STVOR] Metrics attestation rejected:', error.reason);
+        return;
+      }
+
+      console.debug('[STVOR] Metrics attestation verified and stored');
+    } catch (error) {
+      console.error('[STVOR] Failed to send metrics attestation:', error);
+    }
+  }
+
+  /**
+   * Flush metrics to backend
+   * Sends current metrics attestation (if there is any activity)
+   * Called explicitly by user or on disconnect
+   */
+  async flushMetrics(): Promise<void> {
+    await this.sendMetricsAttestation().catch(err =>
+      console.debug('[STVOR] Metrics flush failed:', err)
+    );
   }
 
   async connect(userId: UserId): Promise<StvorFacadeClient> {
@@ -67,7 +122,7 @@ export class StvorApp {
       return existingClient;
     }
 
-    const client = new StvorFacadeClient(userId, this.relay);
+    const client = new StvorFacadeClient(userId, this.relay, this.metricsAttestation);
     await this.initClient(client);
     this.connectedClients.set(userId, client);
     return client;
@@ -86,6 +141,8 @@ export class StvorApp {
       }
       this.connectedClients.clear();
       this.relay.disconnect();
+      // Flush any pending metrics before disconnect
+      await this.flushMetrics();
     }
   }
 
@@ -97,15 +154,17 @@ export class StvorApp {
 export class StvorFacadeClient {
   private userId: UserId;
   private relay: RelayClient;
+  private metricsAttestation: MetricsAttestationEngine;
   private initialized: boolean = false;
   private cryptoSession: CryptoSessionManager;
   private messageHandlers: Map<string, (msg: DecryptedMessage) => void> = new Map();
   private messageQueue: any[] = [];
   private isReceiving: boolean = false;
 
-  constructor(userId: UserId, relay: RelayClient) {
+  constructor(userId: UserId, relay: RelayClient, metricsAttestation: MetricsAttestationEngine) {
     this.userId = userId;
     this.relay = relay;
+    this.metricsAttestation = metricsAttestation;
     this.cryptoSession = new CryptoSessionManager(userId);
   }
 
@@ -167,6 +226,9 @@ export class StvorFacadeClient {
     // Encrypt using Double Ratchet
     const plaintext = new TextDecoder().decode(contentBytes);
     const { ciphertext, header } = await this.cryptoSession.encryptForPeer(recipientId, plaintext);
+
+    // METRIC: Record successful encryption (AFTER AEAD completes)
+    this.metricsAttestation.recordMessageEncrypted();
 
     try {
       await this.relay.send({
@@ -246,7 +308,14 @@ export class StvorFacadeClient {
     // Replay protection: Validate nonce
     const nonce = new Uint8Array(msg.header.nonce);
     const timestamp = Math.floor(new Date(msg.timestamp).getTime() / 1000);
-    await validateMessageWithNonce(msg.from, nonce, timestamp);
+    
+    try {
+      await validateMessageWithNonce(msg.from, nonce, timestamp);
+    } catch (e) {
+      // METRIC: Record replay attempt
+      this.metricsAttestation.recordReplayAttempt();
+      throw e; // Re-throw to prevent decryption
+    }
 
     // Decrypt using Double Ratchet
     try {
@@ -262,6 +331,9 @@ export class StvorFacadeClient {
         header
       );
 
+      // METRIC: Record successful decryption (AFTER AAD verification)
+      this.metricsAttestation.recordMessageDecrypted();
+
       return {
         id: msg.id || crypto.randomUUID(),
         senderId: msg.from,
@@ -269,6 +341,9 @@ export class StvorFacadeClient {
         timestamp: new Date(msg.timestamp),
       };
     } catch (e) {
+      // METRIC: Record failed decryption (auth failure)
+      this.metricsAttestation.recordMessageRejected();
+      
       // Decryption failed — surface as delivery failure
       throw Errors.deliveryFailed(msg.from);
     }
