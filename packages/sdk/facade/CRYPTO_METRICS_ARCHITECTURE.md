@@ -1,4 +1,4 @@
-# STVOR v3.0 - Crypto-Verified Metrics System
+# STVOR v2.4.0 - Crypto-Verified Metrics System
 
 ## Executive Summary
 
@@ -280,7 +280,7 @@ try {
 ```
 
 **UI States:**
-- ✅ **"Verified by SDK v3.0"** - Proof valid, display metrics
+- ✅ **"Verified by SDK v2.4.0"** - Proof valid, display metrics
 - ❌ **"Metrics Rejected"** - Invalid proof
 - 📊 **"No Verified Activity"** - No metrics received yet
 - **All counters at 0** - Valid state (no activity)
@@ -427,7 +427,7 @@ All use identical HKDF-SHA256 derivation with:
 
 ## Backwards Compatibility
 
-**v2.0 → v3.0 Migration:**
+**v2.3 → v2.4 Migration:**
 - Dashboard localStorage removed (fresh start)
 - No persisted metrics from v2.0
 - New projects start with 0 counters
@@ -473,6 +473,6 @@ All use identical HKDF-SHA256 derivation with:
 
 ---
 
-**Version:** STVOR SDK v3.0
+**Version:** STVOR SDK v2.4.0
 **Status:** Production Ready
 **Last Updated:** 2024-Q1

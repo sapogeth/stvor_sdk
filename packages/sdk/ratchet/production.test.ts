@@ -1,5 +1,5 @@
 /**
- * STVOR SDK v3.0 - Production Test Suite
+ * STVOR SDK v2.4.0 - Production Test Suite
  * 
  * Tests SECURITY INVARIANTS and adversarial scenarios
  * Uses property-based + deterministic crypto for repeatability

@@ -1,5 +1,5 @@
 /**
- * STVOR SDK v3.0 - Production-Ready Core Ratchet
+ * STVOR SDK v2.4.0 - Production-Ready Core Ratchet
  * Key changes from v2:
  * - Header AAD authentication
  * - Immutable state transitions

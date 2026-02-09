@@ -708,7 +708,7 @@
     <!-- SIDEBAR -->
     <nav class="sidebar">
       <div class="logo">STVOR<span>.</span></div>
-      <div class="logo-sub">Dashboard v3.0</div>
+      <div class="logo-sub">Dashboard v2.4.0</div>
       
       <a href="/" class="nav-item">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -728,7 +728,7 @@
     <main class="main">
       <div class="header">
         <h1>Dashboard</h1>
-        <div class="plan-badge free">✨ v3.0 Production</div>
+        <div class="plan-badge free">✨ v2.4.0 Production</div>
       </div>
       
       <!-- USAGE STATS -->
@@ -782,24 +782,66 @@
         </div>
       </div>
       
+      <!-- ARCHITECTURE CLARITY -->
+      <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%); border-color: #bfdbfe; border-left: 4px solid #3b82f6;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="font-size: 24px;">🏗️</span>
+          <div>
+            <h3 style="margin: 0 0 8px 0; color: #1e40af; font-weight: 600;">How This Works (v2.4)</h3>
+            <p style="margin: 0 0 12px 0; color: #64748b; font-size: 14px; line-height: 1.6;">
+              <strong>Three trusted roles:</strong>
+            </p>
+            <ul style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.8; padding-left: 20px;">
+              <li><strong>SDK (your client)</strong> — Encrypts/decrypts. Never stores plaintext.</li>
+              <li><strong>Backend (this server)</strong> — Verifies crypto proofs, stores audit log.</li>
+              <li><strong>Relay</strong> — Routes encrypted messages (HTTP protocol, not WebSocket).</li>
+              <li><strong>Dashboard</strong> — Shows verified metrics only (read-only)</li>
+            </ul>
+            <p style="margin: 12px 0 0 0; color: #64748b; font-size: 13px;">
+              ⚠️ <strong>The relay is untrusted</strong> — it cannot decrypt messages or forge metrics.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <!-- IMPORTANT: STORAGE ADAPTERS -->
       <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: #3b82f6; border-left: 4px solid #3b82f6;">
         <div style="display: flex; align-items: flex-start; gap: 12px;">
           <span style="font-size: 24px;">⚙️</span>
           <div>
-            <h3 style="margin: 0 0 8px 0; color: #60a5fa; font-weight: 600;">v3.0: Storage Adapters Required</h3>
+            <h3 style="margin: 0 0 8px 0; color: #60a5fa; font-weight: 600;">v2.4: Storage Adapters Required (Prod)</h3>
             <p style="margin: 0 0 12px 0; color: #94a3b8; font-size: 14px; line-height: 1.6;">
-              <strong style="color: #e2e8f0;">Production mode requires storage adapters.</strong> 
-              The SDK will hard-fail if any are missing:
+              <strong style="color: #e2e8f0;">Production mode hard-fails without these:</strong>
             </p>
-            <ul style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.8; padding-left: 20px;">
-              <li><strong>ReplayCache</strong>: Redis or PostgreSQL (prevents replay attacks)</li>
-              <li><strong>TofuStore</strong>: Persistent fingerprint database (identity verification)</li>
-              <li><strong>SessionStore</strong>: Encrypted session persistence (survives restarts)</li>
-              <li><strong>IdentityStore</strong>: Keychain/KMS encryption for identity keys</li>
-            </ul>
-            <p style="margin: 12px 0 0 0; color: #64748b; font-size: 13px;">
-              See <a href="/" style="color: #3b82f6; text-decoration: none;">docs → v3.0 Production Architecture</a> for examples.
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 6px; font-weight: 600;">Adapter</td>
+                <td style="padding: 6px; font-weight: 600;">Purpose</td>
+                <td style="padding: 6px; font-weight: 600;">Example</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 6px;"><strong>ReplayCache</strong></td>
+                <td style="padding: 6px;">Prevent replayed messages</td>
+                <td style="padding: 6px;">Redis (5 min TTL)</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 6px;"><strong>TofuStore</strong></td>
+                <td style="padding: 6px;">Verify peer fingerprints</td>
+                <td style="padding: 6px;">PostgreSQL</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 6px;"><strong>SessionStore</strong></td>
+                <td style="padding: 6px;">Persist encrypted state</td>
+                <td style="padding: 6px;">PostgreSQL</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px;"><strong>IdentityStore</strong></td>
+                <td style="padding: 6px;">Store identity keypair</td>
+                <td style="padding: 6px;">OS Keychain / KMS</td>
+              </tr>
+            </table>
+            <p style="margin: 0; color: #64748b; font-size: 13px;">
+              ⚠️ <strong>Dev mode</strong> is optional and warns only. See docs for implementation examples.
             </p>
           </div>
         </div>
@@ -836,10 +878,10 @@
         </button>
       </div>
       
-      <!-- QUICK START v3.0 -->
+      <!-- QUICK START v2.4 -->
       <div class="card">
-        <h2>📖 Quick Start (v3.0)</h2>
-        <p style="color: #94a3b8; margin-bottom: 16px;">Production-ready E2EE with security invariants. No WebSocket imports needed!</p>
+        <h2>📖 Quick Start (v2.4)</h2>
+        <p style="color: #94a3b8; margin-bottom: 16px;">Production-ready E2EE with Signal Protocol + crypto-verified metrics.</p>
         
         <div class="api-key-box" style="background: #0f172a;">
           <pre style="margin: 0; color: #e2e8f0; font-size: 12px; overflow-x: auto; line-height: 1.5;"><code>import { createApp } from '@stvor/sdk';
@@ -900,7 +942,7 @@ await user.send('peer@example.com', 'E2EE! 🔐');</code></pre>
 
   <script>
     /**
-     * STVOR v3.0 Dashboard - Backend-Verified Metrics Only
+     * STVOR v2.4.0 Dashboard - Backend-Verified Metrics Only
      * 
      * ⚠️  CRITICAL SECURITY MODEL:
      * 

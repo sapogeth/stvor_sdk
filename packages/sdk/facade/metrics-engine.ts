@@ -1,5 +1,5 @@
 /**
- * STVOR v3.0 - Cryptographically Verified Metrics Engine
+ * STVOR v2.4.0 - Cryptographically Verified Metrics Engine
  * 
  * Single source of truth for E2EE metrics.
  * NO UI-side generation. NO localStorage counters. ONLY verified activity.

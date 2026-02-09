@@ -282,8 +282,8 @@ Legacy Web Crypto implementation still available in `legacy.ts`.
 
 - **v2.2:** Session persistence (IndexedDB)
 - **v2.3:** Offline message queue
-- **v2.4:** Group encryption (Sender Keys)
-- **v3.0:** Post-quantum (ML-KEM integration)
+- **v2.4:** Group encryption (Sender Keys), Metrics verification ← **Current**
+- **v3.0 (planned):** Post-quantum (ML-KEM integration)
 
 ---
 

@@ -1,4 +1,4 @@
--- STVOR v3.0 - Metrics Verification Schema
+-- STVOR v2.4.0 - Metrics Verification Schema
 -- 
 -- This migration creates tables for backend-verified metrics
 -- 
@@ -99,7 +99,7 @@ CREATE INDEX idx_metrics_audit_log_event_type
 -- DEPLOYMENT NOTES
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- 1. Run this migration after deploying v3.0 SDK + Backend
+-- 1. Run this migration after deploying v2.4.0 SDK + Backend
 -- 2. No data migration needed (fresh tables)
 -- 3. Verify tables exist:
 --    SELECT table_name FROM information_schema.tables 

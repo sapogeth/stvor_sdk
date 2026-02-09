@@ -1,5 +1,5 @@
 /**
- * STVOR v3.0 - Metrics Attestation Engine
+ * STVOR v2.4.0 - Metrics Attestation Engine
  * 
  * ⚠️  CRITICAL SECURITY MODEL:
  * 

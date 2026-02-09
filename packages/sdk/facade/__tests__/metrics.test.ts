@@ -1,5 +1,5 @@
 /**
- * STVOR v3.0 - Metrics Verification Test
+ * STVOR v2.4.0 - Metrics Verification Test
  * 
  * Tests that:
  * 1. MetricsEngine increments counters on real E2EE events
@@ -12,7 +12,7 @@
 import { strict as assert } from 'assert';
 import { StvorApp, verifyMetricsSignature } from '../index';
 
-describe('STVOR v3.0 - Cryptographically Verified Metrics', () => {
+describe('STVOR v2.4.0 - Cryptographically Verified Metrics', () => {
   let app: StvorApp;
   const testApiKey = 'stvor_test_1234567890abcdefghij';
 

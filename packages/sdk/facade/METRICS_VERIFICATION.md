@@ -1,8 +1,8 @@
-# STVOR v3.0 - Metrics Verification Guide
+# STVOR v2.4.0 - Metrics Verification Guide
 
 ## Overview
 
-STVOR v3.0 provides **cryptographically verified metrics** - real E2EE activity counters that cannot be forged or faked.
+STVOR v2.4.0 provides **cryptographically verified metrics** - real E2EE activity counters that cannot be forged or faked.
 
 **Core Principle:** Only the SDK runtime is the source of truth. Dashboard displays metrics ONLY if cryptographic proof is valid.
 
@@ -100,7 +100,7 @@ window.addEventListener('message', (event) => {
       // Display verified metrics
       document.getElementById('encrypted-count').textContent = metrics.messagesEncrypted;
       document.getElementById('decrypted-count').textContent = metrics.messagesDecrypted;
-      document.getElementById('status').textContent = '✅ Verified by SDK v3.0';
+      document.getElementById('status').textContent = '✅ Verified by SDK v2.4.0';
     } else {
       // Display rejection
       document.getElementById('status').textContent = '❌ Invalid signature - metrics rejected';
@@ -152,7 +152,7 @@ const invalid = verifyMetricsSignature(
 |----------|---------|
 | No SDK metrics available | "📊 No Verified E2EE Activity" |
 | Invalid proof | "❌ Metrics Rejected (invalid signature)" |
-| Proof valid | Actual counters with "✅ Verified by SDK v3.0" |
+| Proof valid | Actual counters with "✅ Verified by SDK v2.4.0" |
 | All counters at zero | Show 0 for each counter (valid state) |
 
 ## Key Derivation Format

@@ -1,9 +1,19 @@
 {
-  "projects": {},
+  "projects": {
+    "141607c0-6c3c-4de2-bfad-136a22750711": {
+      "created_at": 1770639653223
+    }
+  },
   "api_keys": {
     "stvor_live_c88560370c2fffd9ffa6105287255fcb": {
       "project_id": "user-project",
       "created_at": 1769655216889,
+      "revoked_at": null,
+      "status": "active"
+    },
+    "0430f0a3b5b629a3c91b173214549fbff24c2bc0eb097b68f9146e8c8f1b8c99": {
+      "project_id": "141607c0-6c3c-4de2-bfad-136a22750711",
+      "created_at": 1770639653225,
       "revoked_at": null,
       "status": "active"
     }

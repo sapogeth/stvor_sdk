@@ -548,7 +548,7 @@
     <nav class="sidebar">
       <div class="sidebar-header">
         <a href="#" class="logo">STVOR</a>
-        <div class="logo-tagline">E2EE SDK v3.0</div>
+        <div class="logo-tagline">E2EE SDK v2.4.0</div>
       </div>
       
       <div class="nav-section">
@@ -560,10 +560,11 @@
       </div>
       
       <div class="nav-section">
-        <div class="nav-title">v3.0 Production</div>
-        <a href="#v3-improvements" class="nav-item">What's New</a>
-        <a href="#v3-architecture" class="nav-item">Architecture</a>
-        <a href="#v3-security" class="nav-item">Security Invariants</a>
+        <div class="nav-title">Production</div>
+        <a href="#improvements" class="nav-item">What's New</a>
+        <a href="#architecture" class="nav-item">Architecture</a>
+        <a href="#security" class="nav-item">Security Model</a>
+        <a href="#threat-model" class="nav-item">Threat Model</a>
       </div>
       
       <div class="nav-section">
@@ -605,24 +606,24 @@
         </header>
 
         <div class="intro-card">
-          <p><strong>STVOR v3.0</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Now with production-ready architecture, security invariants, and crypto-verified metrics.</p>
+          <p><strong>STVOR v2.4.0</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Production-ready architecture with security invariants and cryptographically verified metrics.</p>
           <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
-              <strong style="color: var(--success);">✅ v3.0 Features:</strong>
+              <strong style="color: var(--success);">✅ Core Features:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li>AAD header authentication</li>
-                <li>Immutable state transitions</li>
-                <li>Persistent storage adapters</li>
-                <li>Forced DH ratcheting</li>
+                <li>X3DH key agreement</li>
+                <li>Double Ratchet (messaging)</li>
+                <li>AAD authentication</li>
+                <li>Immutable state</li>
               </ul>
             </div>
             <div>
-              <strong style="color: var(--success);">✅ Production Ready:</strong>
+              <strong style="color: var(--success);">✅ Production Features:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
                 <li>6 security invariants</li>
-                <li>State machine FSM</li>
+                <li>Persistent replay cache</li>
                 <li>Crypto-verified metrics</li>
-                <li>Full test suite</li>
+                <li>Full audit logging</li>
               </ul>
             </div>
           </div>
@@ -634,21 +635,23 @@
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Install the SDK (v3.0)</h4>
+            <h4>Install the SDK (v2.4.0)</h4>
             <div class="code-block">
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              <pre><code>npm install @stvor/sdk</code></pre>
+              <pre><code>npm install @stvor/sdk@^2.4.0</code></pre>
             </div>
           </div>
         </div>
 
         <div class="success-box">
-          <h4 style="margin: 0 0 8px 0; color: var(--success);">✨ New in v3.0</h4>
-          <p style="margin: 0;">Production-ready architecture with security invariants. No more <code>ws</code> import needed — it's hidden inside the SDK!</p>
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">📋 Architecture: Three Roles</h4>
+          <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);"><strong>SDK (trusted)</strong> — handles all encryption/decryption. Never sends plaintext.</p>
+          <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);"><strong>Backend (trusted)</strong> — verifies metrics proofs, stores audit log. Never decrypts.</p>
+          <p style="margin: 0; font-size: 13px; color: var(--text-muted);"><strong>Display/Relay (untrusted)</strong> — routes encrypted messages, displays read-only metrics.</p>
         </div>
 
         <!-- QUICK START -->
-        <h2 id="quickstart">Quick Start (v3.0)</h2>
+        <h2 id="quickstart">Quick Start (v2.4.0)</h2>
         <p>The simplest example — connect two users and send an encrypted message with zero crypto knowledge:</p>
         
         <div class="code-block">
@@ -696,15 +699,15 @@ user.onMessage((from, msg) => console.log(msg));
 await user.send('peer@test.com', 'Encrypted message!');</code></pre>
         </div>
 
-        <!-- V3.0 IMPROVEMENTS -->
-        <h2 id="v3-improvements">v3.0 Improvements</h2>
+        <!-- IMPROVEMENTS -->
+        <h2 id="improvements">What's New in v2.4</h2>
         
         <div class="card">
-          <h3 style="margin-top: 0;">Security Fixes</h3>
+          <h3 style="margin-top: 0;">Security Fixes from v2.3</h3>
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ v2 Issue</td>
-              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v3 Fix</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ Previous</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v2.4</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
               <td style="padding: 8px;">Header tampering (AAD=null)</td>
@@ -729,11 +732,89 @@ await user.send('peer@test.com', 'Encrypted message!');</code></pre>
           </table>
         </div>
 
-        <!-- V3.0 ARCHITECTURE -->
-        <h2 id="v3-architecture">Production Architecture</h2>
+        <!-- ARCHITECTURE -->
+        <h2 id="architecture">Production Architecture</h2>
         
-        <h3>Storage Adapters (Required)</h3>
-        <p>v3.0 requires pluggable storage for production. SDK will refuse to start if adapters are missing in production mode.</p>
+        <h3>Component Roles</h3>
+        <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%); border-color: #bfdbfe;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600;">📂 Component</td>
+              <td style="padding: 8px; font-weight: 600;">Role</td>
+              <td style="padding: 8px; font-weight: 600;">Trust Level</td>
+              <td style="padding: 8px; font-weight: 600;">Handles Data</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>SDK</strong></td>
+              <td style="padding: 8px;">Encryption/decryption, signing</td>
+              <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
+              <td style="padding: 8px;">Plaintext, keys</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>Relay</strong></td>
+              <td style="padding: 8px;">Route encrypted messages</td>
+              <td style="padding: 8px;" style="color: var(--text-muted);">⚠️ Untrusted</td>
+              <td style="padding: 8px;">Ciphertexts only</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>Backend</strong></td>
+              <td style="padding: 8px;">Verify metrics, audit, storage</td>
+              <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
+              <td style="padding: 8px;">Signatures, ciphertexts, audit log</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;"><strong>Dashboard</strong></td>
+              <td style="padding: 8px;">Display metrics (read-only)</td>
+              <td style="padding: 8px;" style="color: var(--text-muted);">⚠️ Untrusted</td>
+              <td style="padding: 8px;">Verified counts only</td>
+            </tr>
+          </table>
+        </div>
+
+        <h3>Production vs Development Modes</h3>
+        <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%); border-color: #fcd34d;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600;">Property</td>
+              <td style="padding: 8px; font-weight: 600; text-align: center;">Dev Mode</td>
+              <td style="padding: 8px; font-weight: 600; text-align: center;">Prod Mode</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Encryption</td>
+              <td style="padding: 8px; text-align: center;">✅ Full</td>
+              <td style="padding: 8px; text-align: center;">✅ Full</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Replay Protection</td>
+              <td style="padding: 8px; text-align: center;">❌ Memory only</td>
+              <td style="padding: 8px; text-align: center;">✅ Persistent</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Session Persistence</td>
+              <td style="padding: 8px; text-align: center;">❌ Lost on restart</td>
+              <td style="padding: 8px; text-align: center;">✅ Survives restarts</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Storage Adapters</td>
+              <td style="padding: 8px; text-align: center;">⚠️ Optional</td>
+              <td style="padding: 8px; text-align: center;">✅ Required</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Metrics Verification</td>
+              <td style="padding: 8px; text-align: center;">❌ None (dev logging)</td>
+              <td style="padding: 8px; text-align: center;">✅ HMAC-signed</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">Startup Failure</td>
+              <td style="padding: 8px; text-align: center;">❌ Warnings only</td>
+              <td style="padding: 8px; text-align: center;">✅ Hard fail</td>
+            </tr>
+          </table>
+          <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--text-muted);">⚠️ <strong>Dev mode ensures encryption but disables durability guarantees.</strong> Suitable for local development and testing. Production fails intentionally if storage adapters are missing.</p>
+        </div>
+        
+        <h3>Storage Adapters (Required for Production)</h3>
+        <p>Production mode requires pluggable storage. SDK will refuse to start if adapters are missing.</p>
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -817,11 +898,32 @@ const app = await createApp({
 });</code></pre>
         </div>
 
-        <!-- V3.0 SECURITY INVARIANTS -->
-        <h2 id="v3-security">6 Security Invariants</h2>
+        <!-- SECURITY MODEL -->
+        <h2 id="security">Security Model & Threat Assumptions</h2>
+        
+        <h3>Threat Model</h3>
+        <div class="card" style="background: linear-gradient(135deg, #fecaca 0%, #fee2e2 100%); border-color: #fca5a5;">
+          <h4 style="margin-top: 0; color: #dc2626;">🎯 Attacker Capabilities (We Protect Against):</h4>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li><strong>Network-level attacker:</strong> Can read/modify all traffic (we use Signal Protocol for protection)</li>
+            <li><strong>Relay compromise:</strong> Can see ciphertexts, but not read them</li>
+            <li><strong>Database compromise:</strong> Can see encrypted sessions, but not decrypt</li>
+            <li><strong>Metrics tampering:</strong> Cannot forge valid attestations (HMAC-signed)</li>
+          </ul>
+          
+          <h4 style="margin-top: 16px; color: #dc2626;">❌ Attacker Limitations (Out of Scope):</h4>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li><strong>SDK compromise:</strong> Cannot prevent if SDK binary is modified</li>
+            <li><strong>Both endpoints compromised:</strong> Plaintext visible on both ends (by definition)</li>
+            <li><strong>KMS compromise:</strong> If your key DB is breached, we lose everything</li>
+            <li><strong>Endpoint state dumps:</strong> Memory forensics can recover keys (use OS protections)</li>
+          </ul>
+        </div>
+        
+        <h3>6 Cryptographic Invariants</h3>
         
         <div class="card">
-          <p>v3.0 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
+          <p>v2.4 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
           
           <h4>I1: State Machine Constraint</h4>
           <p><code>if (state !== ESTABLISHED) → cannot send() or receive()</code></p>
@@ -996,16 +1098,39 @@ node app.mjs</code></pre>
           </ul>
         </div>
 
+        <!-- THREAT MODEL CONTINUED -->
+        <h2 id="threat-model">Implementation Threat Model</h2>
+        <div class="card" style="background: linear-gradient(135deg, #dbeafe 0%, #f0f9ff 100%); border-color: #7dd3fc;">
+          <h4 style="margin-top: 0;">🔒 Key Security Properties</h4>
+          <ul>
+            <li><strong>Forward Secrecy:</strong> Old messages remain encrypted even if current root key is compromised</li>
+            <li><strong>Break-in Recovery:</strong> Perfect forward secrecy prevents long-term key recovery (DH ratchet forces new ephemeral keys)</li>
+            <li><strong>Header Integrity (AAD):</strong> Relay cannot modify sender/recipient/timestamp without breaking cryptographic proof</li>
+            <li><strong>Replay Detection:</strong> Your replay cache (Redis/PostgreSQL) is critical — the SDK checks every nonce against it</li>
+            <li><strong>Session Durability:</strong> Production mode refusal ensures you don't lose keys on restart</li>
+          </ul>
+          
+          <h4>📌 Your Deployment Checklist</h4>
+          <ul style="margin-bottom: 0;">
+            <li>✅ Use HTTPS/TLS between client ↔ relay (WebSocket over TLS required)</li>
+            <li>✅ Redis/PostgreSQL for replay cache — protect with firewall</li>
+            <li>✅ Backend API accessible only internally (metrics verification should not be public)</li>
+            <li>✅ Rotate relay API keys quarterly</li>
+            <li>✅ Monitor failed attestations in audit log (indicates tampering)</li>
+            <li>✅ Use encrypted storage for session keys (OS keychain or KMS)</li>
+          </ul>
+        </div>
+        
         <div class="warning">
-          <strong>🔐 v3.0: Production-Ready</strong><br>
-          This version is suitable for applications requiring production-grade E2EE. Includes security invariants, persistent storage, and crypto-verified metrics. All 6 security guarantees are cryptographically enforced.
+          <strong>🔐 v2.4: Production-Ready</strong><br>
+          Suitable for applications requiring production-grade E2EE. Includes 6 security invariants, persistent replay protection, and crypto-verified metrics. All guarantees are cryptographically enforced when storage adapters are properly configured.
         </div>
 
         <!-- LIMITATIONS -->
         <h2 id="limitations">When to Use (and When Not To)</h2>
         
         <div class="card" style="background: linear-gradient(135deg, #dcfce7 0%, #e0f2fe 100%); border-color: #86efac;">
-          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v3.0):</h4>
+          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v2.4):</h4>
           <ul style="margin-bottom: 0;">
             <li>Healthcare/Finance applications (production-grade E2EE)</li>
             <li>Internal tools with high security requirements</li>
@@ -1016,7 +1141,7 @@ node app.mjs</code></pre>
         </div>
 
         <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #fca5a5;">
-          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v3.0):</h4>
+          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v2.4):</h4>
           <ul style="margin-bottom: 0;">
             <li>Browser/client-side JavaScript (Node.js only)</li>
             <li>Multi-device synchronization (each device = separate identity)</li>
@@ -1037,8 +1162,8 @@ node app.mjs</code></pre>
         </div>
 
         <footer>
-          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.0</div>
-          <div>Production-grade E2EE. Signal Protocol-compatible. Zero crypto knowledge required. (Feb 2026)</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v2.4.0</div>
+          <div>Production-grade E2EE with Signal Protocol, crypto-verified metrics, and security invariants. (Feb 2026)</div>
         </footer>
         
       </div>
