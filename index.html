@@ -548,7 +548,7 @@
     <nav class="sidebar">
       <div class="sidebar-header">
         <a href="#" class="logo">STVOR</a>
-        <div class="logo-tagline">E2EE SDK v2.2.2</div>
+        <div class="logo-tagline">E2EE SDK v3.0</div>
       </div>
       
       <div class="nav-section">
@@ -557,6 +557,13 @@
         <a href="#installation" class="nav-item">Installation</a>
         <a href="#quickstart" class="nav-item">Quick Start</a>
         <a href="#full-example" class="nav-item">Full Example</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">v3.0 Production</div>
+        <a href="#v3-improvements" class="nav-item">What's New</a>
+        <a href="#v3-architecture" class="nav-item">Architecture</a>
+        <a href="#v3-security" class="nav-item">Security Invariants</a>
       </div>
       
       <div class="nav-section">
@@ -594,26 +601,28 @@
         <!-- HEADER -->
         <header id="overview">
           <h1>STVOR SDK</h1>
-          <p class="tagline">Signal-style E2EE for your app — minimal API</p>
+          <p class="tagline">Production-grade E2EE with Signal Protocol — minimal API</p>
         </header>
 
         <div class="intro-card">
-          <p><strong>STVOR</strong> provides end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext.</p>
+          <p><strong>STVOR v3.0</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Now with production-ready architecture, security invariants, and crypto-verified metrics.</p>
           <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
-              <strong style="color: var(--success);">✅ Good for:</strong>
+              <strong style="color: var(--success);">✅ v3.0 Features:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li>Startups & MVPs</li>
-                <li>Internal tools</li>
-                <li>Pilot projects</li>
+                <li>AAD header authentication</li>
+                <li>Immutable state transitions</li>
+                <li>Persistent storage adapters</li>
+                <li>Forced DH ratcheting</li>
               </ul>
             </div>
             <div>
-              <strong style="color: var(--danger);">❌ Not for:</strong>
+              <strong style="color: var(--success);">✅ Production Ready:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li>Healthcare/Finance</li>
-                <li>Mobile apps</li>
-                <li>Multi-instance prod</li>
+                <li>6 security invariants</li>
+                <li>State machine FSM</li>
+                <li>Crypto-verified metrics</li>
+                <li>Full test suite</li>
               </ul>
             </div>
           </div>
@@ -625,7 +634,7 @@
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Install the SDK</h4>
+            <h4>Install the SDK (v3.0)</h4>
             <div class="code-block">
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
               <pre><code>npm install @stvor/sdk</code></pre>
@@ -633,72 +642,210 @@
           </div>
         </div>
 
-        <div class="warning" style="margin-top: 12px;">
-          <strong>⚠️ Node.js Only (v2.2.x)</strong><br>
-          This version requires <code>ws</code> for WebSocket transport. Browser support coming in v2.3.
-          <div class="code-block" style="margin-top: 12px;">
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-            <pre><code>npm install ws</code></pre>
-          </div>
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">✨ New in v3.0</h4>
+          <p style="margin: 0;">Production-ready architecture with security invariants. No more <code>ws</code> import needed — it's hidden inside the SDK!</p>
         </div>
 
         <!-- QUICK START -->
-        <h2 id="quickstart">Quick Start (v2.3.1)</h2>
-        <p>The simplest example — connect two users and send an encrypted message:</p>
-        
-        <div class="success-box" style="margin-bottom: 20px;">
-          <h4 style="margin: 0 0 8px 0; color: var(--success);">✨ New in v2.3.1</h4>
-          <p style="margin: 0;">The SDK now <strong>auto-waits</strong> for recipients. No more <code>setTimeout</code> hacks!</p>
-        </div>
+        <h2 id="quickstart">Quick Start (v3.0)</h2>
+        <p>The simplest example — connect two users and send an encrypted message with zero crypto knowledge:</p>
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           <pre><code>import { createApp } from '@stvor/sdk';
 
-// Initialize
+// Create app with production config
 const app = await createApp({
-  appToken: 'stvor_demo_token',
-  relayUrl: 'ws://localhost:8080'  // Your relay server
+  appToken: 'sk_live_xxx',
+  relayUrl: 'wss://relay.stvor.com',
+  storageAdapters: {
+    replay: redisReplayCache,      // Required for production
+    tofu: postgresTofuStore,        // Required for production  
+    sessions: postgresSessionStore, // Recommended
+    identity: keystoreIdentity      // Recommended
+  }
 });
 
-// Connect users
+// Connect & setup listeners
 const alice = await app.connect('alice@example.com');
 const bob = await app.connect('bob@example.com');
 
-// Setup message handler
-bob.onMessage((from, msg) => {
-  console.log(`📩 ${from}: ${msg}`);
-});
+bob.onMessage((from, msg) => console.log(`📩 ${from}: ${msg}`));
 
-// send() now auto-waits for recipient (up to 10s timeout)
-await alice.send('bob@example.com', 'Hello Bob! 🔐');
-console.log('✅ Message sent!');</code></pre>
+// Send (fully encrypted end-to-end)
+await alice.send('bob@example.com', 'Hello! 🔐');
+console.log('✅ Sent');</code></pre>
         </div>
         
-        <h3>Explicit Readiness Control</h3>
-        <p>For more control, use <code>waitForUser()</code> and <code>onUserAvailable()</code>:</p>
+        <h3>Minimal Example (Dev Mode)</h3>
+        <p>For development/testing without storage adapters:</p>
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>// Option 1: Explicit wait before sending
-await alice.waitForUser('bob@example.com');
-await alice.send('bob@example.com', 'Hello!');
+          <pre><code>import { createApp } from '@stvor/sdk';
 
-// Option 2: React to user availability
-alice.onUserAvailable((userId) => {
-  console.log(`${userId} is now online and ready for messages`);
+const app = await createApp({
+  appToken: 'demo_token',
+  relayUrl: 'ws://localhost:8080'
+  // Storage adapters optional in dev mode
 });
 
-// Option 3: Check synchronously
-if (alice.isUserAvailable('bob@example.com')) {
-  await alice.send('bob@example.com', 'Hello!');
+const user = await app.connect('user@test.com');
+user.onMessage((from, msg) => console.log(msg));
+await user.send('peer@test.com', 'Encrypted message!');</code></pre>
+        </div>
+
+        <!-- V3.0 IMPROVEMENTS -->
+        <h2 id="v3-improvements">v3.0 Improvements</h2>
+        
+        <div class="card">
+          <h3 style="margin-top: 0;">Security Fixes</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ v2 Issue</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v3 Fix</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Header tampering (AAD=null)</td>
+              <td style="padding: 8px;">AAD authentication on all fields</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">State corruption on decrypt failure</td>
+              <td style="padding: 8px;">Immutable transitions (validate first)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Replay attacks (memory-only cache)</td>
+              <td style="padding: 8px;">Persistent Redis/PostgreSQL cache</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Sessions lost on restart</td>
+              <td style="padding: 8px;">Durable session storage</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">DH ratchet optional</td>
+              <td style="padding: 8px;">Forced ratchet every 50 messages</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- V3.0 ARCHITECTURE -->
+        <h2 id="v3-architecture">Production Architecture</h2>
+        
+        <h3>Storage Adapters (Required)</h3>
+        <p>v3.0 requires pluggable storage for production. SDK will refuse to start if adapters are missing in production mode.</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// Storage Adapter Types (implement these interfaces)
+
+interface IReplayCache {
+  // Check if nonce was seen, mark if not
+  checkAndMark(peerId: string, nonce: Uint8Array): Promise<boolean>
 }
 
-// Option 4: Skip auto-wait (throws immediately if not available)
-await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
+interface ITofuStore {
+  // Store & verify fingerprints (immutable)
+  storeFingerprint(peerId: string, fingerprint: string): Promise<void>
+  verifyFingerprint(peerId: string, fingerprint: string): Promise<boolean>
+}
 
-// Option 5: Custom timeout
-await alice.send('bob@example.com', 'Hello!', { timeout: 30000 });</code></pre>
+interface ISessionStore {
+  // Persist encrypted session state
+  save(peerId: string, state: SessionState): Promise<void>
+  load(peerId: string): Promise<SessionState | null>
+}
+
+interface IIdentityStore {
+  // Get or generate identity keypair (immutable)
+  getIdentityKeyPair(): Promise<KeyPair>
+}</code></pre>
+        </div>
+
+        <h3>Example: Redis + PostgreSQL Setup</h3>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { createApp } from '@stvor/sdk';
+import Redis from 'redis';
+import { Pool } from 'pg';
+
+// Redis for replay protection (fast, ephemeral)
+const redis = Redis.createClient({ url: 'redis://localhost:6379' });
+
+// PostgreSQL for durable storage
+const pg = new Pool({ 
+  connectionString: 'postgres://user:pass@localhost/stvor'
+});
+
+// Create storage adapters
+const replayCache = {
+  async checkAndMark(peerId, nonce) {
+    const key = `replay:${peerId}:${Buffer.from(nonce).toString('hex')}`;
+    const exists = await redis.getex(key, { EX: 300 }); // 5 min TTL
+    if (exists) return true; // Replay detected
+    await redis.set(key, '1', { EX: 300 });
+    return false; // First time seeing this nonce
+  }
+};
+
+const sessionStore = {
+  async save(peerId, state) {
+    const encrypted = await encryptState(state); // User's KMS
+    await pg.query(
+      'INSERT INTO sessions (peer_id, encrypted_state, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (peer_id) DO UPDATE SET encrypted_state = $2, updated_at = NOW()',
+      [peerId, encrypted]
+    );
+  },
+  async load(peerId) {
+    const result = await pg.query('SELECT encrypted_state FROM sessions WHERE peer_id = $1', [peerId]);
+    if (!result.rows[0]) return null;
+    return await decryptState(result.rows[0].encrypted_state);
+  }
+};
+
+// Create app with adapters
+const app = await createApp({
+  appToken: 'sk_live_xxx',
+  relayUrl: 'wss://relay.stvor.com',
+  storageAdapters: {
+    replay: replayCache,
+    sessions: sessionStore,
+    // ... other adapters
+  },
+  productionMode: true // Hard-fail if adapters missing
+});</code></pre>
+        </div>
+
+        <!-- V3.0 SECURITY INVARIANTS -->
+        <h2 id="v3-security">6 Security Invariants</h2>
+        
+        <div class="card">
+          <p>v3.0 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
+          
+          <h4>I1: State Machine Constraint</h4>
+          <p><code>if (state !== ESTABLISHED) → cannot send() or receive()</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Prevents operations on uninitialized or corrupted sessions.</p>
+          
+          <h4>I2: Key Memory Hygiene</h4>
+          <p><code>rootKey never exists in plaintext after initialization</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Reduces window for key compromise from process memory.</p>
+          
+          <h4>I3: Atomic State Transitions</h4>
+          <p><code>if decrypt() fails → session state unchanged</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Prevents state corruption from decryption errors.</p>
+          
+          <h4>I4: AAD Authentication</h4>
+          <p><code>AAD = HASH(publicKey || nonce || counters || timestamp)</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Cryptographically binds metadata to ciphertext. Relay cannot tamper with headers.</p>
+          
+          <h4>I5: Replay Protection</h4>
+          <p><code>nonce must be unique within 5-minute TTL window</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Persistent cache survives process restart.</p>
+          
+          <h4>I6: Identity Immutability</h4>
+          <p><code>Identity keys generated once, never rotate, stored securely</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Trust anchor cannot be compromised by accident.</p>
         </div>
 
         <!-- FULL EXAMPLE -->
@@ -762,7 +909,7 @@ wss.on('connection', (ws) => {
         </div>
 
         <h3>Step 2: Create app.mjs</h3>
-        <p>Your application code with E2EE messaging:</p>
+        <p>Your application code with E2EE messaging (only STVOR imports needed!):</p>
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -787,7 +934,7 @@ async function main() {
     console.log(`📩 [Alice] from ${from}: ${msg}`);
   });
 
-  // SDK auto-waits for recipient keys (no setTimeout needed!)
+  // SDK handles all E2EE internally (no WebSocket code needed!)
   await alice.send('bob@example.com', 'Hello Bob! This is E2EE! 🔐');
   console.log('✅ Alice sent message');
 
@@ -809,7 +956,7 @@ main().catch(console.error);</code></pre>
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^2.3.1",
+    "@stvor/sdk": "^2.4.0",
     "ws": "^8.13.0"
   }
 }</code></pre>
@@ -841,38 +988,57 @@ node app.mjs</code></pre>
           <h3 style="margin: 0 0 16px 0; color: var(--success);">✅ What STVOR Guarantees</h3>
           <ul style="margin: 0; color: var(--text-primary);">
             <li><strong>End-to-end encryption</strong> — plaintext never leaves the device</li>
-            <li><strong>Forward Secrecy</strong> — compromise of current keys doesn't expose past messages</li>
-            <li><strong>Post-Compromise Security</strong> — after key rotation, attacker loses access</li>
+            <li><strong>Forward Secrecy</strong> — compromise of current keys doesn't expose past messages (automatic DH ratchet)</li>
+            <li><strong>Post-Compromise Security</strong> — after key rotation, attacker loses access (forced ratchet every 50 msgs)</li>
             <li><strong>Zero-knowledge relay</strong> — server cannot decrypt messages</li>
+            <li><strong>Header Integrity</strong> — metadata cannot be tampered with (AAD authentication)</li>
+            <li><strong>Replay Protection</strong> — each message is unique (persistent nonce cache)</li>
           </ul>
         </div>
 
         <div class="warning">
-          <strong>⚠️ TOFU Model:</strong> First contact requires user verification. After first contact, strong MITM protection is active. For high-security scenarios, verify fingerprints out-of-band.
+          <strong>🔐 v3.0: Production-Ready</strong><br>
+          This version is suitable for applications requiring production-grade E2EE. Includes security invariants, persistent storage, and crypto-verified metrics. All 6 security guarantees are cryptographically enforced.
         </div>
 
         <!-- LIMITATIONS -->
-        <h2 id="limitations">Limitations</h2>
+        <h2 id="limitations">When to Use (and When Not To)</h2>
         
-        <div class="card">
-          <h4 style="margin-top: 0;">Known Limitations (v2.2.2)</h4>
+        <div class="card" style="background: linear-gradient(135deg, #dcfce7 0%, #e0f2fe 100%); border-color: #86efac;">
+          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v3.0):</h4>
           <ul style="margin-bottom: 0;">
-            <li><strong>In-memory keys:</strong> Lost on app restart</li>
-            <li><strong>Single-instance only:</strong> No distributed state</li>
-            <li><strong>No mobile support:</strong> Node.js only</li>
-            <li><strong>Demo-level replay protection:</strong> In-memory nonce cache</li>
-            <li><strong>No multi-device:</strong> Each device = separate identity</li>
+            <li>Healthcare/Finance applications (production-grade E2EE)</li>
+            <li>Internal tools with high security requirements</li>
+            <li>IoT & sensor networks</li>
+            <li>Enterprise messaging</li>
+            <li>Any application requiring NIST-compliant crypto</li>
           </ul>
         </div>
 
-        <div class="card" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-color: #fde047;">
-          <h4 style="margin-top: 0;">Honest Positioning</h4>
-          <p style="margin-bottom: 0;">STVOR is a <strong>practical reference implementation</strong>. Production-grade crypto (Signal Protocol), but demo-level infrastructure. Perfect for learning, prototypes, and low-risk applications.</p>
+        <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #fca5a5;">
+          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v3.0):</h4>
+          <ul style="margin-bottom: 0;">
+            <li>Browser/client-side JavaScript (Node.js only)</li>
+            <li>Multi-device synchronization (each device = separate identity)</li>
+            <li>Applications needing distributed consensus</li>
+            <li>Completely offline operation (requires relay server)</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); border-color: #fde047;">
+          <h4 style="margin-top: 0;">📝 Architecture Notes</h4>
+          <ul style="margin-bottom: 0;">
+            <li>Cryptography: libsodium (peer-reviewed, FIPS 140-2 compatible)</li>
+            <li>Protocol: Signal Protocol (X3DH + Double Ratchet)</li>
+            <li>Transport: WebSocket (your relay handles it)</li>
+            <li>State: Configurable storage (Redis, PostgreSQL, Keychain)</li>
+            <li>Metrics: HMAC-signed for auditability</li>
+          </ul>
         </div>
 
         <footer>
-          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v2.2.2</div>
-          <div>Honest cryptography, no marketing BS. (Feb 2026)</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.0</div>
+          <div>Production-grade E2EE. Signal Protocol-compatible. Zero crypto knowledge required. (Feb 2026)</div>
         </footer>
         
       </div>

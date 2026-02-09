@@ -140,6 +140,135 @@ export async function resetMonthlyQuotas() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// METRICS OPERATIONS (Backend verification)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getProjectByToken(appToken: string) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.id, p.name FROM projects p
+       JOIN app_tokens t ON p.id = t.project_id
+       WHERE t.token = $1 LIMIT 1`,
+      [appToken]
+    );
+    return rows[0] || null;
+  } catch (error) {
+    console.error('[DB] getProjectByToken error:', error);
+    return null;
+  }
+}
+
+export async function insertVerifiedMetrics(verified: any) {
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO verified_metrics 
+       (project_id, session_id, metrics, sequence_number, attestation_id, 
+        attestation_timestamp, verified_at, proof)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id`,
+      [
+        verified.projectId,
+        verified.sessionId,
+        JSON.stringify(verified.metrics),
+        verified.sequenceNumber,
+        verified.attestationId || verified.sessionId + '_' + verified.sequenceNumber,
+        verified.timestamp,
+        verified.verifiedAt,
+        verified.proof,
+      ]
+    );
+    return rows[0];
+  } catch (error) {
+    console.error('[DB] insertVerifiedMetrics error:', error);
+    throw error;
+  }
+}
+
+export async function getLatestVerifiedMetrics(projectId: string) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT project_id, session_id, metrics, sequence_number, attestation_id,
+              attestation_timestamp, verified_at
+       FROM verified_metrics
+       WHERE project_id = $1
+       ORDER BY sequence_number DESC
+       LIMIT 1`,
+      [projectId]
+    );
+    if (!rows[0]) return null;
+    
+    return {
+      projectId: rows[0].project_id,
+      sessionId: rows[0].session_id,
+      metrics: JSON.parse(rows[0].metrics),
+      sequenceNumber: rows[0].sequence_number,
+      attestationId: rows[0].attestation_id,
+      timestamp: rows[0].attestation_timestamp,
+      verifiedAt: rows[0].verified_at,
+    };
+  } catch (error) {
+    console.error('[DB] getLatestVerifiedMetrics error:', error);
+    return null;
+  }
+}
+
+export async function insertAuditLog(log: any) {
+  try {
+    await pool.query(
+      `INSERT INTO metrics_audit_log 
+       (project_id, session_id, attestation_id, event_type, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        log.projectId,
+        log.sessionId || null,
+        log.attestationId || null,
+        log.event || log.eventType || 'unknown',
+        log.reason || null,
+      ]
+    );
+  } catch (error) {
+    console.error('[DB] insertAuditLog error:', error);
+  }
+}
+
+export async function getMetricsAuditLog(projectId: string, limit: number = 100) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, project_id, session_id, attestation_id, event_type, reason, created_at
+       FROM metrics_audit_log
+       WHERE project_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [projectId, limit]
+    );
+    return rows;
+  } catch (error) {
+    console.error('[DB] getMetricsAuditLog error:', error);
+    return [];
+  }
+}
+
+export async function verifyProjectAccess(projectId: string, token: string): Promise<boolean> {
+  try {
+    // Check if token is valid and has access to projectId
+    const { rows } = await pool.query(
+      `SELECT t.project_id FROM app_tokens t
+       WHERE t.token = $1 AND t.project_id::text = $2 LIMIT 1`,
+      [token, projectId]
+    );
+    return rows.length > 0;
+  } catch (error) {
+    console.error('[DB] verifyProjectAccess error:', error);
+    return false;
+  }
+}
+
+export async function verifyAdminAccess(projectId: string, token: string): Promise<boolean> {
+  // In a real system, check admin role; for now, same as verifyProjectAccess
+  return verifyProjectAccess(projectId, token);
+}
+
 export const db = {
   query,
   getToken,
@@ -150,6 +279,13 @@ export const db = {
   createProject,
   getProject,
   resetMonthlyQuotas,
+  getProjectByToken,
+  insertVerifiedMetrics,
+  getLatestVerifiedMetrics,
+  insertAuditLog,
+  getMetricsAuditLog,
+  verifyProjectAccess,
+  verifyAdminAccess,
 };
 
 export default db;

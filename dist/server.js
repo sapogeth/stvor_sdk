@@ -11,6 +11,7 @@ import { createProjectWithApiKey, storeApiKey } from './auth/apiKey.js';
 import healthRoutes from './routes/health.js';
 import projectsRoutes from './routes/projects.js';
 import e2eRoutes from './routes/e2e.js';
+import metricsRoutes from './routes/metrics-verification.js';
 import db, { initDb } from './storage/db.js';
 import { RelayServer } from './relay/server.js';
 dotenv.config();
@@ -79,6 +80,7 @@ const start = async () => {
     app.register(healthRoutes);
     app.register(projectsRoutes);
     app.register(e2eRoutes);
+    app.register(metricsRoutes, { prefix: '/api/metrics' });
     // /usage endpoint - get current quota usage
     app.get('/usage', async (request, reply) => {
         const appToken = request.headers['authorization']?.replace('Bearer ', '');
@@ -134,10 +136,9 @@ const start = async () => {
     }
     await app.listen({ port: 3001, host: '0.0.0.0' });
     console.log('🚀 STVOR API running on http://localhost:3001');
-    // Start WebSocket relay server
+    // Start HTTP relay server (runs its own listener)
     const relayPort = parseInt(process.env.RELAY_PORT || '3002');
-    const relay = new RelayServer(relayPort);
-    relay.start();
+    new RelayServer(relayPort);
 };
 start().catch(err => {
     console.error('❌ Failed to start server:', err);

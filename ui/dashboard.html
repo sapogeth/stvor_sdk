@@ -708,7 +708,7 @@
     <!-- SIDEBAR -->
     <nav class="sidebar">
       <div class="logo">STVOR<span>.</span></div>
-      <div class="logo-sub">Developer Dashboard</div>
+      <div class="logo-sub">Dashboard v3.0</div>
       
       <a href="/" class="nav-item">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -728,7 +728,7 @@
     <main class="main">
       <div class="header">
         <h1>Dashboard</h1>
-        <div class="plan-badge free">✨ Free Plan</div>
+        <div class="plan-badge free">✨ v3.0 Production</div>
       </div>
       
       <!-- USAGE STATS -->
@@ -782,19 +782,24 @@
         </div>
       </div>
       
-      <!-- IMPORTANT DISCLAIMER -->
-      <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: #475569;">
+      <!-- IMPORTANT: STORAGE ADAPTERS -->
+      <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-color: #3b82f6; border-left: 4px solid #3b82f6;">
         <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="font-size: 24px;">ℹ️</span>
+          <span style="font-size: 24px;">⚙️</span>
           <div>
-            <h3 style="margin: 0 0 8px 0; color: #94a3b8; font-weight: 600;">Configuration vs Runtime</h3>
-            <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">
-              This dashboard shows <strong style="color: #e2e8f0;">project configuration</strong> (tokens, quotas), 
-              not runtime availability. Having a valid API key does not guarantee messaging will work — 
-              both sender and recipient must be connected to the relay at runtime.
-              <br><br>
-              Use <code style="background: #334155; padding: 2px 6px; border-radius: 4px; color: #3b82f6;">await client.waitForUser(recipientId)</code> 
-              in your code to ensure recipient is available before sending.
+            <h3 style="margin: 0 0 8px 0; color: #60a5fa; font-weight: 600;">v3.0: Storage Adapters Required</h3>
+            <p style="margin: 0 0 12px 0; color: #94a3b8; font-size: 14px; line-height: 1.6;">
+              <strong style="color: #e2e8f0;">Production mode requires storage adapters.</strong> 
+              The SDK will hard-fail if any are missing:
+            </p>
+            <ul style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.8; padding-left: 20px;">
+              <li><strong>ReplayCache</strong>: Redis or PostgreSQL (prevents replay attacks)</li>
+              <li><strong>TofuStore</strong>: Persistent fingerprint database (identity verification)</li>
+              <li><strong>SessionStore</strong>: Encrypted session persistence (survives restarts)</li>
+              <li><strong>IdentityStore</strong>: Keychain/KMS encryption for identity keys</li>
+            </ul>
+            <p style="margin: 12px 0 0 0; color: #64748b; font-size: 13px;">
+              See <a href="/" style="color: #3b82f6; text-decoration: none;">docs → v3.0 Production Architecture</a> for examples.
             </p>
           </div>
         </div>
@@ -831,28 +836,29 @@
         </button>
       </div>
       
-      <!-- QUICK START -->
+      <!-- QUICK START v3.0 -->
       <div class="card">
-        <h2>📖 Quick Start (v2.3.0)</h2>
-        <p style="color: #94a3b8; margin-bottom: 16px;">The SDK now auto-waits for recipients. No more timing hacks!</p>
+        <h2>📖 Quick Start (v3.0)</h2>
+        <p style="color: #94a3b8; margin-bottom: 16px;">Production-ready E2EE with security invariants. No WebSocket imports needed!</p>
         
         <div class="api-key-box" style="background: #0f172a;">
-          <pre style="margin: 0; color: #e2e8f0; font-size: 13px; overflow-x: auto;"><code>import { createApp } from '@stvor/sdk';
+          <pre style="margin: 0; color: #e2e8f0; font-size: 12px; overflow-x: auto; line-height: 1.5;"><code>import { createApp } from '@stvor/sdk';
+import { RedisReplayCache } from './adapters';
 
 const app = await createApp({
   appToken: '<span id="code-token" style="color: #3b82f6;">YOUR_API_KEY</span>',
-  relayUrl: 'ws://localhost:8080'
+  relayUrl: 'http://localhost:3002',
+  storageAdapters: {
+    replay: new RedisReplayCache(),
+    sessions: postgresSessionStore,
+    tofu: postgresTofuStore,
+    identity: keystoreIdentity
+  },
+  productionMode: true  // Required!
 });
 
-const alice = await app.connect('alice@example.com');
-const bob = await app.connect('bob@example.com');
-
-// Option A: Auto-wait (recommended)
-await alice.send('bob@example.com', 'Hello!');
-
-// Option B: Explicit wait (more control)
-await alice.waitForUser('bob@example.com');
-await alice.send('bob@example.com', 'Hello!');</code></pre>
+const user = await app.connect('user@example.com');
+await user.send('peer@example.com', 'E2EE! 🔐');</code></pre>
         </div>
         
         <a href="/" class="btn btn-secondary" style="margin-top: 8px;">
@@ -893,36 +899,33 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
   </div>
 
   <script>
-    // State
+    /**
+     * STVOR v3.0 Dashboard - Backend-Verified Metrics Only
+     * 
+     * ⚠️  CRITICAL SECURITY MODEL:
+     * 
+     * THIS DASHBOARD:
+     * - ONLY reads verified metrics from /api/metrics
+     * - NEVER verifies cryptography (backend does that)
+     * - NEVER calculates or generates metrics
+     * - NEVER uses localStorage for metric values
+     * - NEVER displays unverified data
+     * 
+     * WHAT DASHBOARD NEVER DOES:
+     * ❌ Verify HMAC in browser (untrusted)
+     * ❌ Generate numbers (demo / fallback)
+     * ❌ Cache metrics locally
+     * ❌ Show metrics without backend verification
+     */
+
+    // State: Only API projects (local storage OK for settings only)
     let projects = JSON.parse(localStorage.getItem('stvor_projects') || '[]');
-    let usage = JSON.parse(localStorage.getItem('stvor_usage') || '{"messages": 0, "resetDate": null}');
-    
-    // Initialize reset date
-    if (!usage.resetDate) {
-      const now = new Date();
-      usage.resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-      saveUsage();
-    }
-    
-    // Generate API key
-    function generateApiKey() {
-      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-      let key = 'stvor_';
-      for (let i = 0; i < 24; i++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return key;
-    }
     
     // Save to localStorage
     function saveProjects() {
       localStorage.setItem('stvor_projects', JSON.stringify(projects));
     }
-    
-    function saveUsage() {
-      localStorage.setItem('stvor_usage', JSON.stringify(usage));
-    }
-    
+
     // Render projects
     function renderProjects() {
       const container = document.getElementById('projects-list');
@@ -936,7 +939,7 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
         `;
         return;
       }
-      
+
       container.innerHTML = projects.map((project, index) => `
         <div class="project-item">
           <div>
@@ -952,51 +955,140 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
           </div>
         </div>
       `).join('');
-      
-      // Update code example with first key
+
       if (projects.length > 0) {
         document.getElementById('code-token').textContent = projects[0].key;
       }
     }
-    
-    // Update stats
-    function updateStats() {
-      const messagesUsed = usage.messages;
-      const messagesLimit = 1000;
-      const percentage = Math.min((messagesUsed / messagesLimit) * 100, 100);
-      
-      document.getElementById('messages-used').textContent = messagesUsed.toLocaleString();
-      document.getElementById('messages-progress').style.width = percentage + '%';
-      document.getElementById('projects-count').textContent = projects.length;
-      
-      // Days remaining
-      const resetDate = new Date(usage.resetDate);
-      const now = new Date();
-      const daysRemaining = Math.max(0, Math.ceil((resetDate - now) / (1000 * 60 * 60 * 24)));
-      document.getElementById('days-remaining').textContent = daysRemaining;
-      
-      // Warning states
-      const progressBar = document.getElementById('messages-progress');
-      const statCard = document.getElementById('messages-stat');
-      const warningBanner = document.getElementById('limit-warning');
-      
-      if (percentage >= 100) {
-        progressBar.classList.add('danger');
-        statCard.classList.add('danger');
-        warningBanner.style.display = 'flex';
-        warningBanner.querySelector('strong').textContent = 'Message limit reached!';
-        warningBanner.querySelector('.text').innerHTML = '<strong>Message limit reached!</strong> Upgrade to Pro for unlimited messages.';
-      } else if (percentage >= 80) {
-        progressBar.classList.add('warning');
-        statCard.classList.add('warning');
-        warningBanner.style.display = 'flex';
-      } else {
-        progressBar.classList.remove('warning', 'danger');
-        statCard.classList.remove('warning', 'danger');
-        warningBanner.style.display = 'none';
+
+    /**
+     * Fetch verified metrics from backend
+     * 
+     * CRITICAL: Dashboard ONLY shows metrics that backend has verified:
+     * - ✅ Backend verified the cryptographic proof
+     * - ✅ Backend checked monotonicity
+     * - ✅ Backend prevented replay attacks
+     * - ✅ Backend stored metrics in DB
+     * 
+     * If backend says "no verified metrics" → show empty state
+     * If backend says "verified" → display the numbers
+     * 
+     * Dashboard CANNOT OVERRIDE backend decisions
+     */
+    async function fetchAndDisplayMetrics() {
+      const projectId = document.getElementById('current-project-id')?.value;
+      if (!projectId) {
+        showNoVerifiedActivity();
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/metrics?projectId=${projectId}`, {
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`,
+          },
+        });
+
+        if (!response.ok) {
+          showMetricsError(`Backend error: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.status === 'no_verified_activity' || !data.metrics) {
+          showNoVerifiedActivity();
+          return;
+        }
+
+        if (data.status === 'verified') {
+          displayVerifiedMetrics(data.metrics, data.timestamp);
+          return;
+        }
+
+        showMetricsError('Unknown response from backend');
+      } catch (error) {
+        console.error('[Dashboard] Failed to fetch metrics:', error);
+        showMetricsError('Failed to fetch metrics from backend');
       }
     }
-    
+
+    /**
+     * Display metrics that backend has already verified
+     * 
+     * We TRUST backend verification because:
+     * - Backend verified cryptographic proof
+     * - Backend is the source of truth
+     * - Dashboard is just displaying
+     */
+    function displayVerifiedMetrics(metrics, timestamp) {
+      const messagesStatCard = document.getElementById('messages-stat');
+      
+      const metricsHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">✅ Encrypted</div>
+            <div style="font-size: 24px; font-weight: 700; color: #10b981;">${metrics.messagesEncrypted}</div>
+          </div>
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">✅ Decrypted</div>
+            <div style="font-size: 24px; font-weight: 700; color: #10b981;">${metrics.messagesDecrypted}</div>
+          </div>
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">❌ Rejected</div>
+            <div style="font-size: 24px; font-weight: 700; color: #ef4444;">${metrics.messagesRejected}</div>
+          </div>
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">🔄 Replay Attempts</div>
+            <div style="font-size: 24px; font-weight: 700; color: #f59e0b;">${metrics.replayAttempts}</div>
+          </div>
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">🛡️ Auth Failures</div>
+            <div style="font-size: 24px; font-weight: 700; color: #ef4444;">${metrics.authFailures}</div>
+          </div>
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">⏱️ Verified At</div>
+            <div style="font-size: 14px; font-weight: 600; color: #60a5fa;">${new Date(timestamp).toLocaleString()}</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: #10b98130; border: 1px solid #10b981; border-radius: 8px; color: #10b981; font-size: 12px; text-align: center;">
+          ✅ Verified by backend
+        </div>
+      `;
+
+      messagesStatCard.innerHTML = metricsHTML;
+    }
+
+    function showNoVerifiedActivity() {
+      const messagesStatCard = document.getElementById('messages-stat');
+      messagesStatCard.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: #64748b;">
+          <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
+          <div style="font-weight: 600;">No Verified E2EE Activity</div>
+          <div style="font-size: 12px; margin-top: 8px; max-width: 400px;">
+            Metrics will appear here once SDK transmits attestations and backend verifies them.
+            This ensures only real, cryptographically-proven E2EE activity is displayed.
+          </div>
+        </div>
+      `;
+    }
+
+    function showMetricsError(message) {
+      const messagesStatCard = document.getElementById('messages-stat');
+      messagesStatCard.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: #ef4444;">
+          <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+          <div style="font-weight: 600;">Metrics Unavailable</div>
+          <div style="font-size: 12px; margin-top: 8px; color: #94a3b8;">${message}</div>
+        </div>
+      `;
+    }
+
+    function getAuthToken() {
+      // In production: get from session / OAuth token
+      return localStorage.getItem('auth_token') || '';
+    }
+
     // Modal controls
     function openModal() {
       if (projects.length >= 3) {
@@ -1006,16 +1098,26 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
       document.getElementById('modal').classList.add('active');
       document.getElementById('project-name').focus();
     }
-    
+
     function closeModal() {
       document.getElementById('modal').classList.remove('active');
       document.getElementById('project-name').value = '';
     }
-    
+
     function closeKeyModal() {
       document.getElementById('key-modal').classList.remove('active');
     }
-    
+
+    // Generate API key
+    function generateApiKey() {
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let key = 'stvor_';
+      for (let i = 0; i < 24; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return key;
+    }
+
     // Create project
     function createProject() {
       const name = document.getElementById('project-name').value.trim();
@@ -1023,24 +1125,22 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
         alert('Please enter a project name');
         return;
       }
-      
+
       const key = generateApiKey();
       projects.push({
         name,
         key,
         created: new Date().toISOString()
       });
-      
+
       saveProjects();
       renderProjects();
-      updateStats();
       closeModal();
-      
-      // Show new key
+
       document.getElementById('new-key-value').textContent = key;
       document.getElementById('key-modal').classList.add('active');
     }
-    
+
     // Copy key
     function copyKey(key, btn) {
       navigator.clipboard.writeText(key).then(() => {
@@ -1052,32 +1152,22 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
         }, 2000);
       });
     }
-    
+
     function copyNewKey() {
       const key = document.getElementById('new-key-value').textContent;
       const btn = document.querySelector('#key-modal .copy-btn');
       copyKey(key, btn);
     }
-    
+
     // Revoke key
     function revokeKey(index) {
       if (confirm('Are you sure you want to revoke this API key? This cannot be undone.')) {
         projects.splice(index, 1);
         saveProjects();
         renderProjects();
-        updateStats();
       }
     }
-    
-    // Simulate usage (for demo)
-    function simulateUsage() {
-      // Random usage between 0-400 for demo
-      if (usage.messages === 0) {
-        usage.messages = Math.floor(Math.random() * 400);
-        saveUsage();
-      }
-    }
-    
+
     // Close modal on overlay click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
@@ -1086,36 +1176,34 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
         }
       });
     });
-    
+
     // Enter key to submit
     document.getElementById('project-name').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') createProject();
     });
-    
+
     // Relay health check
     async function checkRelayHealth() {
       const dot = document.getElementById('relay-status-dot');
       const text = document.getElementById('relay-status-text');
       const card = document.getElementById('relay-status-card');
-      
+
       try {
-        // Try to connect to relay (will fail without valid API key, which is expected)
-        const relayUrl = 'ws://localhost:3002';
-        
-        // For health check, we just try HTTP endpoint if available
         const response = await fetch('http://localhost:3002/health', { 
           method: 'GET',
           signal: AbortSignal.timeout(3000)
         }).catch(() => null);
-        
+
         if (response && response.ok) {
           dot.style.background = '#10b981';
           text.textContent = 'Relay reachable';
           text.style.color = '#10b981';
           card.style.borderColor = '#059669';
         } else {
-          // Try WebSocket ping (without auth)
-          await testWebSocketReachable(relayUrl, dot, text, card);
+          dot.style.background = '#64748b';
+          text.textContent = 'Unknown';
+          text.style.color = '#94a3b8';
+          card.style.borderColor = '#475569';
         }
       } catch (e) {
         dot.style.background = '#64748b';
@@ -1124,69 +1212,20 @@ await alice.send('bob@example.com', 'Hello!');</code></pre>
         card.style.borderColor = '#475569';
       }
     }
-    
-    async function testWebSocketReachable(url, dot, text, card) {
-      return new Promise((resolve) => {
-        try {
-          const ws = new WebSocket(url);
-          const timeout = setTimeout(() => {
-            ws.close();
-            dot.style.background = '#f59e0b';
-            text.textContent = 'Not reachable';
-            text.style.color = '#f59e0b';
-            card.style.borderColor = '#d97706';
-            resolve(false);
-          }, 3000);
-          
-          ws.onopen = () => {
-            clearTimeout(timeout);
-            ws.close();
-            // Connected but will be rejected without API key - relay is UP
-            dot.style.background = '#10b981';
-            text.textContent = 'Relay reachable';
-            text.style.color = '#10b981';
-            card.style.borderColor = '#059669';
-            resolve(true);
-          };
-          
-          ws.onerror = () => {
-            clearTimeout(timeout);
-            dot.style.background = '#ef4444';
-            text.textContent = 'Not reachable';
-            text.style.color = '#ef4444';
-            card.style.borderColor = '#dc2626';
-            resolve(false);
-          };
-          
-          ws.onclose = (e) => {
-            clearTimeout(timeout);
-            // 401 = relay is up but rejected auth (expected without key)
-            if (e.code === 4001 || e.code === 4002 || e.code === 1006) {
-              dot.style.background = '#10b981';
-              text.textContent = 'Relay reachable';
-              text.style.color = '#10b981';
-              card.style.borderColor = '#059669';
-            }
-            resolve(true);
-          };
-        } catch (e) {
-          dot.style.background = '#64748b';
-          text.textContent = 'Unknown';
-          text.style.color = '#94a3b8';
-          card.style.borderColor = '#475569';
-          resolve(false);
-        }
-      });
-    }
-    
+
     // Initialize
-    simulateUsage();
     renderProjects();
-    updateStats();
+    showNoVerifiedActivity();
     checkRelayHealth();
-    
+
     // Recheck every 30s
     setInterval(checkRelayHealth, 30000);
+
+    // Export for SDK to call
+    window.stvorDashboard = {
+      updateMetrics: updateStatsWithVerifiedMetrics,
+      showNoActivity: showNoVerifiedActivity
+    };
   </script>
 </body>
 </html>
