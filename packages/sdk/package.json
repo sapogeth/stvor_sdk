@@ -1,14 +1,25 @@
 {
   "name": "@stvor/sdk",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Stvor DX Facade - Simple E2EE SDK for client-side encryption",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./mock-relay": {
+      "import": "./dist/mock-relay-server.js",
+      "require": "./dist/mock-relay-server.cjs"
     }
   },
   "files": [
@@ -38,9 +49,13 @@
   },
   "homepage": "https://stvor.xyz",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
     "prepublishOnly": "npm run build",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "mock-relay": "node dist/mock-relay-server.js"
+  },
+  "bin": {
+    "stvor-mock-relay": "./dist/mock-relay-server.js"
   },
   "dependencies": {
     "ws": "^8.13.0",

@@ -548,14 +548,16 @@
     <nav class="sidebar">
       <div class="sidebar-header">
         <a href="#" class="logo">STVOR</a>
-        <div class="logo-tagline">E2EE SDK v2.4.0</div>
+        <div class="logo-tagline">E2EE SDK v2.4.1</div>
       </div>
       
       <div class="nav-section">
         <div class="nav-title">Getting Started</div>
         <a href="#overview" class="nav-item active">Overview</a>
         <a href="#installation" class="nav-item">Installation</a>
+        <a href="#module-setup" class="nav-item">Module Setup</a>
         <a href="#quickstart" class="nav-item">Quick Start</a>
+        <a href="#mock-relay" class="nav-item">Local Dev Server</a>
         <a href="#full-example" class="nav-item">Full Example</a>
       </div>
       
@@ -571,6 +573,11 @@
         <div class="nav-title">Core Concepts</div>
         <a href="#security" class="nav-item">Security Model</a>
         <a href="#limitations" class="nav-item">Limitations</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Help</div>
+        <a href="#troubleshooting" class="nav-item">Troubleshooting</a>
       </div>
       
       <div class="nav-section">
@@ -606,7 +613,7 @@
         </header>
 
         <div class="intro-card">
-          <p><strong>STVOR v2.4.0</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Production-ready architecture with security invariants and cryptographically verified metrics.</p>
+          <p><strong>STVOR v2.4.1</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Production-ready architecture with security invariants and cryptographically verified metrics.</p>
           <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
               <strong style="color: var(--success);">✅ Core Features:</strong>
@@ -635,10 +642,10 @@
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Install the SDK (v2.4.0)</h4>
+            <h4>Install the SDK (v2.4.1)</h4>
             <div class="code-block">
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              <pre><code>npm install @stvor/sdk@^2.4.0</code></pre>
+              <pre><code>npm install @stvor/sdk@^2.4.1</code></pre>
             </div>
           </div>
         </div>
@@ -650,8 +657,65 @@
           <p style="margin: 0; font-size: 13px; color: var(--text-muted);"><strong>Display/Relay (untrusted)</strong> — routes encrypted messages, displays read-only metrics.</p>
         </div>
 
+        <!-- MODULE SETUP -->
+        <h2 id="module-setup">Module Setup (ESM &amp; CommonJS)</h2>
+        <p>STVOR SDK supports both ESM and CommonJS. Choose the format that matches your project:</p>
+
+        <h3>ESM (recommended)</h3>
+        <p>Works with <code>"type": "module"</code> in package.json or <code>.mjs</code> files:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { Stvor } from '@stvor/sdk';
+
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'ws://localhost:4444'
+});</code></pre>
+        </div>
+
+        <h3>CommonJS</h3>
+        <p>Works with <code>require()</code> in <code>.cjs</code> files or projects without <code>"type": "module"</code>:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>const sdk = require('@stvor/sdk');
+
+// Use the async loader
+const { Stvor } = await sdk.load();
+
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'ws://localhost:4444'
+});</code></pre>
+        </div>
+
+        <h3>TypeScript</h3>
+        <p>Full type support out of the box. Set <code>moduleResolution</code> to <code>"NodeNext"</code> or <code>"Bundler"</code>:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// tsconfig.json
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2020"
+  }
+}</code></pre>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">📋 package.json для нового проекта</h4>
+          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>{
+  "name": "my-e2ee-app",
+  "type": "module",
+  "dependencies": {
+    "@stvor/sdk": "^2.4.1",
+    "ws": "^8.13.0"
+  }
+}</code></pre>
+        </div>
+
         <!-- QUICK START -->
-        <h2 id="quickstart">Quick Start (v2.4.0)</h2>
+        <h2 id="quickstart">Quick Start (v2.4.1)</h2>
         <p>The simplest example — connect two users and send an encrypted message with zero crypto knowledge:</p>
         
         <div class="code-block">
@@ -697,6 +761,64 @@ const app = await createApp({
 const user = await app.connect('user@test.com');
 user.onMessage((from, msg) => console.log(msg));
 await user.send('peer@test.com', 'Encrypted message!');</code></pre>
+        </div>
+
+        <!-- MOCK RELAY -->
+        <h2 id="mock-relay">Local Development Server</h2>
+        <p>STVOR SDK включает встроенный mock relay сервер для локальной разработки без интернета и без необходимости запускать свой relay:</p>
+
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Запуск через npx (рекомендуется)
+npx @stvor/sdk mock-relay
+
+# Или с кастомным портом
+STVOR_MOCK_PORT=9000 npx @stvor/sdk mock-relay
+
+# С подробным логированием
+STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay</code></pre>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">✅ Что Mock Relay умеет:</h4>
+          <ul style="margin: 0; color: var(--text-primary);">
+            <li>WebSocket на <code>ws://localhost:4444</code></li>
+            <li>Health check: <code>GET http://localhost:4444/health</code></li>
+            <li>Автороутинг сообщений между подключёнными клиентами</li>
+            <li>Хранение сообщений для оффлайн-получателей</li>
+            <li>Принимает любой AppToken начинающийся с <code>stvor_</code></li>
+          </ul>
+        </div>
+
+        <h3>Использование в коде</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { Stvor } from '@stvor/sdk';
+
+// Укажите адрес mock relay вместо продакшен-сервера
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',   // любой токен с stvor_ префиксом
+  relayUrl: 'ws://localhost:4444'  // mock relay
+});
+
+const alice = await app.connect('alice');
+const bob = await app.connect('bob');
+
+bob.onMessage((from, msg) => {
+  console.log(`${from}: ${msg}`);
+});
+
+await alice.send('bob', 'Hello from local dev! 🔐');</code></pre>
+        </div>
+
+        <h3>Проверка статуса</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Health check
+curl http://localhost:4444/health
+
+# Проверить пользователя онлайн
+curl http://localhost:4444/status/alice</code></pre>
         </div>
 
         <!-- IMPROVEMENTS -->
@@ -1058,7 +1180,7 @@ main().catch(console.error);</code></pre>
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^2.4.0",
+    "@stvor/sdk": "^2.4.1",
     "ws": "^8.13.0"
   }
 }</code></pre>
@@ -1161,8 +1283,69 @@ node app.mjs</code></pre>
           </ul>
         </div>
 
+        <!-- TROUBLESHOOTING -->
+        <h2 id="troubleshooting">Troubleshooting</h2>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: No "exports" main defined in @stvor/sdk/package.json</code></pre>
+          </div>
+          <p><strong>Причина:</strong> Старая версия SDK (&lt;2.4.1) без dual CJS/ESM exports.</p>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>npm install @stvor/sdk@latest</code></pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">Relay handshake timeout</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>StvorError: Relay handshake timeout [RELAY_UNAVAILABLE]</code></pre>
+          </div>
+          <p><strong>Причины:</strong></p>
+          <ul>
+            <li>Relay сервер не запущен</li>
+            <li>Неправильный <code>relayUrl</code></li>
+            <li>AppToken невалидный</li>
+          </ul>
+          <p><strong>Решение:</strong> Запустите mock relay для тестирования: <code>npx @stvor/sdk mock-relay</code></p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">Cannot find module 'ws'</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>Error: Cannot find module 'ws'</code></pre>
+          </div>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>npm install ws</code></pre>
+          </div>
+          <p style="color: var(--text-muted); font-size: 13px;"><code>ws</code> — peer dependency в v2.4.1. Устанавливается вместе с SDK, но в некоторых пакетных менеджерах (pnpm) нужно устанавливать явно.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">INVALID_APP_TOKEN / AUTH_FAILED</h3>
+          <p>Убедитесь что токен начинается с <code>stvor_</code> для mock relay. Для продакшен — получите токен через <a href="/dashboard.html">Dashboard</a>.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">CommonJS: require() возвращает Proxy</h3>
+          <p>В CommonJS SDK экспортирует Proxy-объект. Используйте async <code>.load()</code>:</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>const sdk = require('@stvor/sdk');
+const { Stvor } = await sdk.load();
+
+// Теперь Stvor доступен
+const app = await Stvor.init({ ... });</code></pre>
+          </div>
+        </div>
+
         <footer>
-          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v2.4.0</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v2.4.1</div>
           <div>Production-grade E2EE with Signal Protocol, crypto-verified metrics, and security invariants. (Feb 2026)</div>
         </footer>
         

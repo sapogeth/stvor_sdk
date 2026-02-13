@@ -188,10 +188,29 @@ export class StvorFacadeClient {
     this.startMessagePolling();
   }
 
-  async send(recipientId: UserId, content: MessageContent): Promise<void> {
+  /**
+   * Send an encrypted message to a recipient.
+   *
+   * By default, if the recipient is not yet registered, the method will
+   * poll up to `options.timeout` ms for their keys to appear on the relay.
+   * Set `options.waitForRecipient: false` to throw immediately instead.
+   *
+   * @param recipientId  - The recipient's user ID
+   * @param content      - Message content (string or Uint8Array)
+   * @param options      - Optional settings:
+   *   - `timeout`           — Max wait time in ms (default: 10 000)
+   *   - `waitForRecipient`  — Auto-wait for recipient keys (default: true)
+   */
+  async send(
+    recipientId: UserId,
+    content: MessageContent,
+    options?: { timeout?: number; waitForRecipient?: boolean }
+  ): Promise<void> {
     if (!this.initialized) {
       throw Errors.clientNotReady();
     }
+
+    const { timeout = 10_000, waitForRecipient = true } = options ?? {};
 
     // Check quota for production tokens (skip for local dev tokens)
     const appToken = this.relay.getAppToken();
@@ -209,8 +228,14 @@ export class StvorFacadeClient {
 
     // Ensure session with recipient exists
     if (!this.cryptoSession.hasSession(recipientId)) {
-      // Fetch recipient's public keys
-      const recipientPublicKeys = await this.relay.getPublicKeys(recipientId);
+      // Fetch recipient's public keys (with optional polling)
+      let recipientPublicKeys = await this.relay.getPublicKeys(recipientId);
+
+      // If not found and waitForRecipient is enabled, poll until timeout
+      if (!recipientPublicKeys && waitForRecipient) {
+        recipientPublicKeys = await this.waitForRecipientKeys(recipientId, timeout);
+      }
+
       if (!recipientPublicKeys) {
         throw Errors.recipientNotFound(recipientId);
       }
@@ -263,6 +288,35 @@ export class StvorFacadeClient {
       // If quota check fails, allow the request (fail open for availability)
       return null;
     }
+  }
+
+  /**
+   * Wait for a specific recipient's public keys to become available on the relay.
+   * Polls the relay at 500ms intervals until the keys appear or timeout expires.
+   *
+   * @param recipientId - The user ID of the recipient
+   * @param timeoutMs   - Max time to wait in milliseconds (default: 10000)
+   * @returns The recipient's serialized public keys, or null if timeout
+   */
+  async waitForUser(recipientId: UserId, timeoutMs: number = 10_000): Promise<boolean> {
+    const keys = await this.waitForRecipientKeys(recipientId, timeoutMs);
+    return keys !== null;
+  }
+
+  private async waitForRecipientKeys(
+    recipientId: UserId,
+    timeoutMs: number,
+  ): Promise<import('./crypto-session').SerializedPublicKeys | null> {
+    const start = Date.now();
+    const pollInterval = 500;
+
+    while (Date.now() - start < timeoutMs) {
+      const keys = await this.relay.getPublicKeys(recipientId);
+      if (keys) return keys;
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+
+    return null;
   }
 
   // Note: blocking receive()/seal()/open() APIs are NOT part of SDK v0.1 facade.

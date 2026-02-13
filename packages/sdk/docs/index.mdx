@@ -44,8 +44,12 @@ STVOR is a **practical reference implementation**. All limitations are documente
 
 - [Installation](#installation) — 30 seconds to start
 - [Quickstart](#quickstart) — Working example
+- [Module Setup (ESM/CJS)](#module-setup) — CommonJS and ESM configuration
+- [Local Development](#local-development) — Mock relay server
 - [API Reference](#api-reference) — Full API docs
 - [Security Model](#security-model) — What we protect
+- [Troubleshooting](#troubleshooting) — Common errors & fixes
+- [Interactive Examples](#interactive-examples) — Try in browser
 - [Limitations](#limitations--deployment) — What we don't
 
 ---
@@ -115,6 +119,134 @@ const app = await Stvor.init({
 
 ---
 
+## Module Setup
+
+The SDK supports both **ESM** (recommended) and **CommonJS** module systems.
+
+### ESM (Recommended)
+
+Add `"type": "module"` to your `package.json`:
+
+```json
+{
+  "type": "module",
+  "dependencies": { "@stvor/sdk": "^2.4.0" }
+}
+```
+
+```typescript
+import { Stvor } from '@stvor/sdk';
+const app = await Stvor.init({ appToken: 'stvor_dev_...' });
+```
+
+### CommonJS
+
+For projects using `require()`, use the async `load()` pattern:
+
+```javascript
+const sdk = require('@stvor/sdk');
+
+async function main() {
+  const { Stvor } = await sdk.load();
+  const app = await Stvor.init({ appToken: 'stvor_dev_...' });
+  const alice = await app.connect('alice@example.com');
+  await alice.send('bob@example.com', 'Hello from CJS!');
+}
+main();
+```
+
+### TypeScript
+
+Use `NodeNext` module resolution in `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true
+  }
+}
+```
+
+<Tip>
+See [examples/](https://github.com/sapogeth/stvor_sdk/tree/main/packages/sdk/examples) for complete working examples in ESM, CJS, and TypeScript.
+</Tip>
+
+---
+
+## Local Development
+
+The SDK includes a **mock relay server** for local development and testing.
+No internet connection or production credentials required.
+
+### Start the Mock Relay
+
+```bash
+# Default port 4444
+npx @stvor/sdk mock-relay
+
+# Custom port
+PORT=9000 npx @stvor/sdk mock-relay
+
+# Verbose logging
+STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay
+```
+
+### Use in Your App
+
+```typescript
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',      // any token starting with "stvor_"
+  relayUrl: 'ws://localhost:4444',     // mock relay URL
+});
+```
+
+### Docker
+
+```bash
+docker run -p 4444:4444 stvor/mock-relay
+```
+
+Or with Docker Compose:
+
+```yaml
+services:
+  relay:
+    image: node:20-alpine
+    working_dir: /app
+    command: npx @stvor/sdk mock-relay
+    ports:
+      - "4444:4444"
+    environment:
+      - STVOR_MOCK_VERBOSE=1
+```
+
+The mock relay:
+- Accepts **any** `stvor_*` token
+- Stores data **in-memory** (resets on restart)
+- Supports all SDK operations (register, send, receive)
+- Provides a `/health` endpoint for readiness checks
+
+---
+
+## Interactive Examples
+
+Try the STVOR SDK in your browser without any local setup:
+
+- **CodeSandbox**: [STVOR Quickstart Template](https://codesandbox.io/s/stvor-sdk-quickstart)
+- **StackBlitz**: [STVOR Quickstart Template](https://stackblitz.com/edit/stvor-sdk-quickstart)
+
+These sandboxes include a pre-configured mock relay, so you can experiment
+with E2E encryption directly in the browser.
+
+<Tip>
+The interactive examples are great for prototyping and sharing code snippets
+with your team before integrating into your project.
+</Tip>
+
+---
+
 # SDK Basics
 
 ## Initialization
@@ -177,25 +309,39 @@ await alice.send('bob@example.com', 'Hello Bob!');
 await alice.send('bob@example.com', new Uint8Array([1, 2, 3]));
 ```
 
-Sends an encrypted message to a recipient.
+Sends an encrypted message to a recipient. **Automatically waits** for the
+recipient to be available (configurable).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `recipientId` | `string` | Recipient's user ID |
 | `content` | `string \| Uint8Array` | Message text or binary data |
+| `options.timeout` | `number` | Max wait time for recipient (ms, default: 10000) |
+| `options.waitForRecipient` | `boolean` | Auto-wait for recipient (default: true) |
 
 | Returns | Description |
 |---------|-------------|
 | `Promise<void>` | Resolves when message is sent |
 
 ```typescript
-// Send text
+// Send text (auto-waits for recipient)
 await alice.send('bob@example.com', 'Hello!');
+
+// Send with custom timeout
+await alice.send('bob@example.com', 'Hello!', { timeout: 30000 });
 
 // Send binary (files, images)
 const fileData = await fetchFile();
 await alice.send('bob@example.com', fileData);
+
+// Skip waiting — fail immediately if recipient not found
+await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 ```
+
+<Tip>
+The `send()` method waits for the recipient by default. You no longer need
+to call `waitForUser()` before sending — it's built in!
+</Tip>
 
 <Warning>
 Message is delivered asynchronously. Use `await` to ensure message is sent.
@@ -319,10 +465,15 @@ await alice.send('bob@example.com', 'Hello!');
 ## StvorClient.send()
 
 ```typescript
-function send(recipientId: string, content: string | Uint8Array): Promise<void>
+function send(
+  recipientId: string,
+  content: string | Uint8Array,
+  options?: { timeout?: number; waitForRecipient?: boolean }
+): Promise<void>
 ```
 
-Sends an encrypted message to a recipient.
+Sends an encrypted message to a recipient. By default, automatically waits
+for the recipient's public keys if they haven't connected yet.
 
 ### Parameters
 
@@ -330,6 +481,8 @@ Sends an encrypted message to a recipient.
 |------|------|----------|-------------|
 | `recipientId` | `string` | Yes | Recipient's user ID |
 | `content` | `string \| Uint8Array` | Yes | Message content |
+| `options.timeout` | `number` | No | Max wait time for recipient (ms, default: 10000) |
+| `options.waitForRecipient` | `boolean` | No | Auto-wait for recipient (default: true) |
 
 ### Returns
 
@@ -338,14 +491,61 @@ Sends an encrypted message to a recipient.
 ### Example
 
 ```typescript
+// Basic send (auto-waits for recipient)
 await alice.send('bob@example.com', 'Hello Bob!');
+
+// Send binary data
 await alice.send('bob@example.com', binaryData);
+
+// Custom timeout
+await alice.send('bob@example.com', 'Hello!', { timeout: 30000 });
+
+// Skip waiting — throws immediately if recipient not available
+await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 ```
 
 ### Errors
 
-- `RECIPIENT_UNAVAILABLE` — Recipient offline > 24h
+- `RECIPIENT_NOT_FOUND` — Recipient not registered (when waitForRecipient: false)
+- `RECIPIENT_TIMEOUT` — Timed out waiting for recipient keys
 - `DELIVERY_FAILED` — Message could not be delivered
+- `QUOTA_EXCEEDED` — Monthly message limit reached
+
+---
+
+## StvorClient.waitForUser()
+
+```typescript
+function waitForUser(userId: string, timeoutMs?: number): Promise<boolean>
+```
+
+Explicitly wait for a user's public keys to become available on the relay.
+Returns `true` if the user became available, or `false` on timeout (in WebSocket version, throws on timeout).
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `userId` | `string` | Yes | User ID to wait for |
+| `timeoutMs` | `number` | No | Timeout in ms (default: 10000) |
+
+### Example
+
+```typescript
+// Wait for Bob to connect
+const available = await alice.waitForUser('bob@example.com', 30000);
+if (available) {
+  await alice.send('bob@example.com', 'Hello!');
+} else {
+  console.log('Bob did not connect in time');
+}
+```
+
+<Tip>
+You don't need to call `waitForUser()` before `send()` — the `send()` method
+automatically waits by default. Use `waitForUser()` only when you need to
+check availability without sending.
+</Tip>
 
 ---
 
@@ -655,7 +855,22 @@ Hybrid encryption (X25519 + ML-KEM-768). No action required from developers.
 2. [Run Quickstart](#quickstart)
 3. [Explore API Reference](#api-reference)
 4. [Review Security Model](#security-model)
+5. [Module Setup (ESM/CJS)](#module-setup) — Configure for your project
+6. [Local Development](#local-development) — Start the mock relay
+7. [Troubleshooting](./TROUBLESHOOTING.md) — Common errors & fixes
 
 ---
 
-*STVOR SDK v2.0 — Secure by default.*
+## Troubleshooting
+
+Having issues? See the [full Troubleshooting guide](./TROUBLESHOOTING.md) for solutions to:
+
+- **ERR_PACKAGE_PATH_NOT_EXPORTED** — Module import issues
+- **Relay handshake timeout** — Connection problems
+- **Timed out waiting for user** — Recipient not available
+- **CommonJS vs ESM** — Module system configuration
+- And more...
+
+---
+
+*STVOR SDK v2.4 — Secure by default, honest by design. (Feb 2026)*

@@ -7,9 +7,11 @@ export const ErrorCode = {
   INVALID_APP_TOKEN: 'INVALID_APP_TOKEN',
   RELAY_UNAVAILABLE: 'RELAY_UNAVAILABLE',
   RECIPIENT_NOT_FOUND: 'RECIPIENT_NOT_FOUND',
+  RECIPIENT_TIMEOUT: 'RECIPIENT_TIMEOUT',
   CLIENT_NOT_READY: 'CLIENT_NOT_READY',
   DELIVERY_FAILED: 'DELIVERY_FAILED',
-  // Note: receive()/related flow not implemented in v0.1
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+  RATE_LIMITED: 'RATE_LIMITED',
 } as const;
 
 export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
@@ -98,6 +100,16 @@ export const Errors = {
       'Protocol version mismatch.',
       'Update the SDK to the latest version.',
       false
+    );
+  },
+
+  recipientTimeout(userId: string, timeoutMs: number): StvorError {
+    return new StvorError(
+      ErrorCode.RECIPIENT_TIMEOUT,
+      `Timed out waiting for user "${userId}" after ${timeoutMs}ms. ` +
+      `The user may not have registered with STVOR yet.`,
+      'Ensure the recipient has called connect() and is online, or increase the timeout.',
+      true
     );
   },
 
