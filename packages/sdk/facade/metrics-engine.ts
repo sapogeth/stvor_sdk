@@ -31,9 +31,11 @@ export interface SignedMetrics {
 export class MetricsEngine {
   private metrics: Metrics;
   private appToken: string;
+  private analyticsUrl: string;
 
-  constructor(appToken: string) {
+  constructor(appToken: string, analyticsUrl: string = 'http://localhost:3001') {
     this.appToken = appToken;
+    this.analyticsUrl = analyticsUrl;
     this.metrics = {
       messagesEncrypted: 0,
       messagesDecrypted: 0,
@@ -47,7 +49,7 @@ export class MetricsEngine {
 
   /**
    * Called ONLY after successful encrypt with AEAD
-   * Cannot be called externally
+   */
    */
   recordMessageEncrypted(): void {
     this.metrics.messagesEncrypted++;

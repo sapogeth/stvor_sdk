@@ -1,0 +1,91 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: stvor-db-prod
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-stvor123}
+      POSTGRES_DB: ${DB_NAME:-stvor}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - stvor-db-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - stvor-network
+
+  # Main API + HTTP Relay
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: stvor-api-prod
+    ports:
+      - "3001:3001"  # API
+      - "3002:3002"  # HTTP Relay
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-stvor123}
+      DB_NAME: ${DB_NAME:-stvor}
+      RELAY_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - stvor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # WebSocket Relay Server
+  ws-relay:
+    build: 
+      context: .
+      dockerfile: Dockerfile.ws
+    container_name: stvor-ws-relay-prod
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+    restart: unless-stopped
+    networks:
+      - stvor-network
+
+  # Redis for caching (optional but recommended)
+  redis:
+    image: redis:7-alpine
+    container_name: stvor-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - stvor-redis-data:/data
+    restart: unless-stopped
+    networks:
+      - stvor-network
+    command: redis-server --appendonly yes
+
+volumes:
+  stvor-db-data:
+    driver: local
+  stvor-redis-data:
+    driver: local
+
+networks:
+  stvor-network:
+    driver: bridge

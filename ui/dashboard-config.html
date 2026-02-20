@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STVOR Local Dashboard Configuration</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .container { background: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid #334155; }
+        h1 { color: #3b82f6; margin-bottom: 20px; }
+        .option { 
+            background: #334155; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .url { 
+            background: #0f172a; 
+            padding: 8px 12px; 
+            border-radius: 4px; 
+            font-family: monospace;
+            color: #10b981;
+        }
+        code { background: #0f172a; padding: 2px 6px; border-radius: 4px; color: #fbbf24; }
+        .note { background: #1f2937; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 STVOR Dashboard Configuration</h1>
+        
+        <p><strong>Проблема:</strong> Вы смотрите на онлайн дашборд <code>https://sdk.stvor.xyz/dashboard.html</code>, который настроен для продакшен сервера, а ваш relay работает локально.</p>
+
+        <div class="option">
+            <h3>✅ Вариант 1: Локальный дашборд (Рекомендуется)</h3>
+            <p>Используйте встроенный дашборд вашего сервера:</p>
+            <div class="url">http://localhost:3001/dashboard.html</div>
+            <p><em>Этот дашборд уже правильно настроен для вашего локального relay сервера.</em></p>
+        </div>
+
+        <div class="option">
+            <h3>🌐 Вариант 2: Туннель для внешнего доступа</h3>
+            <p>Сделайте локальный сервер доступным из интернета:</p>
+            <div class="url">
+                # Установите ngrok<br>
+                brew install ngrok<br><br>
+                # Создайте туннель<br>
+                ngrok http 3002
+            </div>
+            <p>Затем используйте полученный URL в онлайн дашборде.</p>
+        </div>
+
+        <div class="option">
+            <h3>⚙️ Вариант 3: Настройка онлайн дашборда</h3>
+            <p>Измените URL relay в настройках онлайн дашборда:</p>
+            <ol>
+                <li>Откройте <code>https://sdk.stvor.xyz/dashboard.html</code></li>
+                <li>Откройте Developer Tools (F12)</li>
+                <li>В консоли выполните:</li>
+            </ol>
+            <div class="url">
+                localStorage.setItem('stvor_relay_url', 'http://localhost:3002');<br>
+                location.reload();
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>🔍 Статус вашего сервера:</strong><br>
+            • API Server: <span style="color: #10b981;">✅ http://localhost:3001</span><br>
+            • HTTP Relay: <span style="color: #10b981;">✅ http://localhost:3002</span><br>
+            • WebSocket: <span style="color: #10b981;">✅ ws://localhost:8080</span>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="http://localhost:3001/dashboard.html" 
+               style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                🚀 Открыть локальный дашборд
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Автоматическая проверка соединения
+        async function checkConnection() {
+            try {
+                const response = await fetch('http://localhost:3002/health');
+                const status = response.ok ? '✅ Подключен' : '❌ Ошибка';
+                console.log('Relay status:', status);
+            } catch (e) {
+                console.log('Relay status: ❌ Недоступен (CORS или сервер не запущен)');
+            }
+        }
+        checkConnection();
+    </script>
+</body>
+</html>

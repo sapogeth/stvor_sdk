@@ -96,6 +96,255 @@ export async function getUsage(token: string) {
   return rows[0] || null;
 }
 
+// Analytics functions
+
+// Record aggregated daily stats (stores latest cumulative values)
+export async function recordDailyStats(stats: {
+  projectId: string;
+  handshakes: number;
+  messagesEncrypted: number;
+  messagesDecrypted: number;
+  errors: number;
+  sdkVersion: string;
+  timestamp: number;
+}) {
+  // Validate values to prevent abuse
+  const MAX_HANDSHAKES = 1000000;
+  const MAX_MESSAGES = 10000000;
+  
+  if (
+    stats.handshakes > MAX_HANDSHAKES ||
+    stats.messagesEncrypted > MAX_MESSAGES ||
+    stats.messagesDecrypted > MAX_MESSAGES ||
+    stats.errors > MAX_MESSAGES
+  ) {
+    console.warn('[Analytics] Rejected absurd analytics values:', {
+      handshakes: stats.handshakes,
+      messagesEncrypted: stats.messagesEncrypted,
+      messagesDecrypted: stats.messagesDecrypted,
+      errors: stats.errors
+    });
+    return;
+  }
+
+  if (!isDbAvailable) {
+    console.log('[Analytics] DB unavailable, skipping daily stats');
+    return;
+  }
+
+  const date = new Date(stats.timestamp).toISOString().split('T')[0];
+  
+  // Use MAX for cumulative values - protects against concurrent SDK instances
+  // If Instance A sends 100 and Instance B sends 50, we store MAX = 100
+  await pool.query(
+    `INSERT INTO analytics_daily_stats 
+      (project_id, date, messages_encrypted, messages_decrypted, handshakes, errors, unique_sessions, sdk_versions)
+    VALUES ($1, $2, $3, $4, $5, $6, $5, $7)
+    ON CONFLICT (project_id, date) DO UPDATE SET
+      messages_encrypted = GREATEST(analytics_daily_stats.messages_encrypted, EXCLUDED.messages_encrypted),
+      messages_decrypted = GREATEST(analytics_daily_stats.messages_decrypted, EXCLUDED.messages_decrypted),
+      handshakes = GREATEST(analytics_daily_stats.handshakes, EXCLUDED.handshakes),
+      errors = GREATEST(analytics_daily_stats.errors, EXCLUDED.errors),
+      unique_sessions = GREATEST(analytics_daily_stats.unique_sessions, EXCLUDED.unique_sessions),
+      sdk_versions = COALESCE(analytics_daily_stats.sdk_versions, '{}'::jsonb) || EXCLUDED.sdk_versions`,
+    [
+      parseInt(stats.projectId),
+      date,
+      stats.messagesEncrypted,
+      stats.messagesDecrypted,
+      stats.handshakes,
+      stats.errors,
+      JSON.stringify({ [stats.sdkVersion]: stats.handshakes })
+    ]
+  );
+}
+
+export async function recordAnalyticsEvent(event: {
+  projectId: string;
+  event: string;
+  userId: string;
+  sessionId: string;
+  messageSize: number;
+  userAgent: string;
+  sdkVersion: string;
+  timestamp: number;
+  ip: string;
+}) {
+  if (!isDbAvailable) {
+    console.log('[Analytics] DB unavailable, skipping event:', event.event);
+    return;
+  }
+
+  await pool.query(
+    `SELECT record_analytics_event($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      event.projectId,
+      event.event,
+      event.userId,
+      event.sessionId,
+      event.messageSize,
+      event.userAgent,
+      event.sdkVersion,
+      event.ip,
+      event.timestamp
+    ]
+  );
+}
+
+export async function getTotalAnalytics() {
+  if (!isDbAvailable) {
+    return {
+      totalMessages: 0,
+      totalProjects: 0,
+      totalUsers: 0,
+      totalBytes: 0
+    };
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      COUNT(*) FILTER (WHERE event IN ('message_encrypted', 'message_decrypted')) as total_messages,
+      COUNT(DISTINCT project_id) as total_projects,
+      COUNT(DISTINCT user_id) as total_users,
+      SUM(message_size) as total_bytes
+    FROM analytics_events
+  `);
+
+  return rows[0] || { total_messages: 0, total_projects: 0, total_users: 0, total_bytes: 0 };
+}
+
+export async function getRecentAnalytics(days: number = 30) {
+  if (!isDbAvailable) {
+    return [];
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      DATE_TRUNC('day', created_at) as date,
+      COUNT(*) FILTER (WHERE event = 'message_encrypted') as encrypted,
+      COUNT(*) FILTER (WHERE event = 'message_decrypted') as decrypted,
+      COUNT(DISTINCT user_id) as active_users,
+      COUNT(DISTINCT session_id) as sessions
+    FROM analytics_events 
+    WHERE created_at >= NOW() - INTERVAL '${days} days'
+    GROUP BY DATE_TRUNC('day', created_at)
+    ORDER BY date DESC
+  `);
+
+  return rows;
+}
+
+export async function getTopProjectsByActivity(limit: number = 10) {
+  if (!isDbAvailable) {
+    return [];
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      p.name,
+      p.id,
+      COUNT(ae.id) as total_events,
+      COUNT(*) FILTER (WHERE ae.event = 'message_encrypted') as messages_encrypted,
+      COUNT(DISTINCT ae.user_id) as unique_users
+    FROM projects p
+    LEFT JOIN analytics_events ae ON p.id = ae.project_id
+    GROUP BY p.id, p.name
+    ORDER BY total_events DESC
+    LIMIT $1
+  `, [limit]);
+
+  return rows;
+}
+
+export async function getGeographicStats() {
+  if (!isDbAvailable) {
+    return [];
+  }
+
+  // Simplified geographic stats based on IP (you'd need IP geolocation service)
+  const { rows } = await pool.query(`
+    SELECT 
+      'Unknown' as country,
+      COUNT(*) as message_count
+    FROM analytics_events
+    WHERE event IN ('message_encrypted', 'message_decrypted')
+    GROUP BY ip_address
+    ORDER BY message_count DESC
+    LIMIT 10
+  `);
+
+  return rows;
+}
+
+export async function getSdkVersionStats() {
+  if (!isDbAvailable) {
+    return [];
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      sdk_version,
+      COUNT(*) as usage_count,
+      COUNT(DISTINCT project_id) as projects_count
+    FROM analytics_events
+    WHERE sdk_version IS NOT NULL AND sdk_version != 'unknown'
+    GROUP BY sdk_version
+    ORDER BY usage_count DESC
+  `);
+
+  return rows;
+}
+
+export async function getProjectAnalytics(projectId: string) {
+  if (!isDbAvailable) {
+    return null;
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      COUNT(*) FILTER (WHERE event = 'message_encrypted') as messages_encrypted,
+      COUNT(*) FILTER (WHERE event = 'message_decrypted') as messages_decrypted,
+      COUNT(DISTINCT user_id) as unique_users,
+      COUNT(DISTINCT session_id) as unique_sessions,
+      SUM(message_size) as total_bytes,
+      MIN(created_at) as first_activity,
+      MAX(created_at) as last_activity
+    FROM analytics_events
+    WHERE project_id = $1
+  `, [projectId]);
+
+  return rows[0];
+}
+
+export async function getRealtimeStats() {
+  if (!isDbAvailable) {
+    return { active_now: 0, messages_last_hour: 0 };
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 
+      COUNT(DISTINCT session_id) FILTER (WHERE created_at >= NOW() - INTERVAL '5 minutes') as active_now,
+      COUNT(*) FILTER (WHERE event IN ('message_encrypted', 'message_decrypted') AND created_at >= NOW() - INTERVAL '1 hour') as messages_last_hour
+    FROM analytics_events
+  `);
+
+  return rows[0] || { active_now: 0, messages_last_hour: 0 };
+}
+
+export async function verifyProjectAccess(projectId: string, token: string): Promise<boolean> {
+  if (!isDbAvailable) {
+    return true; // Allow access in development mode
+  }
+
+  const { rows } = await pool.query(`
+    SELECT 1 FROM app_tokens at
+    JOIN projects p ON p.id = at.project_id
+    WHERE p.id = $1 AND at.token = $2
+  `, [projectId, token]);
+
+  return rows.length > 0;
+}
+
 export async function getLimits(token: string) {
   if (!isDbAvailable) {
     // Fallback: return mock data for development
@@ -246,21 +495,6 @@ export async function getMetricsAuditLog(projectId: string, limit: number = 100)
   } catch (error) {
     console.error('[DB] getMetricsAuditLog error:', error);
     return [];
-  }
-}
-
-export async function verifyProjectAccess(projectId: string, token: string): Promise<boolean> {
-  try {
-    // Check if token is valid and has access to projectId
-    const { rows } = await pool.query(
-      `SELECT t.project_id FROM app_tokens t
-       WHERE t.token = $1 AND t.project_id::text = $2 LIMIT 1`,
-      [token, projectId]
-    );
-    return rows.length > 0;
-  } catch (error) {
-    console.error('[DB] verifyProjectAccess error:', error);
-    return false;
   }
 }
 

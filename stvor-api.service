@@ -1,0 +1,26 @@
+[Unit]
+Description=STVOR API Server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=nodejs
+WorkingDirectory=/opt/stvor-api
+ExecStart=/usr/bin/node dist/server.js
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=RELAY_PORT=3002
+Environment=DB_HOST=localhost
+Environment=DB_PORT=5433
+Environment=DB_USER=postgres
+Environment=DB_PASSWORD=stvor123
+Environment=DB_NAME=stvor
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=stvor-api
+
+[Install]
+WantedBy=multi-user.target

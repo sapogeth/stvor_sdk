@@ -1,56 +1,120 @@
 ---
 title: STVOR SDK Documentation
-description: Honest Signal-style E2EE for startups and pilots
+description: Add end-to-end encryption to your app in minutes — not months
 ---
 
 # STVOR SDK
 
-**Honest Signal-style E2EE SDK for startups and pilots**
+**Add Signal Protocol encryption to your app with just a few lines of code.**
 
-STVOR implements X3DH key exchange and Double Ratchet encryption (Signal Protocol) for client-side end-to-end encryption.
+STVOR implements X3DH key exchange and Double Ratchet encryption (the same cryptography used by Signal) so you can add world-class end-to-end encryption without being a cryptographer.
 
 ```typescript
 import { Stvor } from '@stvor/sdk';
 
+// Initialize with your app token
 const app = await Stvor.init({ appToken: 'sk_live_...' });
+
+// Connect a user
 const alice = await app.connect('alice@example.com');
-await alice.send('bob@example.com', 'Hello!');
+
+// Send encrypted messages — E2EE happens automatically
+await alice.send('bob@example.com', 'Hello, Bob!');
+
+// Receive messages with a callback
+alice.onMessage((senderId, message) => {
+  console.log(`${senderId}: ${message}`);
+});
 ```
+
+<Tip>
+**Zero cryptography knowledge required.** The SDK handles X3DH handshakes, key rotation, and Double Ratchet encryption automatically.
+</Tip>
 
 ---
 
-## Who is this for?
+## Why STVOR?
 
-✅ **Recommended for:**
-- Startups and pilot projects
-- Internal tools and demos
-- Single-instance deployments
-- Teams that need transparent E2EE
+| Feature | STVOR | Building from Scratch |
+|---------|-------|----------------------|
+| **Time to integrate** | ~30 minutes | 2-4 weeks |
+| **Crypto expertise needed** | None | Expert required |
+| **Forward secrecy** | ✅ Automatic | Complex to implement |
+| **Post-compromise security** | ✅ Automatic | Must design carefully |
+| **Self-hostable** | ✅ Yes | N/A |
+| **Vendor lock-in** | ✅ None | N/A |
 
-❌ **NOT recommended for:**
-- Enterprise environments (no SOC 2, GDPR guarantees)
-- High-risk applications (healthcare, finance)
-- Multi-instance production (requires Redis/PostgreSQL)
-- Mobile apps (no persistent storage yet)
-- Post-quantum security requirements
+### Who uses STVOR?
+
+- **Startups** building MVPs who need E2EE for demos and pilots
+- **Internal tools** where teams need secure communication
+- **Proof-of-concept projects** evaluating E2EE requirements
+- **Developers** who want Signal Protocol without the complexity
+
+---
+
+## Quickstart
+
+Get up and running in under 30 seconds:
+
+### 1. Install
+
+```bash
+npm install @stvor/sdk
+```
+
+### 2. Start the mock relay (for local development)
+
+```bash
+npx @stvor/sdk mock-relay
+```
+
+The mock relay lets you test E2EE without production credentials.
+
+### 3. Send your first encrypted message
+
+```typescript
+import { Stvor } from '@stvor/sdk';
+
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',  // Any stvor_* token works locally
+  relayUrl: 'ws://localhost:4444'
+});
+
+const alice = await app.connect('alice@example.com');
+const bob = await app.connect('bob@example.com');
+
+// Send an encrypted message
+await alice.send('bob@example.com', 'Hello from Alice!');
+
+// Receive messages
+bob.onMessage((sender, message) => {
+  console.log(`${sender}: ${message}`); // "alice@example.com: Hello from Alice!"
+});
+
+await alice.disconnect();
+await bob.disconnect();
+```
 
 <Warning>
-STVOR is a **practical reference implementation**. All limitations are documented honestly. Review [Security Model](#security-model) and [Limitations](#limitations--deployment) before production use.
+**Never commit tokens to version control.** Use environment variables:
+```typescript
+const app = await Stvor.init({
+  appToken: process.env.STVOR_APP_TOKEN
+});
+```
 </Warning>
 
 ---
 
-## Quick Links
+## Interactive Examples
 
-- [Installation](#installation) — 30 seconds to start
-- [Quickstart](#quickstart) — Working example
-- [Module Setup (ESM/CJS)](#module-setup) — CommonJS and ESM configuration
-- [Local Development](#local-development) — Mock relay server
-- [API Reference](#api-reference) — Full API docs
-- [Security Model](#security-model) — What we protect
-- [Troubleshooting](#troubleshooting) — Common errors & fixes
-- [Interactive Examples](#interactive-examples) — Try in browser
-- [Limitations](#limitations--deployment) — What we don't
+Try STVOR in your browser without any setup:
+
+- **CodeSandbox**: [STVOR Quickstart Template](https://codesandbox.io/s/stvor-sdk-quickstart)
+- **StackBlitz**: [STVOR Quickstart Template](https://stackblitz.com/edit/stvor-sdk-quickstart)
+
+These sandboxes include a pre-configured mock relay so you can experiment with E2E encryption immediately.
 
 ---
 
@@ -72,56 +136,14 @@ yarn add @stvor/sdk
 
 **Requirements:**
 - Node.js ≥18.0.0 or modern browser
-- WebSocket support
-- No crypto knowledge required
-
----
-
-## Quickstart
-
-```typescript
-import { Stvor } from '@stvor/sdk';
-
-// 1. Initialize SDK with your API token
-const app = await Stvor.init({
-  appToken: 'sk_live_abc123...',
-  relayUrl: 'wss://relay.stvor.xyz' // optional
-});
-
-// 2. Connect as a user
-const alice = await app.connect('alice@example.com');
-
-// 3. Send encrypted message (E2EE happens automatically)
-await alice.send('bob@example.com', 'Hello Bob!');
-
-// 4. Receive messages (push-based)
-const unsubscribe = alice.onMessage((senderId, message) => {
-  console.log(`${senderId}: ${message}`);
-});
-
-// Cleanup when done
-unsubscribe();
-await alice.disconnect();
-```
-
-<Tip>
-**Zero crypto knowledge required.** X3DH handshake and Double Ratchet encryption happen automatically behind `send()` and `onMessage()`.
-</Tip>
-
-<Warning>
-Never commit tokens to version control:
-```typescript
-const app = await Stvor.init({
-  appToken: process.env.STVOR_APP_TOKEN
-});
-```
-</Warning>
+- WebSocket support (built into browsers, use `ws` package for Node.js)
+- No cryptography experience needed
 
 ---
 
 ## Module Setup
 
-The SDK supports both **ESM** (recommended) and **CommonJS** module systems.
+The SDK supports both **ESM** (recommended) and **CommonJS**.
 
 ### ESM (Recommended)
 
@@ -177,8 +199,7 @@ See [examples/](https://github.com/sapogeth/stvor_sdk/tree/main/packages/sdk/exa
 
 ## Local Development
 
-The SDK includes a **mock relay server** for local development and testing.
-No internet connection or production credentials required.
+The SDK includes a **mock relay server** for local development and testing. No internet or production credentials required.
 
 ### Start the Mock Relay
 
@@ -197,8 +218,8 @@ STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay
 
 ```typescript
 const app = await Stvor.init({
-  appToken: 'stvor_dev_test123',      // any token starting with "stvor_"
-  relayUrl: 'ws://localhost:4444',     // mock relay URL
+  appToken: 'stvor_dev_test123',  // any token starting with "stvor_"
+  relayUrl: 'ws://localhost:4444'  // mock relay URL
 });
 ```
 
@@ -227,23 +248,6 @@ The mock relay:
 - Stores data **in-memory** (resets on restart)
 - Supports all SDK operations (register, send, receive)
 - Provides a `/health` endpoint for readiness checks
-
----
-
-## Interactive Examples
-
-Try the STVOR SDK in your browser without any local setup:
-
-- **CodeSandbox**: [STVOR Quickstart Template](https://codesandbox.io/s/stvor-sdk-quickstart)
-- **StackBlitz**: [STVOR Quickstart Template](https://stackblitz.com/edit/stvor-sdk-quickstart)
-
-These sandboxes include a pre-configured mock relay, so you can experiment
-with E2E encryption directly in the browser.
-
-<Tip>
-The interactive examples are great for prototyping and sharing code snippets
-with your team before integrating into your project.
-</Tip>
 
 ---
 
@@ -309,8 +313,7 @@ await alice.send('bob@example.com', 'Hello Bob!');
 await alice.send('bob@example.com', new Uint8Array([1, 2, 3]));
 ```
 
-Sends an encrypted message to a recipient. **Automatically waits** for the
-recipient to be available (configurable).
+Sends an encrypted message to a recipient. **Automatically waits** for the recipient to be available (configurable).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -339,8 +342,7 @@ await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 ```
 
 <Tip>
-The `send()` method waits for the recipient by default. You no longer need
-to call `waitForUser()` before sending — it's built in!
+The `send()` method waits for the recipient by default. You no longer need to call `waitForUser()` before sending — it's built in!
 </Tip>
 
 <Warning>
@@ -472,8 +474,7 @@ function send(
 ): Promise<void>
 ```
 
-Sends an encrypted message to a recipient. By default, automatically waits
-for the recipient's public keys if they haven't connected yet.
+Sends an encrypted message to a recipient. By default, automatically waits for the recipient's public keys if they haven't connected yet.
 
 ### Parameters
 
@@ -519,8 +520,7 @@ await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 function waitForUser(userId: string, timeoutMs?: number): Promise<boolean>
 ```
 
-Explicitly wait for a user's public keys to become available on the relay.
-Returns `true` if the user became available, or `false` on timeout (in WebSocket version, throws on timeout).
+Explicitly wait for a user's public keys to become available on the relay. Returns `true` if the user became available, or `false` on timeout.
 
 ### Parameters
 
@@ -542,9 +542,7 @@ if (available) {
 ```
 
 <Tip>
-You don't need to call `waitForUser()` before `send()` — the `send()` method
-automatically waits by default. Use `waitForUser()` only when you need to
-check availability without sending.
+You don't need to call `waitForUser()` before `send()` — the `send()` method automatically waits by default. Use `waitForUser()` only when you need to check availability without sending.
 </Tip>
 
 ---
@@ -671,29 +669,7 @@ unsubscribe();
 
 ---
 
-### Example
-
-```typescript
-// Use onMessage subscription; blocking receive() is not implemented in v0.1
-const unsubscribe = alice.onMessage((from, msg) => console.log(from, msg));
-```
-
----
-
-## StvorClient.seal()
-
-APIs for sealing/opening offline payloads are not available in SDK v0.1. See Sealing / Offline payloads section above.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|
-  }
-}
-```
-
----
-Cryptography
+# Cryptography
 
 STVOR implements the **Signal Protocol**:
 - **X3DH** (Extended Triple Diffie-Hellman) for key agreement
@@ -706,7 +682,7 @@ STVOR implements the **Signal Protocol**:
 ✅ **Forward Secrecy** — DH key rotation every 50 messages / 10 minutes  
 ✅ **Post-Compromise Security** — Assuming at least one successful DH ratchet  
 ✅ **Authenticated encryption** — AEAD prevents tampering  
-✅ **Replay protection** — Within documented operational limits (requires persistent storage for full guarantees)  
+✅ **Replay protection** — Within documented operational limits  
 ✅ **TOFU fingerprint verification** — Optional identity verification  
 
 ## What STVOR Does NOT Guarantee
@@ -728,6 +704,7 @@ STVOR implements the **Signal Protocol**:
 **What attacker CANNOT do:**
 - Decrypt message content (without private keys)
 - Forge authenticated messages
+
 **Out of scope:**
 - Device compromise (malware, root access)
 - Social engineering
@@ -757,6 +734,7 @@ STVOR implements the **Signal Protocol**:
 ## Deployment Scenarios
 
 ### ✅ Single-instance dev (READY)
+
 ```bash
 # No infrastructure needed
 npm run dev
@@ -765,9 +743,58 @@ npm run dev
 - Keys lost on restart (acceptable for dev)
 
 ### 🟡 Single-instance production (CONDITIONAL)
+
 ```bash
 # Requires Redis + PostgreSQL
-dockX3DH handshake and Double Ratchet are fully automatic. Keys generated on `connect()`, rotated transparently.
+docker-compose up
+```
+- Persistent replay protection cache
+- Persistent TOFU fingerprints
+- Keys still in-memory (v2.3)
+
+### ❌ Multi-instance (NOT READY)
+
+Requires distributed state (Redis/PostgreSQL). Coming in v2.2.
+
+---
+
+## When to Use STVOR
+
+✅ **Use STVOR if:**
+- Building a startup MVP or pilot
+- Need transparent E2EE without vendor lock-in
+- Running single-instance deployments
+- Want Signal Protocol without complexity
+
+❌ **Don't use STVOR if:**
+- Enterprise compliance required (SOC 2, GDPR)
+- Multi-instance/multi-region deployment
+- Healthcare, finance, or high-risk data
+- Post-quantum security required today
+
+---
+
+## Honest Positioning
+
+STVOR is **not an enterprise product**. We document limitations honestly:
+- In-memory storage (v2.1) — keys cleared on restart
+- Single-instance ready — multi-instance needs v2.2
+- TOFU model — first contact requires user verification
+- No compliance guarantees — use at your own risk
+
+**What we promise:**
+- Transparent code (no black boxes)
+- Honest security claims (no marketing fluff)
+- Production-grade crypto (Signal Protocol)
+- Zero vendor lock-in (self-hostable)
+
+---
+
+# FAQ
+
+**Q: Do I need to understand cryptography?**
+
+No. X3DH handshake and Double Ratchet are fully automatic. Keys generated on `connect()`, rotated transparently.
 
 **Q: Is this really end-to-end encrypted?**
 
@@ -802,62 +829,12 @@ No. Storing keys server-side would break E2EE. Forward secrecy means past messag
 
 ---
 
-## When to Use STVOR
-
-✅ **Use STVOR if:**
-- Building a startup MVP or pilot
-- Need transparent E2EE without vendor lock-in
-- Running single-instance deployments
-- Want Signal Protocol without complexity
-
-❌ **Don't use STVOR if:**
-- Enterprise compliance required (SOC 2, GDPR)
-- Multi-instance/multi-region deployment
-- Healthcare, finance, or high-risk data
-- Post-quantum security required today
-
 ## Next Steps
 
 1. **[Run Quickstart](#quickstart)** — Copy-paste working example
 2. **[Review Limitations](#limitations--deployment)** — Understand what's ready
 3. **[API Reference](#api-reference)** — Explore full SDK
 4. **[Security Model](#security-model)** — Verify threat model fit
-
----
-
-## Honest Positioning
-
-STVOR is **not an enterprise product**. We document limitations honestly:
-- In-memory storage (v2.1) — keys cleared on restart
-- Single-instance ready — multi-instance needs v2.2
-- TOFU model — first contact requires user verification
-- No compliance guarantees — use at your own risk
-
-**What we promise:**
-- Transparent code (no black boxes)
-- Honest security claims (no marketing fluff)
-- Production-grade crypto (Signal Protocol)
-- Zero vendor lock-in (self-hostable)
-
----
-
-*STVOR SDK v2.1 — Honest cryptography, no marketing claims. (Feb 2026)*
-
-**Q: How is post-quantum security achieved?**
-
-Hybrid encryption (X25519 + ML-KEM-768). No action required from developers.
-
----
-
-## Next Steps
-
-1. [Get AppToken](https://dashboard.stvor.io)
-2. [Run Quickstart](#quickstart)
-3. [Explore API Reference](#api-reference)
-4. [Review Security Model](#security-model)
-5. [Module Setup (ESM/CJS)](#module-setup) — Configure for your project
-6. [Local Development](#local-development) — Start the mock relay
-7. [Troubleshooting](./TROUBLESHOOTING.md) — Common errors & fixes
 
 ---
 

@@ -12,6 +12,7 @@ import healthRoutes from './routes/health.js';
 import projectsRoutes from './routes/projects.js';
 import e2eRoutes from './routes/e2e.js';
 import metricsRoutes from './routes/metrics-verification.js';
+import analyticsRoutes from './routes/analytics.js';
 import db, { initDb } from './storage/db.js';
 import { RelayServer } from './relay/server.js';
 
@@ -93,6 +94,7 @@ const start = async () => {
   app.register(projectsRoutes);
   app.register(e2eRoutes);
   app.register(metricsRoutes, { prefix: '/api/metrics' });
+  app.register(analyticsRoutes, { prefix: '/analytics' });
 
   // /usage endpoint - get current quota usage
   app.get('/usage', async (request: FastifyRequest, reply: FastifyReply) => {
