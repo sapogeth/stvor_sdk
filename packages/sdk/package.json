@@ -61,7 +61,7 @@
   "scripts": {
     "build": "tsc --pretty false --noEmitOnError false || true && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
     "prepublishOnly": "npm run build",
-    "test": "echo \"No tests yet\" && exit 0",
+    "test": "node --import tsx test-e2ee.ts",
     "mock-relay": "node dist/mock-relay-server.js"
   },
   "bin": {
