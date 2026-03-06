@@ -3,7 +3,7 @@
  * Production-ready replay protection for clustered deployments
  */
 
-import { createClient, RedisClientType } from 'redis';
+import Redis from 'ioredis';
 
 export interface RedisReplayCacheConfig {
   url: string;           // Redis connection URL
@@ -12,7 +12,7 @@ export interface RedisReplayCacheConfig {
 }
 
 export class RedisReplayCache {
-  private client: RedisClientType;
+  private client: Redis;
   private keyPrefix: string;
   private ttlSeconds: number;
 
@@ -20,20 +20,18 @@ export class RedisReplayCache {
     this.keyPrefix = config.keyPrefix || 'stvor:replay:';
     this.ttlSeconds = config.ttlSeconds || 300;
     
-    this.client = createClient({
-      url: config.url,
-      socket: {
-        reconnectStrategy: (retries) => {
-          if (retries > 10) {
-            console.error('[RedisReplay] Max reconnection attempts reached');
-            return new Error('Max reconnection attempts reached');
-          }
-          return Math.min(retries * 100, 3000);
+    this.client = new Redis(config.url, {
+      retryStrategy: (times: number) => {
+        if (times > 10) {
+          console.error('[RedisReplay] Max reconnection attempts reached');
+          return null;
         }
-      }
+        return Math.min(times * 100, 3000);
+      },
+      maxRetriesPerRequest: 3,
     });
 
-    this.client.on('error', (err) => {
+    this.client.on('error', (err: Error) => {
       console.error('[RedisReplay] Redis error:', err);
     });
 
@@ -43,10 +41,10 @@ export class RedisReplayCache {
   }
 
   /**
-   * Connect to Redis
+   * Connect to Redis (ioredis connects automatically)
    */
   async connect(): Promise<void> {
-    await this.client.connect();
+    // ioredis connects on instantiation
   }
 
   /**
@@ -68,7 +66,7 @@ export class RedisReplayCache {
    */
   async addNonce(userId: string, nonce: string, timestamp: number): Promise<void> {
     const key = this.buildKey(userId, nonce);
-    await this.client.setEx(key, this.ttlSeconds, String(timestamp));
+    await this.client.setex(key, this.ttlSeconds, String(timestamp));
   }
 
   /**
