@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -8,7 +9,7 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'stvor',
-  password: process.env.DB_PASSWORD || 'stvor123',
+  password: process.env.DB_PASSWORD || '',
   port: parseInt(process.env.DB_PORT || '5432'),
 });
 
@@ -49,7 +50,7 @@ export async function getToken(token: string) {
 }
 
 export async function createToken(projectId: number, plan: 'free' | 'starter' | 'unlimited' = 'free') {
-  const token = `stvor_live_${Math.random().toString(36).slice(2, 14)}`;
+  const token = `stvor_live_${crypto.randomBytes(12).toString('base64url')}`;
   const limits = {
     free: 1000,
     starter: 10000,

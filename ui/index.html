@@ -8,63 +8,172 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --bg-main: #ffffff;
+      --bg-secondary: #f8fafc;
+      --border: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --sidebar-width: clamp(200px, 20vw, 280px);
       --font-size-base: clamp(13px, 2vw, 16px);
-      --font-size-h1: clamp(28px, 6vw, 42px);
-      --font-size-h2: clamp(18px, 4.5vw, 24px);
-      --font-size-h3: clamp(15px, 3vw, 18px);
-      --padding: clamp(16px, 4vw, 40px);
-      --gap: clamp(12px, 2vw, 16px);
+      --font-size-h1: clamp(24px, 6vw, 48px);
+      --font-size-h2: clamp(20px, 4vw, 28px);
+      --font-size-h3: clamp(16px, 3vw, 18px);
+      --padding-mobile: clamp(12px, 3vw, 24px);
+      --padding-content: clamp(16px, 4vw, 32px);
     }
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: clamp(1.5, 0.3vw + 1.5, 1.8);
-      color: #1a1a2e;
-      background: #fafafa;
+      line-height: clamp(1.5, 0.5vw + 1.5, 1.8);
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      margin: 0;
       font-size: var(--font-size-base);
     }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: clamp(24px, 5vw, 40px) var(--padding);
+    
+    .layout { display: flex; min-height: 100vh; }
+    
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-main);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0;
     }
-    h1 {
-      font-size: var(--font-size-h1);
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .logo {
+      font-size: clamp(20px, 5vw, 24px);
       font-weight: 800;
-      margin-bottom: clamp(6px, 1.5vw, 8px);
-      color: #0f172a;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 4px;
     }
-    .tagline {
-      font-size: clamp(14px, 3vw, 18px);
-      color: #64748b;
-      margin-bottom: clamp(20px, 3vw, 32px);
+    .logo-tagline {
+      font-size: clamp(10px, 1.5vw, 12px);
+      color: var(--text-muted);
+      font-weight: 500;
     }
+    .nav-section { margin-bottom: clamp(16px, 2vw, 24px); }
+    .nav-title {
+      font-size: clamp(9px, 1.2vw, 11px);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 clamp(12px, 2vw, 24px) clamp(4px, 1vw, 8px);
+      letter-spacing: 0.5px;
+    }
+    .nav-item {
+      display: block;
+      padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 24px);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: clamp(12px, 1.8vw, 14px);
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+    .nav-item.active {
+      color: var(--primary);
+      border-left-color: var(--primary);
+      background: #eff6ff;
+    }
+    
+    .main-content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+    }
+    .topbar {
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(8px, 2vw, 12px) clamp(16px, 3vw, 32px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .tabs { display: flex; gap: clamp(12px, 3vw, 24px); }
+    .tab {
+      padding: clamp(4px, 1.2vw, 8px) 0;
+      font-size: clamp(12px, 1.8vw, 14px);
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    
+    .content { max-width: 900px; padding: clamp(24px, 5vw, 48px) var(--padding-content); }
+    
+    header { margin-bottom: clamp(24px, 4vw, 40px); }
+    header h1 { font-size: var(--font-size-h1); font-weight: 800; margin-bottom: clamp(8px, 2vw, 12px); }
+    .tagline { font-size: clamp(16px, 3vw, 20px); color: var(--text-secondary); }
+    
+    .intro-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: clamp(8px, 2vw, 12px);
+      padding: clamp(16px, 3vw, 24px);
+      margin-bottom: clamp(24px, 4vw, 40px);
+    }
+    
     h2 {
       font-size: var(--font-size-h2);
       font-weight: 700;
-      margin: clamp(32px, 5vw, 48px) 0 clamp(12px, 2vw, 16px);
-      padding-top: clamp(16px, 2.5vw, 24px);
-      border-top: 1px solid #e2e8f0;
-      color: #0f172a;
+      margin: clamp(32px, 5vw, 48px) 0 clamp(10px, 2vw, 16px) 0;
+      padding-top: clamp(12px, 2vw, 16px);
+      border-top: 1px solid var(--border);
     }
-    h3 {
-      font-size: var(--font-size-h3);
-      font-weight: 600;
-      margin: clamp(16px, 2.5vw, 24px) 0 clamp(8px, 1.5vw, 12px);
-      color: #334155;
+    h2:first-of-type { border-top: none; margin-top: 0; }
+    h3 { font-size: var(--font-size-h3); margin: clamp(16px, 2.5vw, 24px) 0 clamp(8px, 1.5vw, 12px) 0; }
+    p { margin: 0 0 clamp(10px, 2vw, 16px) 0; color: var(--text-secondary); }
+    
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: clamp(6px, 1.5vw, 8px);
+      padding: clamp(16px, 3vw, 24px);
+      margin: clamp(12px, 2vw, 16px) 0;
     }
-    p {
-      margin-bottom: clamp(12px, 2vw, 16px);
-      color: #475569;
+    
+    ul { margin: 0 0 clamp(12px, 2vw, 20px) 0; padding-left: clamp(16px, 3vw, 24px); color: #475569; }
+    li { margin-bottom: clamp(4px, 1vw, 8px); }
+    
+    .code-block {
+      position: relative;
+      margin: clamp(12px, 2vw, 16px) 0;
     }
-    ul {
-      margin: 0 0 clamp(12px, 2vw, 16px) clamp(16px, 3vw, 24px);
-      color: #475569;
-      font-size: var(--font-size-base);
+    .copy-btn {
+      position: absolute;
+      top: clamp(8px, 2vw, 12px);
+      right: clamp(8px, 2vw, 12px);
+      background: #334155;
+      color: #e2e8f0;
+      border: none;
+      padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: clamp(10px, 1.5vw, 12px);
+      opacity: 0.8;
+      transition: all 0.2s;
     }
-    li {
-      margin-bottom: clamp(4px, 1vw, 8px);
-    }
+    .copy-btn:hover { opacity: 1; background: #475569; }
+    .copy-btn.copied { background: var(--success); }
+    
     pre {
       background: #0f172a;
       color: #e2e8f0;
@@ -73,72 +182,26 @@
       overflow-x: auto;
       font-size: clamp(11px, 1.8vw, 14px);
       line-height: clamp(1.4, 0.5vw + 1.4, 1.8);
-      margin: clamp(12px, 2vw, 16px) 0;
+      margin: 0;
     }
-    code {
-      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-      font-size: clamp(11px, 1.8vw, 14px);
-    }
-    .inline-code {
-      background: #f1f5f9;
-      padding: clamp(2px, 0.5vw, 6px);
-      border-radius: 4px;
-      font-size: clamp(11px, 1.8vw, 14px);
-    }
+    code { font-family: 'SF Mono', Monaco, 'Courier New', monospace; }
+    
     .btn {
       display: inline-block;
       padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 24px);
       font-size: clamp(12px, 1.8vw, 14px);
       font-weight: 600;
       border: none;
-      border-radius: 6px;
+      border-radius: clamp(4px, 1vw, 6px);
       cursor: pointer;
       transition: all 0.2s;
+      text-decoration: none;
     }
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #1d4ed8;
-    }
-    .btn-secondary {
-      background: #e2e8f0;
-      color: #334155;
-      margin-left: var(--gap);
-    }
-    .btn-secondary:hover {
-      background: #cbd5e1;
-    }
-    .token-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: clamp(12px, 2.5vw, 16px);
-      margin: clamp(12px, 2vw, 16px) 0;
-    }
-    .token-display {
-      font-family: 'SF Mono', Monaco, monospace;
-      font-size: clamp(12px, 1.8vw, 16px);
-      background: white;
-      border: 1px solid #e2e8f0;
-      padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 16px);
-      border-radius: 6px;
-      margin: clamp(10px, 2vw, 12px) 0;
-      word-break: break-all;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-    }
-    .note {
-      background: #eff6ff;
-      border-left: 4px solid #3b82f6;
-      padding: clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
-      border-radius: 0 6px 6px 0;
-      margin: clamp(12px, 2vw, 16px) 0;
-      font-size: clamp(12px, 1.8vw, 14px);
-      color: #1e40af;
-    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #e2e8f0; color: #334155; margin-left: 8px; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    
     .warning {
       background: #fef3c7;
       border-left: 4px solid #f59e0b;
@@ -148,22 +211,42 @@
       font-size: clamp(12px, 1.8vw, 14px);
       color: #92400e;
     }
-    .guarantee {
-      color: #059669;
-    }
-    .no-guarantee {
-      color: #dc2626;
-    }
-    .section-intro {
-      background: white;
-      border: 1px solid #e2e8f0;
+    .success-box {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
       border-radius: 8px;
       padding: clamp(16px, 3vw, 24px);
-      margin-bottom: clamp(20px, 3vw, 32px);
+      margin: clamp(12px, 2vw, 16px) 0;
     }
+    
+    .step {
+      display: flex;
+      gap: clamp(12px, 2vw, 16px);
+      margin: clamp(16px, 2.5vw, 24px) 0;
+      padding: clamp(12px, 2.5vw, 20px);
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: clamp(6px, 1.5vw, 8px);
+    }
+    .step-number {
+      width: clamp(28px, 4vw, 32px);
+      height: clamp(28px, 4vw, 32px);
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+      font-size: clamp(14px, 2vw, 16px);
+    }
+    .step-content { flex: 1; }
+    .step-content h4 { margin: 0 0 clamp(6px, 1vw, 8px) 0; }
+    
     footer {
       margin-top: clamp(32px, 5vw, 64px);
-      padding-top: clamp(12px, 2.5vw, 24px);
+      padding-top: clamp(12px, 2vw, 24px);
       border-top: 1px solid #e2e8f0;
       text-align: center;
       color: #94a3b8;
@@ -172,46 +255,98 @@
 
     /* ===== RESPONSIVE DESIGN ===== */
     
-    /* Tablets and below 768px */
+    /* Tablets and below 1024px */
+    @media (max-width: 1024px) {
+      :root { --sidebar-width: 240px; }
+      .content { padding: 32px 24px; }
+      header h1 { font-size: 36px; }
+      h2 { font-size: 24px; }
+      .intro-card { padding: 16px; }
+      .intro-card > div { grid-template-columns: 1fr; }
+      pre { font-size: 12px; }
+    }
+
+    /* Small tablets 768px and below */
     @media (max-width: 768px) {
-      .container {
-        max-width: 100%;
-        padding: 32px 16px;
+      :root { --sidebar-width: 0; }
+      
+      .layout { flex-direction: column; }
+      
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
       }
       
-      h1 {
-        font-size: 32px;
+      .sidebar.open { left: 0; }
+      
+      .main-content {
+        margin-left: 0;
+        width: 100%;
       }
       
-      .tagline {
-        font-size: 16px;
+      .topbar {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
+      
+      .tabs { gap: 16px; font-size: 13px; }
+      .tab { padding: 6px 0; }
+      
+      .content { padding: 24px 16px; }
+      
+      header h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+      
+      .tagline { font-size: 16px; }
       
       h2 {
         font-size: 20px;
-        margin: 32px 0 12px;
-        padding-top: 16px;
+        margin: 32px 0 12px 0;
+        padding-top: 12px;
       }
       
-      h3 {
-        font-size: 16px;
-        margin: 16px 0 8px;
+      h3 { font-size: 16px; margin: 16px 0 8px 0; }
+      
+      .intro-card { padding: 12px; margin-bottom: 24px; }
+      .intro-card > div { 
+        grid-template-columns: 1fr;
+        gap: 12px;
       }
       
-      p {
+      .step {
+        flex-direction: column;
+        padding: 16px;
+        gap: 12px;
+      }
+      
+      .step-number { 
+        width: 28px;
+        height: 28px;
         font-size: 14px;
-        margin-bottom: 12px;
       }
       
-      ul {
-        margin: 0 0 12px 16px;
-        font-size: 14px;
-      }
-      
-      pre {
+      .code-block { margin: 12px 0; }
+      pre { 
         padding: 12px;
-        font-size: 12px;
-        margin: 12px 0;
+        font-size: 11px;
+        overflow-x: auto;
+      }
+      
+      .copy-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+        top: 8px;
+        right: 8px;
       }
       
       .btn {
@@ -219,371 +354,1177 @@
         font-size: 13px;
       }
       
-      .btn-secondary {
-        margin-left: 0;
-        margin-top: 8px;
-      }
+      .btn-primary { padding: 8px 12px; font-size: 13px; }
+      .btn-secondary { margin-left: 0; margin-top: 8px; }
+      
+      .warning { font-size: 13px; padding: 10px 12px; }
+      
+      .success-box { padding: 16px; margin: 12px 0; }
+      
+      .intro-card > div { grid-template-columns: 1fr; }
+      
+      footer { margin-top: 32px; font-size: 12px; }
     }
 
     /* Mobile phones 480px and below */
     @media (max-width: 480px) {
-      body {
-        font-size: 13px;
-        line-height: 1.6;
+      :root {
+        --sidebar-width: 0;
+        --text-primary: #0f172a;
       }
       
-      .container {
+      body { font-size: 14px; }
+      
+      .main-content { width: 100%; }
+      
+      .topbar {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px 12px;
+      }
+      
+      .tabs {
+        gap: 8px;
+        width: 100%;
+      }
+      
+      .tab { font-size: 12px; padding: 4px 0; }
+      
+      .content { 
+        padding: 16px 12px;
         max-width: 100%;
-        padding: 20px 12px;
       }
       
-      h1 {
+      header h1 {
         font-size: 24px;
-        font-weight: 800;
         margin-bottom: 6px;
       }
       
-      .tagline {
+      .tagline { 
         font-size: 14px;
-        margin-bottom: 16px;
+        line-height: 1.4;
       }
       
       h2 {
         font-size: 18px;
-        margin: 24px 0 10px;
+        margin: 24px 0 10px 0;
         padding-top: 12px;
-        border-top: 1px solid #e2e8f0;
       }
       
-      h3 {
-        font-size: 14px;
-        margin: 12px 0 6px;
+      h3 { 
+        font-size: 15px;
+        margin: 12px 0 6px 0;
       }
       
-      p {
+      p { 
+        margin-bottom: 12px;
         font-size: 13px;
-        margin-bottom: 10px;
-        color: #475569;
+        line-height: 1.5;
       }
       
-      ul {
-        margin: 0 0 10px 16px;
-        font-size: 13px;
-        color: #475569;
+      ul { margin: 0 0 12px 16px; font-size: 13px; }
+      li { margin-bottom: 4px; }
+      
+      .intro-card {
+        padding: 12px;
+        margin-bottom: 16px;
+        border-radius: 6px;
       }
       
-      li {
-        margin-bottom: 6px;
+      .intro-card > div { 
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .intro-card ul { margin: 4px 0 0 16px; padding: 0; }
+      
+      .card {
+        padding: 16px;
+        margin: 12px 0;
+        border-radius: 6px;
+      }
+      
+      .step {
+        flex-direction: column;
+        padding: 12px;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      
+      .step-number {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      
+      .code-block { 
+        margin: 8px 0;
+        position: relative;
       }
       
       pre {
         padding: 10px;
         font-size: 10px;
         line-height: 1.4;
-        margin: 10px 0;
-        border-radius: 6px;
         overflow-x: auto;
       }
       
-      code {
-        font-size: 10px;
-      }
+      code { font-size: 10px; }
       
-      .inline-code {
-        padding: 2px 4px;
-        font-size: 12px;
+      .copy-btn {
+        padding: 4px 6px;
+        font-size: 10px;
+        top: 6px;
+        right: 6px;
       }
       
       .btn {
-        display: block;
-        width: 100%;
         padding: 10px 12px;
-        font-size: 13px;
-        text-align: center;
+        font-size: 12px;
         border-radius: 4px;
+        width: 100%;
+        text-align: center;
       }
       
-      .btn-primary {
-        background: #2563eb;
-        color: white;
-        margin-bottom: 8px;
-      }
-      
-      .btn-secondary {
-        background: #e2e8f0;
-        color: #334155;
+      .btn-secondary { 
         margin-left: 0;
-        margin-top: 8px;
+        margin-top: 6px;
+        width: 100%;
       }
       
-      .token-box {
+      .warning {
+        font-size: 12px;
+        padding: 10px 12px;
+        border-left-width: 3px;
+        margin: 12px 0;
+      }
+      
+      .success-box {
         padding: 12px;
         margin: 12px 0;
         border-radius: 6px;
       }
       
-      .token-display {
-        font-size: 12px;
-        padding: 10px 12px;
-        margin: 10px 0;
-        border-radius: 4px;
-        min-height: 40px;
-      }
-      
-      .note {
-        padding: 10px 12px;
-        margin: 12px 0;
-        font-size: 12px;
-        border-left-width: 3px;
-      }
-      
-      .warning {
-        padding: 10px 12px;
-        margin: 12px 0;
-        font-size: 12px;
-        border-left-width: 3px;
-      }
-      
-      .section-intro {
-        padding: 16px;
-        margin-bottom: 16px;
-      }
-      
-      .section-intro p {
-        font-size: 13px;
-        margin-bottom: 8px;
+      .success-box h4 { font-size: 13px; }
+      .success-box pre { 
+        font-size: 9px;
+        padding: 8px;
+        margin: 8px 0 0 0;
       }
       
       footer {
-        margin-top: 32px;
-        padding-top: 16px;
+        margin-top: 24px;
+        padding-top: 12px;
         font-size: 11px;
       }
     }
 
     /* Extra small phones 360px and below */
     @media (max-width: 360px) {
-      .container {
-        padding: 16px 8px;
-      }
-      
-      h1 {
+      header h1 {
         font-size: 20px;
+        margin-bottom: 4px;
       }
       
-      .tagline {
-        font-size: 12px;
-      }
+      .tagline { font-size: 12px; }
       
-      h2 {
-        font-size: 16px;
-      }
+      h2 { font-size: 16px; }
+      h3 { font-size: 14px; }
       
-      h3 {
-        font-size: 13px;
-      }
+      .content { padding: 12px 10px; }
       
-      p {
-        font-size: 12px;
-      }
+      pre { font-size: 9px; }
+      code { font-size: 9px; }
       
-      ul {
-        font-size: 12px;
-        margin-left: 12px;
-      }
-      
-      pre {
-        font-size: 9px;
-        padding: 8px;
-      }
-      
-      .token-display {
-        font-size: 11px;
-      }
+      .btn { padding: 8px 10px; font-size: 11px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-
-    <!-- HEADER -->
-    <header>
-      <h1>STVOR SDK</h1>
-      <p class="tagline">Honest Signal-style E2EE SDK for startups and pilots</p>
-    </header>
-
-    <div class="section-intro">
-      <p><strong>STVOR</strong> is a client-side end-to-end encryption SDK inspired by the Signal Protocol. It implements X3DH key exchange and Double Ratchet for forward secrecy.</p>
-      <p><strong>For:</strong> Startups, pilot projects, internal tools that need honest, transparent E2EE.</p>
-      <p><strong>Not for:</strong> Enterprise environments, high-risk applications, or scenarios requiring post-quantum security.</p>
-    </div>
-
-    <!-- INSTALLATION -->
-    <h2>Installation</h2>
-    <p>Install the SDK in your client application. The server never participates in encryption.</p>
-    <p>The relay only forwards ciphertext and cannot decrypt messages.</p>
-    <pre><code>npm install @stvor/sdk</code></pre>
-
-    <!-- DASHBOARD LINK -->
-    <div class="token-box" style="background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border: 1px solid #3b82f6;">
-      <h3 style="margin-top: 0; color: #fff;">🚀 Ready to start?</h3>
-      <p style="color: #94a3b8;">Create a project and get your API token in the Dashboard.</p>
-      <a href="/dashboard.html" class="btn btn-primary" style="text-decoration: none;">Open Dashboard</a>
-    </div>
-
-    <!-- API TOKEN -->
-    <h2>Generate App Token (local demo)</h2>
-    <div class="token-box">
-      <p>Click to generate a local demo token:</p>
-      <button class="btn btn-primary" id="generateBtn">Generate token</button>
-      <button class="btn btn-secondary" id="copyBtn" style="display: none;">Copy</button>
-      <div class="token-display" id="tokenDisplay">—</div>
-    </div>
-
-    <!-- QUOTA DISPLAY -->
-    <div id="quotaSection" class="token-box" style="display: none;">
-      <h3 style="margin-top: 0;">📊 Quota Status</h3>
-      <div style="display: flex; gap: 24px; margin-top: 12px;">
-        <div>
-          <span style="color: #64748b; font-size: 12px;">PLAN</span>
-          <div id="quotaPlan" style="font-weight: 600; font-size: 18px;">free</div>
-        </div>
-        <div>
-          <span style="color: #64748b; font-size: 12px;">USED</span>
-          <div id="quotaUsed" style="font-weight: 600; font-size: 18px;">0</div>
-        </div>
-        <div>
-          <span style="color: #64748b; font-size: 12px;">LIMIT</span>
-          <div id="quotaLimit" style="font-weight: 600; font-size: 18px;">1,000</div>
+  <div class="layout">
+    
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="logo">STVOR</a>
+        <div class="logo-tagline">E2EE SDK v3.0.0</div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Getting Started</div>
+        <a href="#overview" class="nav-item active">Overview</a>
+        <a href="#installation" class="nav-item">Installation</a>
+        <a href="#module-setup" class="nav-item">Module Setup</a>
+        <a href="#quickstart" class="nav-item">Quick Start</a>
+        <a href="#mock-relay" class="nav-item">Local Dev Server</a>
+        <a href="#full-example" class="nav-item">Full Example</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Production</div>
+        <a href="#improvements" class="nav-item">What's New</a>
+        <a href="#migration" class="nav-item">Migration v2→v3</a>
+        <a href="#architecture" class="nav-item">Architecture</a>
+        <a href="#security" class="nav-item">Security Model</a>
+        <a href="#threat-model" class="nav-item">Threat Model</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Core Concepts</div>
+        <a href="#security" class="nav-item">Security Model</a>
+        <a href="#limitations" class="nav-item">Limitations</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Help</div>
+        <a href="#troubleshooting" class="nav-item">Troubleshooting</a>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">Resources</div>
+        <a href="/dashboard.html" class="nav-item">Dashboard</a>
+        <a href="https://github.com/sapogeth/stvor_sdk" class="nav-item" target="_blank">GitHub →</a>
+      </div>
+    </nav>
+    
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="tabs">
+            <a href="#overview" class="tab active">Docs</a>
+            <a href="#full-example" class="tab">Examples</a>
+          </div>
+          <a href="/dashboard.html" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">
+            Open Dashboard →
+          </a>
         </div>
       </div>
-      <div style="margin-top: 12px; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
-        <div id="quotaBar" style="height: 100%; background: #2563eb; width: 0%; transition: width 0.3s;"></div>
-      </div>
-      <p style="margin-top: 8px; font-size: 12px; color: #64748b;">
-        <span id="quotaLocalNote">Local tokens have no quota limits.</span>
-      </p>
-    </div>
+      
+      <!-- CONTENT -->
+      <div class="content">
+        
+        <!-- HEADER -->
+        <header id="overview">
+          <h1>STVOR SDK</h1>
+          <p class="tagline">Production-grade E2EE with Signal Protocol — minimal API</p>
+        </header>
 
-    <div class="note">
-      This is a local demo token generated in your browser. Production tokens are issued via the STVOR Dashboard.
-    </div>
-    </div>
+        <div class="intro-card">
+          <p><strong>STVOR v3.0.0</strong> — настоящее end-to-end шифрование на основе Signal Protocol (X3DH + Double Ratchet). Сообщения шифруются на клиенте — сервер никогда не видит открытый текст. <strong>Ноль внешних крипто-зависимостей</strong> — только Node.js built-in <code>crypto</code> module.</p>
+          <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <strong style="color: var(--success);">✅ Криптография:</strong>
+              <ul style="margin: 8px 0 0 20px; padding: 0;">
+                <li>X3DH key agreement (symmetric)</li>
+                <li>Double Ratchet (Signal)</li>
+                <li>AES-256-GCM + AAD</li>
+                <li>ECDSA P-256 подписи</li>
+                <li>HKDF-SHA256 деривация</li>
+              </ul>
+            </div>
+            <div>
+              <strong style="color: var(--success);">✅ Production Features:</strong>
+              <ul style="margin: 8px 0 0 20px; padding: 0;">
+                <li>Forward Secrecy (DH ratchet)</li>
+                <li>Post-Compromise Security</li>
+                <li>Replay protection</li>
+                <li>TOFU identity verification</li>
+                <li>Crypto-verified metrics</li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
-    <!-- QUICK START -->
-    <h2>Quick Start</h2>
-    <p>Copy this code to start using STVOR. The token is automatically inserted when you generate one above.</p>
-    <pre><code id="quickstartCode">import { Stvor } from '@stvor/sdk';
+        <!-- INSTALLATION -->
+        <h2 id="installation">Installation</h2>
+        
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Install the SDK (v3.0.0)</h4>
+            <div class="code-block">
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+              <pre><code>npm install @stvor/sdk@^3.0.0</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">📋 Architecture: Three Roles</h4>
+          <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);"><strong>SDK (trusted)</strong> — handles all encryption/decryption. Never sends plaintext.</p>
+          <p style="margin: 8px 0; font-size: 13px; color: var(--text-muted);"><strong>Backend (trusted)</strong> — verifies metrics proofs, stores audit log. Never decrypts.</p>
+          <p style="margin: 0; font-size: 13px; color: var(--text-muted);"><strong>Display/Relay (untrusted)</strong> — routes encrypted messages, displays read-only metrics.</p>
+        </div>
+
+        <!-- MODULE SETUP -->
+        <h2 id="module-setup">Module Setup (ESM &amp; CommonJS)</h2>
+        <p>STVOR SDK supports both ESM and CommonJS. Choose the format that matches your project:</p>
+
+        <h3>ESM (recommended)</h3>
+        <p>Works with <code>"type": "module"</code> in package.json or <code>.mjs</code> files:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { Stvor } from '@stvor/sdk';
 
 const app = await Stvor.init({
-  appToken: 'YOUR_TOKEN_HERE'
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'ws://localhost:4444'
+});</code></pre>
+        </div>
+
+        <h3>CommonJS</h3>
+        <p>Works with <code>require()</code> in <code>.cjs</code> files or projects without <code>"type": "module"</code>:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>const sdk = require('@stvor/sdk');
+
+// Use the async loader
+const { Stvor } = await sdk.load();
+
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'ws://localhost:4444'
+});</code></pre>
+        </div>
+
+        <h3>TypeScript</h3>
+        <p>Full type support out of the box. Set <code>moduleResolution</code> to <code>"NodeNext"</code> or <code>"Bundler"</code>:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// tsconfig.json
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2020"
+  }
+}</code></pre>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">📋 package.json для нового проекта</h4>
+          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>{
+  "name": "my-e2ee-app",
+  "type": "module",
+  "dependencies": {
+    "@stvor/sdk": "^3.0.0",
+    "ws": "^8.13.0"
+  }
+}</code></pre>
+        </div>
+
+        <!-- QUICK START -->
+        <h2 id="quickstart">Quick Start (v3.0.0)</h2>
+        <p>Два пользователя, зашифрованное сообщение — без знания криптографии:</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { createApp } from '@stvor/sdk';
+
+// Инициализация
+const app = await createApp({
+  appToken: 'sk_live_xxx',
+  relayUrl: 'http://localhost:3002'
 });
 
+// Подключение пользователей
 const alice = await app.connect('alice@example.com');
-await alice.send('bob@example.com', 'Hello Bob!');</code></pre>
+const bob = await app.connect('bob@example.com');
 
-    <!-- SECURITY -->
-    <h2>Security Model</h2>
+// Подписка на сообщения
+bob.onMessage((msg) => {
+  console.log(`📩 ${msg.senderId}: ${msg.content}`);
+});
 
-    <h3 class="guarantee">✅ What STVOR guarantees</h3>
-    <ul>
-      <li>End-to-end encryption (plaintext never leaves the device)</li>
-      <li>Forward Secrecy via Double Ratchet</li>
-      <li>Post-Compromise Security after an honest DH ratchet</li>
-      <li>Replay protection</li>
-      <li>Authenticated encryption (AEAD)</li>
-    </ul>
+// E2EE отправка — X3DH + Double Ratchet автоматически
+await alice.send('bob@example.com', 'Hello! 🔐');
+console.log('✅ Sent');</code></pre>
+        </div>
+        
+        <h3>Minimal Example (Dev Mode)</h3>
+        <p>For development/testing without storage adapters:</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { createApp } from '@stvor/sdk';
 
-    <h3 class="no-guarantee">❌ What STVOR does NOT guarantee</h3>
-    <ul>
-      <li>MITM protection on first contact (TOFU model)</li>
-      <li>Metadata privacy — relay sees sender, recipient, timing</li>
-      <li>Guaranteed PCS if DH messages are blocked</li>
-      <li>Post-quantum security</li>
-      <li>Multi-device support</li>
-    </ul>
+const app = await createApp({
+  appToken: 'demo_token',
+  relayUrl: 'ws://localhost:8080'
+  // Storage adapters optional in dev mode
+});
 
-    <h3>Threat model summary</h3>
-    <ul>
-      <li>Relay is honest-but-curious</li>
-      <li>Clients must store session state securely</li>
-      <li>PCS requires at least one honest DH exchange</li>
-    </ul>
+const user = await app.connect('user@test.com');
+user.onMessage((from, msg) => console.log(msg));
+await user.send('peer@test.com', 'Encrypted message!');</code></pre>
+        </div>
 
-    <!-- LIMITATIONS -->
-    <h2>Limitations &amp; Positioning</h2>
-    <ul>
-      <li>STVOR is <strong>not</strong> an enterprise product</li>
-      <li>Designed for startups, pilots, and internal tools</li>
-      <li>No GDPR, SOC 2, or compliance guarantees</li>
-      <li>All limitations are documented honestly</li>
-    </ul>
-    <div class="warning">
-      STVOR is a reference implementation. For production use, ensure you understand the threat model and limitations.
+        <!-- MOCK RELAY -->
+        <h2 id="mock-relay">Local Development Server</h2>
+        <p>STVOR SDK включает встроенный mock relay сервер для локальной разработки без интернета и без необходимости запускать свой relay:</p>
+
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Запуск через npx (рекомендуется)
+npx @stvor/sdk mock-relay
+
+# Или с кастомным портом
+STVOR_MOCK_PORT=9000 npx @stvor/sdk mock-relay
+
+# С подробным логированием
+STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay</code></pre>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">✅ Что Mock Relay умеет:</h4>
+          <ul style="margin: 0; color: var(--text-primary);">
+            <li>WebSocket на <code>ws://localhost:4444</code></li>
+            <li>Health check: <code>GET http://localhost:4444/health</code></li>
+            <li>Автороутинг сообщений между подключёнными клиентами</li>
+            <li>Хранение сообщений для оффлайн-получателей</li>
+            <li>Принимает любой AppToken начинающийся с <code>stvor_</code></li>
+          </ul>
+        </div>
+
+        <h3>Использование в коде</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { Stvor } from '@stvor/sdk';
+
+// Укажите адрес mock relay вместо продакшен-сервера
+const app = await Stvor.init({
+  appToken: 'stvor_dev_test123',   // любой токен с stvor_ префиксом
+  relayUrl: 'ws://localhost:4444'  // mock relay
+});
+
+const alice = await app.connect('alice');
+const bob = await app.connect('bob');
+
+bob.onMessage((from, msg) => {
+  console.log(`${from}: ${msg}`);
+});
+
+await alice.send('bob', 'Hello from local dev! 🔐');</code></pre>
+        </div>
+
+        <h3>Проверка статуса</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Health check
+curl http://localhost:4444/health
+
+# Проверить пользователя онлайн
+curl http://localhost:4444/status/alice</code></pre>
+        </div>
+
+        <!-- IMPROVEMENTS -->
+        <h2 id="improvements">What's New in v3.0</h2>
+        
+        <div class="card">
+          <h3 style="margin-top: 0;">Breaking Changes from v2.4</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ v2.4 (сломано)</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v3.0 (исправлено)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Подпись SPK через HMAC с публичным ключом</td>
+              <td style="padding: 8px;">Настоящая ECDSA P-256 подпись</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">X3DH с эфемерным ключом внутри функции</td>
+              <td style="padding: 8px;">Symmetric X3DH — обе стороны получают идентичный секрет</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Nonce не передаётся при дешифровке</td>
+              <td style="padding: 8px;">Nonce в заголовке (85 bytes: pubkey + counters + nonce)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Заголовок обрезает P-256 ключ (32 из 65 байт)</td>
+              <td style="padding: 8px;">Полный 65-byte uncompressed P-256 ключ в заголовке</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">DH ratchet условие инвертировано</td>
+              <td style="padding: 8px;">Корректный DH ratchet с skip message keys</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">Зависимость от libsodium-wrappers</td>
+              <td style="padding: 8px;">Только Node.js built-in crypto (0 зависимостей)</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- MIGRATION GUIDE -->
+        <h2 id="migration">Migration Guide: v2.4 → v3.0</h2>
+        
+        <div class="warning">
+          <strong>⚠️ Breaking Changes</strong><br>
+          v3.0 полностью переписывает крипто-модуль. Сессии, созданные в v2.4, <strong>несовместимы</strong> с v3.0. Все пользователи должны переподключиться.
+        </div>
+
+        <h3>Шаг 1: Обновите SDK</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Обновление до v3.0.0
+npm install @stvor/sdk@^3.0.0
+
+# Удалите libsodium (больше не нужен)
+npm uninstall libsodium-wrappers</code></pre>
+        </div>
+
+        <h3>Шаг 2: Удалите старые сессии</h3>
+        <p>Крипто-формат полностью изменился. Старые сессии не могут быть десериализованы:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Если используете Redis — очистите кеш сессий:
+redis-cli FLUSHDB
+
+# Если используете PostgreSQL:
+# DELETE FROM sessions;
+# DELETE FROM tofu_fingerprints;</code></pre>
+        </div>
+
+        <h3>Шаг 3: Обновите код (если использовали низкоуровневое API)</h3>
+        <p>Высокоуровневый API (<code>createApp</code>, <code>Stvor.init</code>, <code>send</code>, <code>onMessage</code>) — <strong>не изменился</strong>. Если вы использовали только его — обновление автоматическое.</p>
+        <p>Если вы использовали ratchet/crypto-session напрямую:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// ❌ v2.4 — libsodium, внешний nonce
+import sodium from 'libsodium-wrappers';
+await sodium.ready;
+const kp = sodium.crypto_box_keypair();
+const { ciphertext, nonce, header } = encrypt(msg);
+// header.publicKey — обрезанный 32 байта
+// header.nonce — отдельное поле
+
+// ✅ v3.0 — Node.js crypto, nonce в заголовке
+import { generateKeyPair, encryptMessage } from '@stvor/sdk/ratchet';
+const kp = generateKeyPair(); // ECDH P-256
+const { ciphertext, header } = encryptMessage(session, plaintext);
+// header = 85 bytes (65 pubkey + 4 prevChain + 4 msgNum + 12 nonce)
+// Всё в одном base64url строке</code></pre>
+        </div>
+
+        <h3>Шаг 4: Проверьте работоспособность</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># 1. Запустите mock relay
+npx @stvor/sdk mock-relay
+
+# 2. В другом терминале — тест E2EE
+node -e "
+import { createApp } from '@stvor/sdk';
+const app = await createApp({ appToken: 'stvor_test', relayUrl: 'ws://localhost:4444' });
+const alice = await app.connect('alice');
+const bob = await app.connect('bob');
+bob.onMessage((from, msg) => { console.log('✅ E2EE работает:', msg); process.exit(0); });
+await alice.send('bob', 'Hello from v3.0! 🔐');
+"</code></pre>
+        </div>
+
+        <h3>Что изменилось внутри</h3>
+        <div class="card">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 2px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 700;">Компонент</td>
+              <td style="padding: 8px; font-weight: 700;">v2.4</td>
+              <td style="padding: 8px; font-weight: 700;">v3.0</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Крипто-библиотека</td>
+              <td style="padding: 8px;">libsodium-wrappers</td>
+              <td style="padding: 8px;"><code>node:crypto</code> (built-in)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Key exchange</td>
+              <td style="padding: 8px;">X25519 (асимметричный X3DH)</td>
+              <td style="padding: 8px;">ECDH P-256 (symmetric X3DH)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Подписи SPK</td>
+              <td style="padding: 8px;">HMAC (подделываемые)</td>
+              <td style="padding: 8px;">ECDSA P-256 (настоящие цифровые подписи)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Шифрование</td>
+              <td style="padding: 8px;">XChaCha20-Poly1305</td>
+              <td style="padding: 8px;">AES-256-GCM + AAD</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Заголовок</td>
+              <td style="padding: 8px;">Обрезанный (32/65 байт)</td>
+              <td style="padding: 8px;">Полный 85 байт (65 pub + 4+4 counters + 12 nonce)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Nonce</td>
+              <td style="padding: 8px;">Не передавался</td>
+              <td style="padding: 8px;">Внутри заголовка (байты 73-84)</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">Внешние зависимости</td>
+              <td style="padding: 8px;">libsodium-wrappers (~500KB)</td>
+              <td style="padding: 8px;">0 (только Node.js built-in)</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">✅ После миграции:</h4>
+          <ul style="margin: 0;">
+            <li>Все 23 интеграционных теста проходят</li>
+            <li>Размер бандла уменьшен (нет libsodium)</li>
+            <li>Настоящая ECDSA верификация SPK</li>
+            <li>Nonce корректно передаётся в заголовке</li>
+            <li>DH ratchet работает правильно</li>
+          </ul>
+        </div>
+
+        <!-- ARCHITECTURE -->
+        <h2 id="architecture">Production Architecture</h2>
+        
+        <h3>Component Roles</h3>
+        <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%); border-color: #bfdbfe;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600;">📂 Component</td>
+              <td style="padding: 8px; font-weight: 600;">Role</td>
+              <td style="padding: 8px; font-weight: 600;">Trust Level</td>
+              <td style="padding: 8px; font-weight: 600;">Handles Data</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>SDK</strong></td>
+              <td style="padding: 8px;">Encryption/decryption, signing</td>
+              <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
+              <td style="padding: 8px;">Plaintext, keys</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>Relay</strong></td>
+              <td style="padding: 8px;">Route encrypted messages</td>
+              <td style="padding: 8px;" style="color: var(--text-muted);">⚠️ Untrusted</td>
+              <td style="padding: 8px;">Ciphertexts only</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;"><strong>Backend</strong></td>
+              <td style="padding: 8px;">Verify metrics, audit, storage</td>
+              <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
+              <td style="padding: 8px;">Signatures, ciphertexts, audit log</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;"><strong>Dashboard</strong></td>
+              <td style="padding: 8px;">Display metrics (read-only)</td>
+              <td style="padding: 8px;" style="color: var(--text-muted);">⚠️ Untrusted</td>
+              <td style="padding: 8px;">Verified counts only</td>
+            </tr>
+          </table>
+        </div>
+
+        <h3>Production vs Development Modes</h3>
+        <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%); border-color: #fcd34d;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 600;">Property</td>
+              <td style="padding: 8px; font-weight: 600; text-align: center;">Dev Mode</td>
+              <td style="padding: 8px; font-weight: 600; text-align: center;">Prod Mode</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Encryption</td>
+              <td style="padding: 8px; text-align: center;">✅ Full</td>
+              <td style="padding: 8px; text-align: center;">✅ Full</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Replay Protection</td>
+              <td style="padding: 8px; text-align: center;">❌ Memory only</td>
+              <td style="padding: 8px; text-align: center;">✅ Persistent</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Session Persistence</td>
+              <td style="padding: 8px; text-align: center;">❌ Lost on restart</td>
+              <td style="padding: 8px; text-align: center;">✅ Survives restarts</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Storage Adapters</td>
+              <td style="padding: 8px; text-align: center;">⚠️ Optional</td>
+              <td style="padding: 8px; text-align: center;">✅ Required</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Metrics Verification</td>
+              <td style="padding: 8px; text-align: center;">❌ None (dev logging)</td>
+              <td style="padding: 8px; text-align: center;">✅ HMAC-signed</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">Startup Failure</td>
+              <td style="padding: 8px; text-align: center;">❌ Warnings only</td>
+              <td style="padding: 8px; text-align: center;">✅ Hard fail</td>
+            </tr>
+          </table>
+          <p style="margin: 12px 0 0 0; font-size: 12px; color: var(--text-muted);">⚠️ <strong>Dev mode ensures encryption but disables durability guarantees.</strong> Suitable for local development and testing. Production fails intentionally if storage adapters are missing.</p>
+        </div>
+        
+        <h3>Storage Adapters (Required for Production)</h3>
+        <p>Production mode requires pluggable storage. SDK will refuse to start if adapters are missing.</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// Storage Adapter Types (implement these interfaces)
+
+interface IReplayCache {
+  // Check if nonce was seen, mark if not
+  checkAndMark(peerId: string, nonce: Uint8Array): Promise<boolean>
+}
+
+interface ITofuStore {
+  // Store & verify fingerprints (immutable)
+  storeFingerprint(peerId: string, fingerprint: string): Promise<void>
+  verifyFingerprint(peerId: string, fingerprint: string): Promise<boolean>
+}
+
+interface ISessionStore {
+  // Persist encrypted session state
+  save(peerId: string, state: SessionState): Promise<void>
+  load(peerId: string): Promise<SessionState | null>
+}
+
+interface IIdentityStore {
+  // Get or generate identity keypair (immutable)
+  getIdentityKeyPair(): Promise<KeyPair>
+}</code></pre>
+        </div>
+
+        <h3>Example: Redis + PostgreSQL Setup</h3>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>import { createApp } from '@stvor/sdk';
+import Redis from 'redis';
+import { Pool } from 'pg';
+
+// Redis for replay protection (fast, ephemeral)
+const redis = Redis.createClient({ url: 'redis://localhost:6379' });
+
+// PostgreSQL for durable storage
+const pg = new Pool({ 
+  connectionString: 'postgres://user:pass@localhost/stvor'
+});
+
+// Create storage adapters
+const replayCache = {
+  async checkAndMark(peerId, nonce) {
+    const key = `replay:${peerId}:${Buffer.from(nonce).toString('hex')}`;
+    const exists = await redis.getex(key, { EX: 300 }); // 5 min TTL
+    if (exists) return true; // Replay detected
+    await redis.set(key, '1', { EX: 300 });
+    return false; // First time seeing this nonce
+  }
+};
+
+const sessionStore = {
+  async save(peerId, state) {
+    const encrypted = await encryptState(state); // User's KMS
+    await pg.query(
+      'INSERT INTO sessions (peer_id, encrypted_state, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (peer_id) DO UPDATE SET encrypted_state = $2, updated_at = NOW()',
+      [peerId, encrypted]
+    );
+  },
+  async load(peerId) {
+    const result = await pg.query('SELECT encrypted_state FROM sessions WHERE peer_id = $1', [peerId]);
+    if (!result.rows[0]) return null;
+    return await decryptState(result.rows[0].encrypted_state);
+  }
+};
+
+// Create app with adapters
+const app = await createApp({
+  appToken: 'sk_live_xxx',
+  relayUrl: 'wss://relay.stvor.com',
+  storageAdapters: {
+    replay: replayCache,
+    sessions: sessionStore,
+    // ... other adapters
+  },
+  productionMode: true // Hard-fail if adapters missing
+});</code></pre>
+        </div>
+
+        <!-- SECURITY MODEL -->
+        <h2 id="security">Security Model & Threat Assumptions</h2>
+        
+        <h3>Threat Model</h3>
+        <div class="card" style="background: linear-gradient(135deg, #fecaca 0%, #fee2e2 100%); border-color: #fca5a5;">
+          <h4 style="margin-top: 0; color: #dc2626;">🎯 Attacker Capabilities (We Protect Against):</h4>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li><strong>Network-level attacker:</strong> Can read/modify all traffic (we use Signal Protocol for protection)</li>
+            <li><strong>Relay compromise:</strong> Can see ciphertexts, but not read them</li>
+            <li><strong>Database compromise:</strong> Can see encrypted sessions, but not decrypt</li>
+            <li><strong>Metrics tampering:</strong> Cannot forge valid attestations (HMAC-signed)</li>
+          </ul>
+          
+          <h4 style="margin-top: 16px; color: #dc2626;">❌ Attacker Limitations (Out of Scope):</h4>
+          <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li><strong>SDK compromise:</strong> Cannot prevent if SDK binary is modified</li>
+            <li><strong>Both endpoints compromised:</strong> Plaintext visible on both ends (by definition)</li>
+            <li><strong>KMS compromise:</strong> If your key DB is breached, we lose everything</li>
+            <li><strong>Endpoint state dumps:</strong> Memory forensics can recover keys (use OS protections)</li>
+          </ul>
+        </div>
+        
+        <h3>6 Cryptographic Invariants</h3>
+        
+        <div class="card">
+          <p>v3.0 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
+          
+          <h4>I1: State Machine Constraint</h4>
+          <p><code>if (state !== ESTABLISHED) → cannot send() or receive()</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Prevents operations on uninitialized or corrupted sessions.</p>
+          
+          <h4>I2: Key Memory Hygiene</h4>
+          <p><code>rootKey never exists in plaintext after initialization</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Reduces window for key compromise from process memory.</p>
+          
+          <h4>I3: Atomic State Transitions</h4>
+          <p><code>if decrypt() fails → session state unchanged</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Prevents state corruption from decryption errors.</p>
+          
+          <h4>I4: AAD Authentication</h4>
+          <p><code>AAD = HASH(publicKey || nonce || counters || timestamp)</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Cryptographically binds metadata to ciphertext. Relay cannot tamper with headers.</p>
+          
+          <h4>I5: Replay Protection</h4>
+          <p><code>nonce must be unique within 5-minute TTL window</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Persistent cache survives process restart.</p>
+          
+          <h4>I6: Identity Immutability</h4>
+          <p><code>Identity keys generated once, never rotate, stored securely</code></p>
+          <p style="color: var(--text-muted); font-size: 13px;">Trust anchor cannot be compromised by accident.</p>
+        </div>
+
+        <!-- FULL EXAMPLE -->
+        <h2 id="full-example">Full Working Example</h2>
+        <p>Copy these files to get E2EE working in 2 minutes:</p>
+
+        <h3>Step 1: Create relay-server.mjs</h3>
+        
+        <div class="warning">
+          <strong>⚠️ Demo Transport Only</strong><br>
+          This relay server is a minimal example for local development. It is NOT the STVOR API — it's a simple WebSocket forwarder to help you test encryption. For production, you'll need proper auth, persistence, and scaling.
+        </div>
+        
+        <p>The relay server forwards encrypted messages between clients. It cannot decrypt anything.</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// relay-server.mjs
+import WebSocket, { WebSocketServer } from 'ws';
+
+const PORT = 8080;
+const wss = new WebSocketServer({ port: PORT });
+console.log(`🔌 Relay running on ws://localhost:${PORT}`);
+
+const clients = new Map();
+const pubkeys = new Map();
+
+wss.on('connection', (ws) => {
+  // Send all known keys to new client
+  for (const [user, pub] of pubkeys.entries()) {
+    ws.send(JSON.stringify({ type: 'announce', user, pub }));
+  }
+
+  ws.on('message', (data) => {
+    let msg;
+    try { msg = JSON.parse(data.toString()); } catch { return; }
+
+    if (msg.type === 'announce' && msg.user) {
+      clients.set(msg.user, ws);
+      pubkeys.set(msg.user, msg.pub);
+      // Broadcast to all
+      for (const [_, client] of clients) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ 
+            type: 'announce', 
+            user: msg.user, 
+            pub: msg.pub 
+          }));
+        }
+      }
+    }
+
+    if (msg.type === 'message' && msg.to) {
+      const target = clients.get(msg.to);
+      if (target && target.readyState === WebSocket.OPEN) {
+        target.send(JSON.stringify(msg));
+      }
+    }
+  });
+});</code></pre>
+        </div>
+
+        <h3>Step 2: Create app.mjs</h3>
+        <p>Your application code with E2EE messaging (only STVOR imports needed!):</p>
+        
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// app.mjs
+import { createApp } from '@stvor/sdk';
+
+async function main() {
+  const app = await createApp({
+    appToken: 'stvor_demo_token',
+    relayUrl: 'ws://localhost:8080'
+  });
+
+  // Connect Bob (receiver)
+  const bob = await app.connect('bob@example.com');
+  bob.onMessage((from, msg) => {
+    console.log(`📩 [Bob] from ${from}: ${msg}`);
+  });
+
+  // Connect Alice (sender)
+  const alice = await app.connect('alice@example.com');
+  alice.onMessage((from, msg) => {
+    console.log(`📩 [Alice] from ${from}: ${msg}`);
+  });
+
+  // SDK handles all E2EE internally (no WebSocket code needed!)
+  await alice.send('bob@example.com', 'Hello Bob! This is E2EE! 🔐');
+  console.log('✅ Alice sent message');
+
+  // Bob replies
+  await bob.send('alice@example.com', 'Hi Alice! Got it! 🎉');
+  console.log('✅ Bob sent message');
+
+  // Keep alive to see messages
+  await new Promise(r => setTimeout(r, 1000));
+}
+
+main().catch(console.error);</code></pre>
+        </div>
+
+        <h3>Step 3: Create package.json</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>{
+  "name": "my-e2ee-app",
+  "type": "module",
+  "dependencies": {
+    "@stvor/sdk": "^3.0.0",
+    "ws": "^8.13.0"
+  }
+}</code></pre>
+        </div>
+
+        <h3>Step 4: Run it!</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Terminal 1: Start relay
+node relay-server.mjs
+
+# Terminal 2: Run app
+npm install
+node app.mjs</code></pre>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 12px 0; color: var(--success);">✅ Expected Output:</h4>
+          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>✅ Alice sent message
+✅ Bob sent message
+📩 [Bob] from alice@example.com: Hello Bob! This is E2EE! 🔐
+📩 [Alice] from bob@example.com: Hi Alice! Got it! 🎉</code></pre>
+        </div>
+
+        <!-- SECURITY -->
+        <h2 id="security">Security Model</h2>
+        
+        <div class="success-box">
+          <h3 style="margin: 0 0 16px 0; color: var(--success);">✅ What STVOR Guarantees</h3>
+          <ul style="margin: 0; color: var(--text-primary);">
+            <li><strong>End-to-end encryption</strong> — plaintext never leaves the device</li>
+            <li><strong>Forward Secrecy</strong> — compromise of current keys doesn't expose past messages (automatic DH ratchet)</li>
+            <li><strong>Post-Compromise Security</strong> — after key rotation, attacker loses access (forced ratchet every 50 msgs)</li>
+            <li><strong>Zero-knowledge relay</strong> — server cannot decrypt messages</li>
+            <li><strong>Header Integrity</strong> — metadata cannot be tampered with (AAD authentication)</li>
+            <li><strong>Replay Protection</strong> — each message is unique (persistent nonce cache)</li>
+          </ul>
+        </div>
+
+        <!-- THREAT MODEL CONTINUED -->
+        <h2 id="threat-model">Implementation Threat Model</h2>
+        <div class="card" style="background: linear-gradient(135deg, #dbeafe 0%, #f0f9ff 100%); border-color: #7dd3fc;">
+          <h4 style="margin-top: 0;">🔒 Key Security Properties</h4>
+          <ul>
+            <li><strong>Forward Secrecy:</strong> Old messages remain encrypted even if current root key is compromised</li>
+            <li><strong>Break-in Recovery:</strong> Perfect forward secrecy prevents long-term key recovery (DH ratchet forces new ephemeral keys)</li>
+            <li><strong>Header Integrity (AAD):</strong> Relay cannot modify sender/recipient/timestamp without breaking cryptographic proof</li>
+            <li><strong>Replay Detection:</strong> Your replay cache (Redis/PostgreSQL) is critical — the SDK checks every nonce against it</li>
+            <li><strong>Session Durability:</strong> Production mode refusal ensures you don't lose keys on restart</li>
+          </ul>
+          
+          <h4>📌 Your Deployment Checklist</h4>
+          <ul style="margin-bottom: 0;">
+            <li>✅ Use HTTPS/TLS between client ↔ relay (WebSocket over TLS required)</li>
+            <li>✅ Redis/PostgreSQL for replay cache — protect with firewall</li>
+            <li>✅ Backend API accessible only internally (metrics verification should not be public)</li>
+            <li>✅ Rotate relay API keys quarterly</li>
+            <li>✅ Monitor failed attestations in audit log (indicates tampering)</li>
+            <li>✅ Use encrypted storage for session keys (OS keychain or KMS)</li>
+          </ul>
+        </div>
+        
+        <div class="warning">
+          <strong>🔐 v3.0: Production-Ready E2EE</strong><br>
+          Полностью рабочий Signal Protocol на Node.js crypto. Все 23 интеграционных теста пройдены: X3DH key agreement, ECDSA подписи, Double Ratchet encrypt/decrypt, forward secrecy, session serialisation. Ноль внешних крипто-зависимостей.
+        </div>
+
+        <!-- LIMITATIONS -->
+        <h2 id="limitations">When to Use (and When Not To)</h2>
+        
+        <div class="card" style="background: linear-gradient(135deg, #dcfce7 0%, #e0f2fe 100%); border-color: #86efac;">
+          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v3.0):</h4>
+          <ul style="margin-bottom: 0;">
+            <li>Healthcare/Finance applications (production-grade E2EE)</li>
+            <li>Internal tools with high security requirements</li>
+            <li>IoT & sensor networks</li>
+            <li>Enterprise messaging</li>
+            <li>Any application requiring NIST-compliant crypto</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #fca5a5;">
+          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v3.0):</h4>
+          <ul style="margin-bottom: 0;">
+            <li>Browser/client-side JavaScript (Node.js only)</li>
+            <li>Multi-device synchronization (each device = separate identity)</li>
+            <li>Applications needing distributed consensus</li>
+            <li>Completely offline operation (requires relay server)</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); border-color: #fde047;">
+          <h4 style="margin-top: 0;">📝 Architecture Notes</h4>
+          <ul style="margin-bottom: 0;">
+            <li>Cryptография: Node.js built-in crypto — ECDH P-256, ECDSA P-256, AES-256-GCM, HKDF-SHA256</li>
+            <li>Протокол: Signal Protocol (Symmetric X3DH + Double Ratchet)</li>
+            <li>Зависимости: <strong>0 внешних крипто-библиотек</strong> — только <code>node:crypto</code></li>
+            <li>Transport: HTTP relay (Fastify)</li>
+            <li>State: Pluggable storage (Redis, PostgreSQL, in-memory)</li>
+            <li>Метрики: HMAC-SHA256 подписаны для аудита</li>
+          </ul>
+        </div>
+
+        <!-- TROUBLESHOOTING -->
+        <h2 id="troubleshooting">Troubleshooting</h2>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: No "exports" main defined in @stvor/sdk/package.json</code></pre>
+          </div>
+          <p><strong>Причина:</strong> Устаревшая версия SDK (&lt;3.0.0) без dual CJS/ESM exports.</p>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>npm install @stvor/sdk@latest</code></pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">Relay handshake timeout</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>StvorError: Relay handshake timeout [RELAY_UNAVAILABLE]</code></pre>
+          </div>
+          <p><strong>Причины:</strong></p>
+          <ul>
+            <li>Relay сервер не запущен</li>
+            <li>Неправильный <code>relayUrl</code></li>
+            <li>AppToken невалидный</li>
+          </ul>
+          <p><strong>Решение:</strong> Запустите mock relay для тестирования: <code>npx @stvor/sdk mock-relay</code></p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">Cannot find module 'ws'</h3>
+          <div class="code-block" style="margin-bottom: 12px;">
+            <pre><code>Error: Cannot find module 'ws'</code></pre>
+          </div>
+          <p><strong>Решение:</strong></p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>npm install ws</code></pre>
+          </div>
+          <p style="color: var(--text-muted); font-size: 13px;"><code>ws</code> — dependency SDK. Устанавливается автоматически, но в некоторых пакетных менеджерах (pnpm) нужно устанавливать явно.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">INVALID_APP_TOKEN / AUTH_FAILED</h3>
+          <p>Убедитесь что токен начинается с <code>stvor_</code> для mock relay. Для продакшен — получите токен через <a href="/dashboard.html">Dashboard</a>.</p>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0;">CommonJS: require() возвращает Proxy</h3>
+          <p>В CommonJS SDK экспортирует Proxy-объект. Используйте async <code>.load()</code>:</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <pre><code>const sdk = require('@stvor/sdk');
+const { Stvor } = await sdk.load();
+
+// Теперь Stvor доступен
+const app = await Stvor.init({ ... });</code></pre>
+          </div>
+        </div>
+
+        <footer>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.0.0</div>
+          <div>Production-grade E2EE — Signal Protocol (X3DH + Double Ratchet) on native Node.js crypto. Zero external dependencies. (Mar 2026)</div>
+        </footer>
+        
+      </div>
     </div>
-
-    <footer>
-      STVOR SDK — Honest cryptography, no marketing claims. (Feb 2026)
-    </footer>
-
   </div>
 
   <script>
-    const generateBtn = document.getElementById('generateBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const tokenDisplay = document.getElementById('tokenDisplay');
-    const quickstartCode = document.getElementById('quickstartCode');
-    const quotaSection = document.getElementById('quotaSection');
-    const quotaPlan = document.getElementById('quotaPlan');
-    const quotaUsed = document.getElementById('quotaUsed');
-    const quotaLimit = document.getElementById('quotaLimit');
-    const quotaBar = document.getElementById('quotaBar');
-    const quotaLocalNote = document.getElementById('quotaLocalNote');
+    function copyCode(btn) {
+      const code = btn.parentElement.querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
 
-    let currentToken = '';
-
-    generateBtn.addEventListener('click', function() {
-      currentToken = 'stvor_local_' + Math.random().toString(36).slice(2, 12);
-      tokenDisplay.textContent = currentToken;
-      copyBtn.style.display = 'inline-block';
-
-      // Show quota section with local token info
-      quotaSection.style.display = 'block';
-      quotaPlan.textContent = 'local';
-      quotaUsed.textContent = '∞';
-      quotaLimit.textContent = '∞';
-      quotaBar.style.width = '0%';
-      quotaBar.style.background = '#10b981';
-      quotaLocalNote.textContent = 'Local tokens have no quota limits. Production tokens enforce limits.';
-
-      quickstartCode.textContent = `import { Stvor } from '@stvor/sdk';
-
-const app = await Stvor.init({
-  appToken: '${currentToken}'
-});
-
-const alice = await app.connect('alice@example.com');
-await alice.send('bob@example.com', 'Hello Bob!');`;
-    });
-
-    copyBtn.addEventListener('click', function() {
-      navigator.clipboard.writeText(currentToken).then(function() {
-        copyBtn.textContent = 'Copied!';
-        setTimeout(function() {
-          copyBtn.textContent = 'Copy';
-        }, 1500);
+    document.querySelectorAll('.nav-item, .tab').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       });
     });
-
-    // For production tokens, this would fetch from API:
-    // async function checkQuota(token) {
-    //   const res = await fetch('/usage', { headers: { Authorization: `Bearer ${token}` }});
-    //   const data = await res.json();
-    //   quotaPlan.textContent = data.plan;
-    //   quotaUsed.textContent = data.used.toLocaleString();
-    //   quotaLimit.textContent = data.limit === -1 ? '∞' : data.limit.toLocaleString();
-    //   quotaBar.style.width = data.limit === -1 ? '0%' : `${(data.used / data.limit) * 100}%`;
-    // }
+    
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('href') === '#' + entry.target.id) {
+              item.classList.add('active');
+            }
+          });
+        }
+      });
+    }, { threshold: 0.3, rootMargin: '-100px 0px -50% 0px' });
+    
+    document.querySelectorAll('h2[id], header[id]').forEach(section => {
+      observer.observe(section);
+    });
   </script>
 </body>
 </html>

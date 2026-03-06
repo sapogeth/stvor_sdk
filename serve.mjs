@@ -84,7 +84,7 @@ const server = http.createServer((req, res) => {
   // Static files
   let filePath;
   if (req.url === '/') {
-    filePath = path.join(__dirname, 'index.html');
+    filePath = path.join(__dirname, 'ui', 'index.html');
   } else if (req.url === '/dashboard.html' || req.url.startsWith('/dashboard')) {
     filePath = path.join(__dirname, 'ui', 'dashboard.html');
   } else {

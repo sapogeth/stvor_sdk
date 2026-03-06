@@ -17,6 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: stvor-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - stvor-redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     build: .
     container_name: stvor-api
@@ -29,8 +43,12 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-stvor123}
       DB_NAME: ${DB_NAME:-stvor}
+      REDIS_URL: redis://redis:6379
+      REDIS_REPLAY_URL: redis://redis:6379
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./src:/app/src:ro
@@ -38,3 +56,4 @@ services:
 
 volumes:
   stvor-db-data:
+  stvor-redis-data:

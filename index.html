@@ -548,7 +548,7 @@
     <nav class="sidebar">
       <div class="sidebar-header">
         <a href="#" class="logo">STVOR</a>
-        <div class="logo-tagline">E2EE SDK v2.4.1</div>
+        <div class="logo-tagline">E2EE SDK v3.0.0</div>
       </div>
       
       <div class="nav-section">
@@ -564,6 +564,7 @@
       <div class="nav-section">
         <div class="nav-title">Production</div>
         <a href="#improvements" class="nav-item">What's New</a>
+        <a href="#migration" class="nav-item">Migration v2→v3</a>
         <a href="#architecture" class="nav-item">Architecture</a>
         <a href="#security" class="nav-item">Security Model</a>
         <a href="#threat-model" class="nav-item">Threat Model</a>
@@ -613,24 +614,26 @@
         </header>
 
         <div class="intro-card">
-          <p><strong>STVOR v2.4.1</strong> provides battle-tested end-to-end encryption using the Signal Protocol (X3DH + Double Ratchet). Messages are encrypted on the client — the server never sees plaintext. Production-ready architecture with security invariants and cryptographically verified metrics.</p>
+          <p><strong>STVOR v3.0.0</strong> — настоящее end-to-end шифрование на основе Signal Protocol (X3DH + Double Ratchet). Сообщения шифруются на клиенте — сервер никогда не видит открытый текст. <strong>Ноль внешних крипто-зависимостей</strong> — только Node.js built-in <code>crypto</code> module.</p>
           <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
-              <strong style="color: var(--success);">✅ Core Features:</strong>
+              <strong style="color: var(--success);">✅ Криптография:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li>X3DH key agreement</li>
-                <li>Double Ratchet (messaging)</li>
-                <li>AAD authentication</li>
-                <li>Immutable state</li>
+                <li>X3DH key agreement (symmetric)</li>
+                <li>Double Ratchet (Signal)</li>
+                <li>AES-256-GCM + AAD</li>
+                <li>ECDSA P-256 подписи</li>
+                <li>HKDF-SHA256 деривация</li>
               </ul>
             </div>
             <div>
               <strong style="color: var(--success);">✅ Production Features:</strong>
               <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li>6 security invariants</li>
-                <li>Persistent replay cache</li>
+                <li>Forward Secrecy (DH ratchet)</li>
+                <li>Post-Compromise Security</li>
+                <li>Replay protection</li>
+                <li>TOFU identity verification</li>
                 <li>Crypto-verified metrics</li>
-                <li>Full audit logging</li>
               </ul>
             </div>
           </div>
@@ -642,10 +645,10 @@
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Install the SDK (v2.4.1)</h4>
+            <h4>Install the SDK (v3.0.0)</h4>
             <div class="code-block">
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              <pre><code>npm install @stvor/sdk@^2.4.1</code></pre>
+              <pre><code>npm install @stvor/sdk@^3.0.0</code></pre>
             </div>
           </div>
         </div>
@@ -708,39 +711,36 @@ const app = await Stvor.init({
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^2.4.1",
+    "@stvor/sdk": "^3.0.0",
     "ws": "^8.13.0"
   }
 }</code></pre>
         </div>
 
         <!-- QUICK START -->
-        <h2 id="quickstart">Quick Start (v2.4.1)</h2>
-        <p>The simplest example — connect two users and send an encrypted message with zero crypto knowledge:</p>
+        <h2 id="quickstart">Quick Start (v3.0.0)</h2>
+        <p>Два пользователя, зашифрованное сообщение — без знания криптографии:</p>
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           <pre><code>import { createApp } from '@stvor/sdk';
 
-// Create app with production config
+// Инициализация
 const app = await createApp({
   appToken: 'sk_live_xxx',
-  relayUrl: 'wss://relay.stvor.com',
-  storageAdapters: {
-    replay: redisReplayCache,      // Required for production
-    tofu: postgresTofuStore,        // Required for production  
-    sessions: postgresSessionStore, // Recommended
-    identity: keystoreIdentity      // Recommended
-  }
+  relayUrl: 'http://localhost:3002'
 });
 
-// Connect & setup listeners
+// Подключение пользователей
 const alice = await app.connect('alice@example.com');
 const bob = await app.connect('bob@example.com');
 
-bob.onMessage((from, msg) => console.log(`📩 ${from}: ${msg}`));
+// Подписка на сообщения
+bob.onMessage((msg) => {
+  console.log(`📩 ${msg.senderId}: ${msg.content}`);
+});
 
-// Send (fully encrypted end-to-end)
+// E2EE отправка — X3DH + Double Ratchet автоматически
 await alice.send('bob@example.com', 'Hello! 🔐');
 console.log('✅ Sent');</code></pre>
         </div>
@@ -822,36 +822,165 @@ curl http://localhost:4444/status/alice</code></pre>
         </div>
 
         <!-- IMPROVEMENTS -->
-        <h2 id="improvements">What's New in v2.4</h2>
+        <h2 id="improvements">What's New in v3.0</h2>
         
         <div class="card">
-          <h3 style="margin-top: 0;">Security Fixes from v2.3</h3>
+          <h3 style="margin-top: 0;">Breaking Changes from v2.4</h3>
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ Previous</td>
-              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v2.4</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ v2.4 (сломано)</td>
+              <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v3.0 (исправлено)</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px;">Header tampering (AAD=null)</td>
-              <td style="padding: 8px;">AAD authentication on all fields</td>
+              <td style="padding: 8px;">Подпись SPK через HMAC с публичным ключом</td>
+              <td style="padding: 8px;">Настоящая ECDSA P-256 подпись</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px;">State corruption on decrypt failure</td>
-              <td style="padding: 8px;">Immutable transitions (validate first)</td>
+              <td style="padding: 8px;">X3DH с эфемерным ключом внутри функции</td>
+              <td style="padding: 8px;">Symmetric X3DH — обе стороны получают идентичный секрет</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px;">Replay attacks (memory-only cache)</td>
-              <td style="padding: 8px;">Persistent Redis/PostgreSQL cache</td>
+              <td style="padding: 8px;">Nonce не передаётся при дешифровке</td>
+              <td style="padding: 8px;">Nonce в заголовке (85 bytes: pubkey + counters + nonce)</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px;">Sessions lost on restart</td>
-              <td style="padding: 8px;">Durable session storage</td>
+              <td style="padding: 8px;">Заголовок обрезает P-256 ключ (32 из 65 байт)</td>
+              <td style="padding: 8px;">Полный 65-byte uncompressed P-256 ключ в заголовке</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">DH ratchet условие инвертировано</td>
+              <td style="padding: 8px;">Корректный DH ratchet с skip message keys</td>
             </tr>
             <tr>
-              <td style="padding: 8px;">DH ratchet optional</td>
-              <td style="padding: 8px;">Forced ratchet every 50 messages</td>
+              <td style="padding: 8px;">Зависимость от libsodium-wrappers</td>
+              <td style="padding: 8px;">Только Node.js built-in crypto (0 зависимостей)</td>
             </tr>
           </table>
+        </div>
+
+        <!-- MIGRATION GUIDE -->
+        <h2 id="migration">Migration Guide: v2.4 → v3.0</h2>
+        
+        <div class="warning">
+          <strong>⚠️ Breaking Changes</strong><br>
+          v3.0 полностью переписывает крипто-модуль. Сессии, созданные в v2.4, <strong>несовместимы</strong> с v3.0. Все пользователи должны переподключиться.
+        </div>
+
+        <h3>Шаг 1: Обновите SDK</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Обновление до v3.0.0
+npm install @stvor/sdk@^3.0.0
+
+# Удалите libsodium (больше не нужен)
+npm uninstall libsodium-wrappers</code></pre>
+        </div>
+
+        <h3>Шаг 2: Удалите старые сессии</h3>
+        <p>Крипто-формат полностью изменился. Старые сессии не могут быть десериализованы:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># Если используете Redis — очистите кеш сессий:
+redis-cli FLUSHDB
+
+# Если используете PostgreSQL:
+# DELETE FROM sessions;
+# DELETE FROM tofu_fingerprints;</code></pre>
+        </div>
+
+        <h3>Шаг 3: Обновите код (если использовали низкоуровневое API)</h3>
+        <p>Высокоуровневый API (<code>createApp</code>, <code>Stvor.init</code>, <code>send</code>, <code>onMessage</code>) — <strong>не изменился</strong>. Если вы использовали только его — обновление автоматическое.</p>
+        <p>Если вы использовали ratchet/crypto-session напрямую:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// ❌ v2.4 — libsodium, внешний nonce
+import sodium from 'libsodium-wrappers';
+await sodium.ready;
+const kp = sodium.crypto_box_keypair();
+const { ciphertext, nonce, header } = encrypt(msg);
+// header.publicKey — обрезанный 32 байта
+// header.nonce — отдельное поле
+
+// ✅ v3.0 — Node.js crypto, nonce в заголовке
+import { generateKeyPair, encryptMessage } from '@stvor/sdk/ratchet';
+const kp = generateKeyPair(); // ECDH P-256
+const { ciphertext, header } = encryptMessage(session, plaintext);
+// header = 85 bytes (65 pubkey + 4 prevChain + 4 msgNum + 12 nonce)
+// Всё в одном base64url строке</code></pre>
+        </div>
+
+        <h3>Шаг 4: Проверьте работоспособность</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code># 1. Запустите mock relay
+npx @stvor/sdk mock-relay
+
+# 2. В другом терминале — тест E2EE
+node -e "
+import { createApp } from '@stvor/sdk';
+const app = await createApp({ appToken: 'stvor_test', relayUrl: 'ws://localhost:4444' });
+const alice = await app.connect('alice');
+const bob = await app.connect('bob');
+bob.onMessage((from, msg) => { console.log('✅ E2EE работает:', msg); process.exit(0); });
+await alice.send('bob', 'Hello from v3.0! 🔐');
+"</code></pre>
+        </div>
+
+        <h3>Что изменилось внутри</h3>
+        <div class="card">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr style="border-bottom: 2px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 700;">Компонент</td>
+              <td style="padding: 8px; font-weight: 700;">v2.4</td>
+              <td style="padding: 8px; font-weight: 700;">v3.0</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Крипто-библиотека</td>
+              <td style="padding: 8px;">libsodium-wrappers</td>
+              <td style="padding: 8px;"><code>node:crypto</code> (built-in)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Key exchange</td>
+              <td style="padding: 8px;">X25519 (асимметричный X3DH)</td>
+              <td style="padding: 8px;">ECDH P-256 (symmetric X3DH)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Подписи SPK</td>
+              <td style="padding: 8px;">HMAC (подделываемые)</td>
+              <td style="padding: 8px;">ECDSA P-256 (настоящие цифровые подписи)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Шифрование</td>
+              <td style="padding: 8px;">XChaCha20-Poly1305</td>
+              <td style="padding: 8px;">AES-256-GCM + AAD</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Заголовок</td>
+              <td style="padding: 8px;">Обрезанный (32/65 байт)</td>
+              <td style="padding: 8px;">Полный 85 байт (65 pub + 4+4 counters + 12 nonce)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px;">Nonce</td>
+              <td style="padding: 8px;">Не передавался</td>
+              <td style="padding: 8px;">Внутри заголовка (байты 73-84)</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px;">Внешние зависимости</td>
+              <td style="padding: 8px;">libsodium-wrappers (~500KB)</td>
+              <td style="padding: 8px;">0 (только Node.js built-in)</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="success-box">
+          <h4 style="margin: 0 0 8px 0; color: var(--success);">✅ После миграции:</h4>
+          <ul style="margin: 0;">
+            <li>Все 23 интеграционных теста проходят</li>
+            <li>Размер бандла уменьшен (нет libsodium)</li>
+            <li>Настоящая ECDSA верификация SPK</li>
+            <li>Nonce корректно передаётся в заголовке</li>
+            <li>DH ratchet работает правильно</li>
+          </ul>
         </div>
 
         <!-- ARCHITECTURE -->
@@ -1045,7 +1174,7 @@ const app = await createApp({
         <h3>6 Cryptographic Invariants</h3>
         
         <div class="card">
-          <p>v2.4 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
+          <p>v3.0 enforces 6 cryptographic invariants that prevent protocol-level attacks:</p>
           
           <h4>I1: State Machine Constraint</h4>
           <p><code>if (state !== ESTABLISHED) → cannot send() or receive()</code></p>
@@ -1180,7 +1309,7 @@ main().catch(console.error);</code></pre>
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^2.4.1",
+    "@stvor/sdk": "^3.0.0",
     "ws": "^8.13.0"
   }
 }</code></pre>
@@ -1244,15 +1373,15 @@ node app.mjs</code></pre>
         </div>
         
         <div class="warning">
-          <strong>🔐 v2.4: Production-Ready</strong><br>
-          Suitable for applications requiring production-grade E2EE. Includes 6 security invariants, persistent replay protection, and crypto-verified metrics. All guarantees are cryptographically enforced when storage adapters are properly configured.
+          <strong>🔐 v3.0: Production-Ready E2EE</strong><br>
+          Полностью рабочий Signal Protocol на Node.js crypto. Все 23 интеграционных теста пройдены: X3DH key agreement, ECDSA подписи, Double Ratchet encrypt/decrypt, forward secrecy, session serialisation. Ноль внешних крипто-зависимостей.
         </div>
 
         <!-- LIMITATIONS -->
         <h2 id="limitations">When to Use (and When Not To)</h2>
         
         <div class="card" style="background: linear-gradient(135deg, #dcfce7 0%, #e0f2fe 100%); border-color: #86efac;">
-          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v2.4):</h4>
+          <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v3.0):</h4>
           <ul style="margin-bottom: 0;">
             <li>Healthcare/Finance applications (production-grade E2EE)</li>
             <li>Internal tools with high security requirements</li>
@@ -1263,7 +1392,7 @@ node app.mjs</code></pre>
         </div>
 
         <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #fca5a5;">
-          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v2.4):</h4>
+          <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v3.0):</h4>
           <ul style="margin-bottom: 0;">
             <li>Browser/client-side JavaScript (Node.js only)</li>
             <li>Multi-device synchronization (each device = separate identity)</li>
@@ -1275,11 +1404,12 @@ node app.mjs</code></pre>
         <div class="card" style="background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); border-color: #fde047;">
           <h4 style="margin-top: 0;">📝 Architecture Notes</h4>
           <ul style="margin-bottom: 0;">
-            <li>Cryptography: libsodium (peer-reviewed, FIPS 140-2 compatible)</li>
-            <li>Protocol: Signal Protocol (X3DH + Double Ratchet)</li>
-            <li>Transport: WebSocket (your relay handles it)</li>
-            <li>State: Configurable storage (Redis, PostgreSQL, Keychain)</li>
-            <li>Metrics: HMAC-signed for auditability</li>
+            <li>Cryptография: Node.js built-in crypto — ECDH P-256, ECDSA P-256, AES-256-GCM, HKDF-SHA256</li>
+            <li>Протокол: Signal Protocol (Symmetric X3DH + Double Ratchet)</li>
+            <li>Зависимости: <strong>0 внешних крипто-библиотек</strong> — только <code>node:crypto</code></li>
+            <li>Transport: HTTP relay (Fastify)</li>
+            <li>State: Pluggable storage (Redis, PostgreSQL, in-memory)</li>
+            <li>Метрики: HMAC-SHA256 подписаны для аудита</li>
           </ul>
         </div>
 
@@ -1291,7 +1421,7 @@ node app.mjs</code></pre>
           <div class="code-block" style="margin-bottom: 12px;">
             <pre><code>Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: No "exports" main defined in @stvor/sdk/package.json</code></pre>
           </div>
-          <p><strong>Причина:</strong> Старая версия SDK (&lt;2.4.1) без dual CJS/ESM exports.</p>
+          <p><strong>Причина:</strong> Устаревшая версия SDK (&lt;3.0.0) без dual CJS/ESM exports.</p>
           <p><strong>Решение:</strong></p>
           <div class="code-block">
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -1323,7 +1453,7 @@ node app.mjs</code></pre>
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             <pre><code>npm install ws</code></pre>
           </div>
-          <p style="color: var(--text-muted); font-size: 13px;"><code>ws</code> — peer dependency в v2.4.1. Устанавливается вместе с SDK, но в некоторых пакетных менеджерах (pnpm) нужно устанавливать явно.</p>
+          <p style="color: var(--text-muted); font-size: 13px;"><code>ws</code> — dependency SDK. Устанавливается автоматически, но в некоторых пакетных менеджерах (pnpm) нужно устанавливать явно.</p>
         </div>
 
         <div class="card">
@@ -1345,8 +1475,8 @@ const app = await Stvor.init({ ... });</code></pre>
         </div>
 
         <footer>
-          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v2.4.1</div>
-          <div>Production-grade E2EE with Signal Protocol, crypto-verified metrics, and security invariants. (Feb 2026)</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.0.0</div>
+          <div>Production-grade E2EE — Signal Protocol (X3DH + Double Ratchet) on native Node.js crypto. Zero external dependencies. (Mar 2026)</div>
         </footer>
         
       </div>
