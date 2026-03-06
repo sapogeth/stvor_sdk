@@ -15,6 +15,17 @@ function fixFile(filePath) {
   fs.writeFileSync(filePath, code);
 }
 
-fs.readdirSync(distDir).forEach(f => {
-  if (f.endsWith('.js')) fixFile(path.join(distDir, f));
-});
+function processDir(dir) {
+  fs.readdirSync(dir).forEach(f => {
+    const fullPath = path.join(dir, f);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      processDir(fullPath);
+    } else if (f.endsWith('.js')) {
+      fixFile(fullPath);
+    }
+  });
+}
+
+processDir(distDir);
+console.log('Fixed extensions in all JS files');

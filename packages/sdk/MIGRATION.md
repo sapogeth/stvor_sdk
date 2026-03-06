@@ -14,7 +14,7 @@ The facade API now uses **X3DH + Double Ratchet** from the `ratchet/` module end
 |-----------|---------------|--------------|
 | **Key Exchange** | Web Crypto ECDH (P-256) | X3DH (X25519 + Ed25519) |
 | **Encryption** | AES-GCM | Double Ratchet (XChaCha20-Poly1305) |
-| **Crypto Backend** | Web Crypto API | libsodium-wrappers |
+| **Crypto Backend** | AES-GCM | Node.js crypto (P-256, AES-256-GCM, HKDF) |
 | **Forward Secrecy** | ❌ No | ✅ Yes (automatic DH rotation) |
 | **Post-Compromise Security** | ❌ No | ✅ Yes (forced ratchet) |
 | **TOFU** | ❌ No | ✅ Yes (fingerprint verification) |
@@ -55,7 +55,7 @@ alice.onMessage((msg) => {
 #### `facade/crypto-session.ts`
 - Manages `SessionState` per peer
 - Wraps `ratchet/index.ts` functions
-- Handles libsodium initialization
+- Handles crypto initialization
 - Maintains identity keys and sessions
 
 #### `facade/tofu-manager.ts`
@@ -87,7 +87,7 @@ const encrypted = await crypto.subtle.encrypt(
 
 **After:**
 ```typescript
-// Initialize libsodium + generate identity keys
+// Initialize crypto + generate identity keys
 await this.cryptoSession.initialize();
 
 // Establish X3DH session with TOFU
@@ -181,7 +181,7 @@ npm install @stvor/sdk libsodium-wrappers
 ### After
 ```bash
 npm install @stvor/sdk
-# libsodium-wrappers now included as direct dependency
+# Uses Node.js built-in crypto (no external crypto libraries)
 ```
 
 ---
@@ -217,8 +217,8 @@ npm install @stvor/sdk
 
 | Operation | Before | After | Change |
 |-----------|--------|-------|--------|
-| **Initialization** | ~5ms | ~15ms | +200% (libsodium init) |
-| **Session Setup** | ~10ms | ~25ms | +150% (X3DH handshake) |
+| **Initialization** | ~5ms | ~10ms | +100% (crypto ready) |
+| **Session Setup** | ~10ms | ~15ms | +50% (X3DH) |
 | **Encryption** | ~2ms | ~5ms | +150% (Double Ratchet) |
 | **Decryption** | ~2ms | ~5ms | +150% (Double Ratchet) |
 

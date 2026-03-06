@@ -1,6 +1,6 @@
 'use strict';
 
-// Auto-generated CommonJS wrapper for facade/crypto.js
+// Auto-generated CommonJS wrapper for facade/metrics-engine.js
 // This allows `require('@stvor/sdk')` to work alongside ESM `import`.
 
 const mod = require('module');

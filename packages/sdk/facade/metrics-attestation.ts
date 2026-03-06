@@ -36,7 +36,6 @@
  */
 
 import { createHmac, randomBytes } from 'crypto';
-import sodium from 'libsodium-wrappers';
 
 /**
  * Raw metrics from SDK (before attestation)

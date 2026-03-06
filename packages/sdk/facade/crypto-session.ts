@@ -1,262 +1,240 @@
 /**
  * STVOR Crypto Session Manager
- * Integrates X3DH + Double Ratchet from ratchet module
- * 
- * CRITICAL: Identity keys generated ONCE per userId
- * Currently in-memory only - keys lost on restart
- * 
- * TODO: Add persistent storage (IndexedDB/Keychain)
+ * Uses ONLY Node.js built-in crypto module — zero external dependencies
+ *
+ * Manages identity keys (IK + SPK), ECDSA signatures,
+ * X3DH session establishment, and Double Ratchet encrypt/decrypt.
  */
 
-import sodium from 'libsodium-wrappers';
-import { ensureSodiumReady } from './sodium-singleton.js';
 import {
   SessionState,
+  KeyPair,
+  generateKeyPair,
   encryptMessage as ratchetEncrypt,
   decryptMessage as ratchetDecrypt,
-  incrementMessageCounter,
+  establishSession as ratchetEstablishSession,
+  serializeSession,
+  deserializeSession,
+  initializeCrypto,
+  ecSign,
+  ecVerify,
 } from '../ratchet/index.js';
 
+/* ================================================================
+ * Public interfaces
+ * ================================================================ */
+
 export interface IdentityKeys {
-  identityKeyPair: { publicKey: Uint8Array; privateKey: Uint8Array };
-  signedPreKeyPair: { publicKey: Uint8Array; privateKey: Uint8Array };
-  oneTimePreKeys: Uint8Array[];
+  identityKeyPair: KeyPair;
+  signedPreKeyPair: KeyPair;
+  signedPreKeySignature: Buffer;
 }
 
 export interface SerializedPublicKeys {
-  identityKey: string; // base64
-  signedPreKey: string; // base64
-  signedPreKeySignature: string; // base64
-  oneTimePreKey: string; // base64
+  identityKey: string;
+  signedPreKey: string;
+  signedPreKeySignature: string;
+  oneTimePreKey: string; // kept for relay compat — always empty
 }
 
-/**
- * Manages cryptographic sessions for all peers
- */
+/* ================================================================
+ * Storage interfaces
+ * ================================================================ */
+
+export interface IIdentityStore {
+  saveIdentityKeys(
+    userId: string,
+    keys: {
+      identityKeyPair: { publicKey: string; privateKey: string };
+      signedPreKeyPair: { publicKey: string; privateKey: string };
+      signedPreKeySignature: string;
+    },
+  ): Promise<void>;
+  loadIdentityKeys(
+    userId: string,
+  ): Promise<{
+    identityKeyPair: { publicKey: string; privateKey: string };
+    signedPreKeyPair: { publicKey: string; privateKey: string };
+    signedPreKeySignature: string;
+  } | null>;
+}
+
+export interface ISessionStore {
+  saveSession(userId: string, peerId: string, sessionData: Buffer): Promise<void>;
+  loadSession(userId: string, peerId: string): Promise<Buffer | null>;
+  deleteSession(userId: string, peerId: string): Promise<void>;
+  listSessions(userId: string): Promise<string[]>;
+}
+
+/* ================================================================
+ * Helpers
+ * ================================================================ */
+
+function toB64(buf: Buffer): string { return buf.toString('base64url'); }
+function fromB64(s: string): Buffer { return Buffer.from(s, 'base64url'); }
+
+/* ================================================================
+ * CryptoSessionManager
+ * ================================================================ */
+
 export class CryptoSessionManager {
   private userId: string;
   private identityKeys: IdentityKeys | null = null;
   private sessions: Map<string, SessionState> = new Map();
-  private initialized: boolean = false;
+  private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private identityStore: IIdentityStore | null = null;
+  private sessionStore: ISessionStore | null = null;
 
-  constructor(userId: string) {
+  constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore) {
     this.userId = userId;
+    this.identityStore = identityStore || null;
+    this.sessionStore = sessionStore || null;
   }
 
-  /**
-   * Initialize libsodium and generate identity keys
-   * RACE CONDITION SAFE: Returns same promise if called concurrently
-   */
+  /* ---- Initialisation ---- */
+
   async initialize(): Promise<void> {
-    // Already initialized
-    if (this.initialized && this.identityKeys) {
-      return;
-    }
-
-    // Initialization in progress - return existing promise
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    // Start initialization
-    this.initPromise = this._doInitialize();
+    if (this.initialized && this.identityKeys) return;
+    if (this.initPromise) return this.initPromise;
+    this.initPromise = this._doInit();
     return this.initPromise;
   }
 
-  private async _doInitialize(): Promise<void> {
-    // Ensure libsodium ready (singleton - safe to call multiple times)
-    await ensureSodiumReady();
+  private async _doInit(): Promise<void> {
+    await initializeCrypto();
 
-    // CRITICAL: Check again after await (another call might have completed)
-    if (this.initialized && this.identityKeys) {
-      return;
+    if (this.identityStore) {
+      try {
+        const stored = await this.identityStore.loadIdentityKeys(this.userId);
+        if (stored) {
+          this.identityKeys = {
+            identityKeyPair: {
+              publicKey: fromB64(stored.identityKeyPair.publicKey),
+              privateKey: fromB64(stored.identityKeyPair.privateKey),
+            },
+            signedPreKeyPair: {
+              publicKey: fromB64(stored.signedPreKeyPair.publicKey),
+              privateKey: fromB64(stored.signedPreKeyPair.privateKey),
+            },
+            signedPreKeySignature: fromB64(stored.signedPreKeySignature),
+          };
+          this.initialized = true;
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to load identity keys:', e);
+      }
     }
 
-    // Generate long-term identity key pair (Ed25519 for signing)
-    const identityKeyPair = sodium.crypto_sign_keypair();
-
-    // Generate semi-ephemeral signed pre-key (X25519 for DH)
-    const signedPreKeyPair = sodium.crypto_kx_keypair();
-
-    // Generate pool of one-time pre-keys
-    const oneTimePreKeys: Uint8Array[] = [];
-    for (let i = 0; i < 10; i++) {
-      const keypair = sodium.crypto_kx_keypair();
-      oneTimePreKeys.push(keypair.publicKey);
-    }
+    const ik = generateKeyPair();
+    const spk = generateKeyPair();
+    const sig = ecSign(spk.publicKey, ik);
 
     this.identityKeys = {
-      identityKeyPair: {
-        publicKey: identityKeyPair.publicKey,
-        privateKey: identityKeyPair.privateKey,
-      },
-      signedPreKeyPair: {
-        publicKey: signedPreKeyPair.publicKey,
-        privateKey: signedPreKeyPair.privateKey,
-      },
-      oneTimePreKeys,
+      identityKeyPair: ik,
+      signedPreKeyPair: spk,
+      signedPreKeySignature: sig,
     };
+
+    if (this.identityStore) {
+      try {
+        await this.identityStore.saveIdentityKeys(this.userId, {
+          identityKeyPair: { publicKey: toB64(ik.publicKey), privateKey: toB64(ik.privateKey) },
+          signedPreKeyPair: { publicKey: toB64(spk.publicKey), privateKey: toB64(spk.privateKey) },
+          signedPreKeySignature: toB64(sig),
+        });
+      } catch (e) {
+        console.warn('Failed to save identity keys:', e);
+      }
+    }
 
     this.initialized = true;
-    this.initPromise = null;
-
-    console.log(`[Crypto] Identity keys generated for ${this.userId}`);
   }
 
-  /**
-   * Get serialized public keys for relay registration
-   */
+  /* ---- Public keys ---- */
+
   getPublicKeys(): SerializedPublicKeys {
-    if (!this.identityKeys) {
-      throw new Error('CryptoSessionManager not initialized');
-    }
-
-    // Sign the pre-key
-    const signedPreKeySignature = sodium.crypto_sign_detached(
-      this.identityKeys.signedPreKeyPair.publicKey,
-      this.identityKeys.identityKeyPair.privateKey
-    );
-
+    if (!this.identityKeys) throw new Error('Not initialized');
     return {
-      identityKey: sodium.to_base64(this.identityKeys.identityKeyPair.publicKey),
-      signedPreKey: sodium.to_base64(this.identityKeys.signedPreKeyPair.publicKey),
-      signedPreKeySignature: sodium.to_base64(signedPreKeySignature),
-      oneTimePreKey: sodium.to_base64(this.identityKeys.oneTimePreKeys[0] || new Uint8Array(32)),
+      identityKey: toB64(this.identityKeys.identityKeyPair.publicKey),
+      signedPreKey: toB64(this.identityKeys.signedPreKeyPair.publicKey),
+      signedPreKeySignature: toB64(this.identityKeys.signedPreKeySignature),
+      oneTimePreKey: '',
     };
   }
 
-  /**
-   * Establish session with peer (X3DH handshake)
-   */
-  async establishSessionWithPeer(
-    peerId: string,
-    peerPublicKeys: SerializedPublicKeys
-  ): Promise<void> {
-    if (!this.identityKeys) {
-      throw new Error('CryptoSessionManager not initialized');
+  /* ---- Session establishment ---- */
+
+  async establishSession(peerId: string, peerPublicKeys: SerializedPublicKeys): Promise<void> {
+    if (!this.identityKeys) throw new Error('Not initialized');
+
+    const peerIK = fromB64(peerPublicKeys.identityKey);
+    const peerSPK = fromB64(peerPublicKeys.signedPreKey);
+    const peerSig = peerPublicKeys.signedPreKeySignature
+      ? fromB64(peerPublicKeys.signedPreKeySignature)
+      : Buffer.alloc(0);
+
+    if (peerSig.length > 0 && !ecVerify(peerSPK, peerSig, peerIK)) {
+      throw new Error('Invalid signed pre-key signature — possible MITM attack');
     }
 
-    // Skip if session already exists
-    if (this.sessions.has(peerId)) {
-      return;
-    }
-
-    // Deserialize peer's public keys
-    const recipientIdentityKey = sodium.from_base64(peerPublicKeys.identityKey);
-    const recipientSignedPreKey = sodium.from_base64(peerPublicKeys.signedPreKey);
-    const recipientSPKSignature = sodium.from_base64(peerPublicKeys.signedPreKeySignature);
-    const recipientOneTimePreKey = sodium.from_base64(peerPublicKeys.oneTimePreKey);
-
-    // Verify SPK signature
-    const isValid = sodium.crypto_sign_verify_detached(
-      recipientSPKSignature,
-      recipientSignedPreKey,
-      recipientIdentityKey
+    const session = ratchetEstablishSession(
+      this.identityKeys.identityKeyPair,
+      this.identityKeys.signedPreKeyPair,
+      peerIK,
+      peerSPK,
     );
-
-    if (!isValid) {
-      throw new Error(`Invalid SPK signature for peer ${peerId}`);
-    }
-
-    // Perform X3DH to derive shared secret
-    const dh1 = sodium.crypto_scalarmult(
-      this.identityKeys.signedPreKeyPair.privateKey,
-      recipientSignedPreKey
-    );
-    const dh2 = sodium.crypto_scalarmult(
-      this.identityKeys.identityKeyPair.privateKey,
-      recipientOneTimePreKey
-    );
-    const dh3 = sodium.crypto_scalarmult(
-      this.identityKeys.signedPreKeyPair.privateKey,
-      recipientOneTimePreKey
-    );
-
-    // Combine DH outputs
-    const sharedSecret = sodium.crypto_generichash(
-      32,
-      new Uint8Array([...dh1, ...dh2, ...dh3])
-    );
-
-    // Derive root key
-    const rootKey = sodium.crypto_generichash(
-      32,
-      new Uint8Array([
-        ...sharedSecret,
-        ...sodium.from_string('x3dh-root-key-v1'),
-      ])
-    );
-
-    // Create initial session state
-    const session: SessionState = {
-      identityKey: this.identityKeys.identityKeyPair.publicKey,
-      signedPreKey: this.identityKeys.signedPreKeyPair.publicKey,
-      oneTimePreKey: this.identityKeys.oneTimePreKeys[0] || new Uint8Array(32),
-      rootKey,
-      sendingChainKey: rootKey,
-      receivingChainKey: rootKey,
-      skippedMessageKeys: new Map(),
-      isPostCompromise: false,
-    };
 
     this.sessions.set(peerId, session);
-  }
 
-  /**
-   * Encrypt message for peer using Double Ratchet
-   */
-  async encryptForPeer(peerId: string, plaintext: string): Promise<{
-    ciphertext: Uint8Array;
-    header: { publicKey: Uint8Array; nonce: Uint8Array };
-  }> {
-    const session = this.sessions.get(peerId);
-    if (!session) {
-      throw new Error(`No session with peer ${peerId}`);
+    if (this.sessionStore) {
+      try {
+        await this.sessionStore.saveSession(this.userId, peerId, serializeSession(session));
+      } catch (e) {
+        console.warn('Failed to save session:', e);
+      }
     }
-
-    // Encrypt using Double Ratchet
-    const result = ratchetEncrypt(plaintext, session);
-
-    // Enforce DH ratchet policy (Forward Secrecy + PCS)
-    const recipientKey = session.identityKey;
-    incrementMessageCounter(session, recipientKey);
-
-    return result;
   }
 
-  /**
-   * Decrypt message from peer using Double Ratchet
-   */
-  async decryptFromPeer(
-    peerId: string,
-    ciphertext: Uint8Array,
-    header: { publicKey: Uint8Array; nonce: Uint8Array }
-  ): Promise<string> {
-    const session = this.sessions.get(peerId);
-    if (!session) {
-      throw new Error(`No session with peer ${peerId}`);
-    }
-
-    // Decrypt using Double Ratchet
-    const plaintext = ratchetDecrypt(ciphertext, header, session);
-
-    return plaintext;
+  async establishSessionWithPeer(peerId: string, pk: SerializedPublicKeys): Promise<void> {
+    return this.establishSession(peerId, pk);
   }
 
-  /**
-   * Check if session exists with peer
-   */
   hasSession(peerId: string): boolean {
     return this.sessions.has(peerId);
   }
 
-  /**
-   * Destroy all sessions (cleanup)
-   */
-  destroy(): void {
-    this.sessions.clear();
-    this.identityKeys = null;
-    this.initialized = false;
+  /* ---- Encrypt ---- */
+
+  encryptForPeer(peerId: string, plaintext: string): { ciphertext: string; header: string } {
+    const session = this.sessions.get(peerId);
+    if (!session) throw new Error('No session with peer');
+
+    const { ciphertext, header } = ratchetEncrypt(session, Buffer.from(plaintext, 'utf-8'));
+    return { ciphertext: toB64(ciphertext), header: toB64(header) };
+  }
+
+  /* ---- Decrypt ---- */
+
+  decryptFromPeer(peerId: string, ciphertext: string, header: string): string {
+    const session = this.sessions.get(peerId);
+    if (!session) throw new Error('No session with peer');
+
+    const pt = ratchetDecrypt(session, fromB64(ciphertext), fromB64(header));
+    return pt.toString('utf-8');
+  }
+
+  /* ---- Post-compromise ---- */
+
+  async forceRatchet(peerId: string): Promise<void> {
+    const session = this.sessions.get(peerId);
+    if (session) {
+      session.myRatchetKeyPair = generateKeyPair();
+      session.sendCount = 0;
+      session.recvCount = 0;
+      session.prevSendCount = 0;
+      session.isPostCompromise = true;
+    }
   }
 }

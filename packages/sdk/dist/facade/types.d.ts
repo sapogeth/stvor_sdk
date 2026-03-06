@@ -47,4 +47,6 @@ export interface SealedPayload {
     ciphertext: Uint8Array;
     /** Nonce used for encryption */
     nonce: Uint8Array;
+    /** Recipient user ID this was sealed for */
+    recipientId: UserId;
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-// Auto-generated CommonJS wrapper for mock-relay-server.js
+// Auto-generated CommonJS wrapper for src/facade/index.js
 // This allows `require('@stvor/sdk')` to work alongside ESM `import`.
 
 const mod = require('module');

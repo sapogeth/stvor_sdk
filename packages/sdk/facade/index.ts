@@ -21,4 +21,41 @@ export { StvorApp, StvorFacadeClient, Stvor, init, createApp } from './app';
 export { ErrorCode as STVOR_ERRORS } from './errors';
 
 // Re-export metrics verification for Dashboard
-export { verifyMetricsSignature } from './metrics-engine';
+export { verifyMetricsSignature, MetricsEngine } from './metrics-engine';
+
+// Re-export crypto session management
+export { CryptoSessionManager } from './crypto-session';
+export type { IdentityKeys, SerializedPublicKeys, IIdentityStore, ISessionStore } from './crypto-session';
+export { LocalStorageIdentityStore, LocalStorageSessionStore } from './local-storage-identity-store';
+
+// Re-export replay protection
+export {
+  isReplay,
+  validateMessage,
+  validateMessageWithNonce,
+  getCacheStats,
+  cleanupExpiredNonces,
+  initializeReplayProtection,
+  startAutoCleanup,
+  stopAutoCleanup,
+} from './replay-manager';
+export type { IReplayCache } from './replay-manager';
+
+// Re-export Redis replay cache for production
+export { RedisReplayCache } from './redis-replay-cache';
+export type { RedisClient, RedisReplayCacheConfig } from './redis-replay-cache';
+
+// Re-export TOFU management
+export {
+  generateFingerprint,
+  storeFingerprint,
+  verifyFingerprint,
+  isFingerprintTrusted,
+  getFingerprint,
+  revokeTrust,
+  trustNewFingerprint,
+  listTrustedFingerprints,
+  getFingerprintInfo,
+  initializeTofu,
+} from './tofu-manager';
+export type { ITofuStore } from './tofu-manager';

@@ -8,12 +8,13 @@
  * - TOFU (Trust On First Use) for identity verification
  * - Replay protection via nonce validation
  * - Cryptographically verified metrics (HMAC-SHA256)
- * - libsodium for all cryptographic operations
+ * - Node.js crypto for all cryptographic operations
  */
 
 import { StvorAppConfig, UserId, MessageContent } from './types';
 import { DecryptedMessage } from './types';
 import { Errors, StvorError, ErrorCode } from './errors';
+import { SealedPayload } from './types';
 export type { DecryptedMessage, SealedPayload, ErrorCode };
 export { StvorError, Errors };
 import { RelayClient } from './relay-client';
@@ -22,7 +23,7 @@ import { CryptoSessionManager } from './crypto-session';
 import { verifyFingerprint } from './tofu-manager';
 import { validateMessageWithNonce } from './replay-manager';
 import { MetricsAttestationEngine, MetricsAttestation } from './metrics-attestation';
-import sodium from 'libsodium-wrappers';
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
 
 // Define Prometheus metrics
 const messagesDeliveredTotal = new Counter({
@@ -241,7 +242,7 @@ export class StvorFacadeClient {
       }
 
       // TOFU: Verify fingerprint (throws on mismatch)
-      const recipientIdentityKey = sodium.from_base64(recipientPublicKeys.identityKey);
+      const recipientIdentityKey = Buffer.from(recipientPublicKeys.identityKey, 'base64url');
       await verifyFingerprint(recipientId, recipientIdentityKey);
 
       // Establish X3DH session
@@ -250,7 +251,7 @@ export class StvorFacadeClient {
 
     // Encrypt using Double Ratchet
     const plaintext = new TextDecoder().decode(contentBytes);
-    const { ciphertext, header } = await this.cryptoSession.encryptForPeer(recipientId, plaintext);
+    const { ciphertext, header } = this.cryptoSession.encryptForPeer(recipientId, plaintext);
 
     // METRIC: Record successful encryption (AFTER AEAD completes)
     this.metricsAttestation.recordMessageEncrypted();
@@ -331,15 +332,13 @@ export class StvorFacadeClient {
   }
 
   getUserId(): UserId {
-    returcryptoSession.destroy();
-    this.messageQueue = [];
-    this.isReceiving = false;
+    return this.userId;
   }
 
   private async decryptMessage(msg: { 
     from: string; 
-    ciphertext: number[]; 
-    header: { publicKey: number[]; nonce: number[] }; 
+    ciphertext: string; 
+    header: string; 
     timestamp: string; 
     id?: string 
   }): Promise<DecryptedMessage> {
@@ -352,15 +351,16 @@ export class StvorFacadeClient {
       }
 
       // TOFU: Verify fingerprint (throws on mismatch)
-      const senderIdentityKey = sodium.from_base64(senderPublicKeys.identityKey);
+      const senderIdentityKey = Buffer.from(senderPublicKeys.identityKey, 'base64url');
       await verifyFingerprint(msg.from, senderIdentityKey);
 
       // Establish X3DH session
       await this.cryptoSession.establishSessionWithPeer(msg.from, senderPublicKeys);
     }
 
-    // Replay protection: Validate nonce
-    const nonce = new Uint8Array(msg.header.nonce);
+    // Replay protection: extract nonce from header (bytes 73-84)
+    const headerBuf = Buffer.from(msg.header, 'base64url');
+    const nonce = headerBuf.subarray(73, 85);
     const timestamp = Math.floor(new Date(msg.timestamp).getTime() / 1000);
     
     try {
@@ -373,16 +373,10 @@ export class StvorFacadeClient {
 
     // Decrypt using Double Ratchet
     try {
-      const ciphertext = new Uint8Array(msg.ciphertext);
-      const header = {
-        publicKey: new Uint8Array(msg.header.publicKey),
-        nonce: new Uint8Array(msg.header.nonce),
-      };
-
-      const plaintext = await this.cryptoSession.decryptFromPeer(
+      const plaintext = this.cryptoSession.decryptFromPeer(
         msg.from,
-        ciphertext,
-        header
+        msg.ciphertext,
+        msg.header,
       );
 
       // METRIC: Record successful decryption (AFTER AAD verification)
@@ -414,13 +408,13 @@ export class StvorFacadeClient {
           for (const handler of this.messageHandlers.values()) {
             try {
               handler(msg);
-            } catch {
-              // Handler error does not break other handlers
+            } catch (err) {
+              console.error('[StvorApp] Handler error:', err);
             }
           }
         }
-      } catch {
-        // Silent error on poll
+      } catch (err) {
+        console.error('[StvorApp] Poll error:', err);
       }
       
       if (this.initialized) {
@@ -429,6 +423,15 @@ export class StvorFacadeClient {
     };
     
     poll();
+  }
+
+  /**
+   * Disconnect the client from the relay server.
+   */
+  async disconnect(): Promise<void> {
+    this.initialized = false;
+    // Stop message polling
+    // Note: The polling interval will naturally stop checking once initialized is false
   }
 }
 
@@ -451,7 +454,8 @@ export async function init(config: StvorAppConfig): Promise<StvorApp> {
   try {
     const relay = new RelayClient(relayUrl, config.appToken, timeout);
     await relay.healthCheck();
-  } catch {
+  } catch (err) {
+    console.error('[StvorApp] Relay health check failed:', err);
     throw Errors.relayUnavailable();
   }
 
@@ -465,24 +469,3 @@ export const Stvor = {
   init,
   createApp,
 };
-
-async function processDelivery(messageId, appToken) {
-  await db.query(`
-    BEGIN;
-
-    WITH inserted AS (
-      INSERT INTO message_deliveries (message_id, app_token, delivered_at)
-      VALUES ($1, $2, now())
-      ON CONFLICT DO NOTHING
-      RETURNING 1
-    )
-    UPDATE app_tokens
-    SET used_messages = used_messages + 1
-    WHERE app_token = $2
-      AND plan != 'unlimited'
-      AND used_messages < monthly_message_limit
-      AND EXISTS (SELECT 1 FROM inserted);
-
-    COMMIT;
-  `, [messageId, appToken]);
-}

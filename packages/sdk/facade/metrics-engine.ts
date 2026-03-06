@@ -5,7 +5,6 @@
  * NO UI-side generation. NO localStorage counters. ONLY verified activity.
  */
 
-import sodium from 'libsodium-wrappers';
 import { createHmac } from 'crypto';
 
 export interface Metrics {
@@ -49,7 +48,6 @@ export class MetricsEngine {
 
   /**
    * Called ONLY after successful encrypt with AEAD
-   */
    */
   recordMessageEncrypted(): void {
     this.metrics.messagesEncrypted++;

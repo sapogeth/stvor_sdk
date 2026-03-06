@@ -1,21 +1,62 @@
-export const Errors = {
+/**
+ * STVOR DX Facade - Error Handling
+ */
+export const ErrorCode = {
+    AUTH_FAILED: 'AUTH_FAILED',
     INVALID_APP_TOKEN: 'INVALID_APP_TOKEN',
-    INVALID_API_KEY: 'INVALID_API_KEY',
     RELAY_UNAVAILABLE: 'RELAY_UNAVAILABLE',
-    DELIVERY_FAILED: 'DELIVERY_FAILED',
     RECIPIENT_NOT_FOUND: 'RECIPIENT_NOT_FOUND',
     RECIPIENT_TIMEOUT: 'RECIPIENT_TIMEOUT',
-    MESSAGE_INTEGRITY_FAILED: 'MESSAGE_INTEGRITY_FAILED',
-    RECEIVE_TIMEOUT: 'RECEIVE_TIMEOUT',
-    RECEIVE_IN_PROGRESS: 'RECEIVE_IN_PROGRESS',
-    NOT_CONNECTED: 'NOT_CONNECTED',
+    CLIENT_NOT_READY: 'CLIENT_NOT_READY',
+    DELIVERY_FAILED: 'DELIVERY_FAILED',
+    QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+    RATE_LIMITED: 'RATE_LIMITED',
 };
 export class StvorError extends Error {
     constructor(code, message, action, retryable) {
         super(message);
+        this.name = 'StvorError';
         this.code = code;
         this.action = action;
         this.retryable = retryable;
-        this.name = 'StvorError';
     }
 }
+export const Errors = {
+    authFailed() {
+        return new StvorError(ErrorCode.AUTH_FAILED, 'The AppToken is invalid or has been revoked.', 'Check your dashboard and regenerate a new AppToken.', false);
+    },
+    invalidAppToken() {
+        return new StvorError(ErrorCode.INVALID_APP_TOKEN, 'Invalid AppToken format. AppToken must start with "stvor_".', 'Get your AppToken from the developer dashboard.', false);
+    },
+    relayUnavailable() {
+        return new StvorError(ErrorCode.RELAY_UNAVAILABLE, 'Cannot connect to STVOR relay server.', 'Check your internet connection.', true);
+    },
+    recipientNotFound(userId) {
+        return new StvorError(ErrorCode.RECIPIENT_NOT_FOUND, `User "${userId}" not found. They may not have registered with STVOR.`, 'Ask the recipient to initialize STVOR first, or verify the userId is correct.', false);
+    },
+    messageIntegrityFailed() {
+        return new StvorError(ErrorCode.DELIVERY_FAILED, 'Message integrity check failed or decryption failed.', 'Request the message again from the sender.', false);
+    },
+    keystoreCorrupted() {
+        return new StvorError(ErrorCode.DELIVERY_FAILED, 'Local keystore error (not supported in v0.1).', 'Investigate local storage configuration.', false);
+    },
+    deviceCompromised() {
+        return new StvorError(ErrorCode.DELIVERY_FAILED, 'Device compromise detected (placeholder).', 'Investigate and revoke credentials.', false);
+    },
+    protocolMismatch() {
+        return new StvorError(ErrorCode.DELIVERY_FAILED, 'Protocol version mismatch.', 'Update the SDK to the latest version.', false);
+    },
+    recipientTimeout(userId, timeoutMs) {
+        return new StvorError(ErrorCode.RECIPIENT_TIMEOUT, `Timed out waiting for user "${userId}" after ${timeoutMs}ms. ` +
+            `The user may not have registered with STVOR yet.`, 'Ensure the recipient has called connect() and is online, or increase the timeout.', true);
+    },
+    clientNotReady() {
+        return new StvorError(ErrorCode.CLIENT_NOT_READY, 'Client is not ready. Call connect() first and await it.', 'Make sure to await app.connect() before sending messages.', false);
+    },
+    deliveryFailed(recipientId) {
+        return new StvorError(ErrorCode.DELIVERY_FAILED, `Failed to deliver message to ${recipientId}.`, 'Check that the recipient exists and try again.', true);
+    },
+    quotaExceeded: () => new StvorError(ErrorCode.QUOTA_EXCEEDED, 'Message quota exceeded for this AppToken.', 'UPGRADE_PLAN', false),
+    rateLimited: () => new StvorError(ErrorCode.RATE_LIMITED, 'Rate limit exceeded. Please try again later.', 'WAIT', true),
+    // receive()/timeout APIs are not part of SDK v0.1 facade; use onMessage().
+};

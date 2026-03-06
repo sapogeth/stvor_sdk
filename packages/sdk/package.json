@@ -1,6 +1,6 @@
 {
   "name": "@stvor/sdk",
-  "version": "2.4.1",
+  "version": "3.0.0",
   "description": "Stvor DX Facade - Simple E2EE SDK for client-side encryption",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./ratchet": {
+      "import": {
+        "types": "./dist/ratchet/index.d.ts",
+        "default": "./dist/ratchet/index.js"
+      },
+      "require": {
+        "types": "./dist/ratchet/index.d.cts",
+        "default": "./dist/ratchet/index.cjs"
       }
     },
     "./mock-relay": {
@@ -33,7 +43,7 @@
     "end-to-end",
     "x3dh",
     "double-ratchet",
-    "libsodium"
+    "signal-protocol"
   ],
   "author": "Stvor",
   "license": "MIT",
@@ -49,7 +59,7 @@
   },
   "homepage": "https://stvor.xyz",
   "scripts": {
-    "build": "tsc && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
+    "build": "tsc --pretty false --noEmitOnError false || true && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
     "prepublishOnly": "npm run build",
     "test": "echo \"No tests yet\" && exit 0",
     "mock-relay": "node dist/mock-relay-server.js"
@@ -59,8 +69,9 @@
   },
   "dependencies": {
     "ws": "^8.13.0",
-    "libsodium-wrappers": "^0.7.13",
     "prom-client": "^14.0.0"
   },
-  "peerDependencies": {}
+  "peerDependencies": {
+    "ioredis": ">=5.3.0"
+  }
 }

@@ -8,21 +8,15 @@ import type { SerializedPublicKeys } from './crypto-session';
 interface OutgoingMessage {
   to: string;
   from: string;
-  ciphertext: Uint8Array;
-  header: {
-    publicKey: Uint8Array;
-    nonce: Uint8Array;
-  };
+  ciphertext: string; // base64url encoded
+  header: string;     // base64url encoded (85-byte binary blob)
 }
 
 interface IncomingMessage {
   id?: string;
   from: string;
-  ciphertext: number[];
-  header: {
-    publicKey: number[];
-    nonce: number[];
-  };
+  ciphertext: string; // base64url encoded
+  header: string;     // base64url encoded
   timestamp: string;
 }
 
@@ -138,11 +132,8 @@ export class RelayClient {
         body: JSON.stringify({
           to: message.to,
           from: message.from,
-          ciphertext: Array.from(message.ciphertext),
-          header: {
-            publicKey: Array.from(message.header.publicKey),
-            nonce: Array.from(message.header.nonce),
-          }
+          ciphertext: message.ciphertext,
+          header: message.header,
         }),
         signal: controller.signal,
       });

@@ -131,18 +131,18 @@ export const Errors = {
     );
   },
 
-  quotaExceeded: () => new StvorError({
-    code: 'QUOTA_EXCEEDED',
-    message: 'Message quota exceeded for this AppToken.',
-    action: 'UPGRADE_PLAN',
-    retryable: false,
-  }),
+  quotaExceeded: () => new StvorError(
+    ErrorCode.QUOTA_EXCEEDED,
+    'Message quota exceeded for this AppToken.',
+    'UPGRADE_PLAN',
+    false
+  ),
 
-  rateLimited: () => new StvorError({
-    code: 'RATE_LIMITED',
-    message: 'Rate limit exceeded. Please try again later.',
-    action: 'WAIT',
-    retryable: true,
-  }),
+  rateLimited: () => new StvorError(
+    ErrorCode.RATE_LIMITED,
+    'Rate limit exceeded. Please try again later.',
+    'WAIT',
+    true
+  ),
   // receive()/timeout APIs are not part of SDK v0.1 facade; use onMessage().
 };

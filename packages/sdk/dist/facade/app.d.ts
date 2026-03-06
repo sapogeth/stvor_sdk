@@ -1,100 +1,108 @@
-import type { StvorAppConfig, UserId, MessageContent } from './types.js';
-import { RelayClient } from './relay-client.js';
-type MessageHandler = (from: UserId, msg: string | Uint8Array) => void;
-type UserAvailableHandler = (userId: UserId) => void;
+/**
+ * STVOR DX Facade - Main Application Classes
+ *
+ * Security Guarantees:
+ * - X3DH + Double Ratchet (Signal Protocol)
+ * - Forward Secrecy via automatic DH ratchet rotation
+ * - Post-Compromise Security via forced ratchet steps
+ * - TOFU (Trust On First Use) for identity verification
+ * - Replay protection via nonce validation
+ * - Cryptographically verified metrics (HMAC-SHA256)
+ * - Node.js crypto for all cryptographic operations
+ */
+import { StvorAppConfig, UserId, MessageContent } from './types';
+import { DecryptedMessage } from './types';
+import { Errors, StvorError, ErrorCode } from './errors';
+import { SealedPayload } from './types';
+export type { DecryptedMessage, SealedPayload, ErrorCode };
+export { StvorError, Errors };
+import { RelayClient } from './relay-client';
+import { Counter, Gauge, register } from 'prom-client';
+import { MetricsAttestationEngine } from './metrics-attestation';
+declare const messagesDeliveredTotal: Counter<string>;
+declare const quotaExceededTotal: Counter<string>;
+declare const rateLimitedTotal: Counter<string>;
+declare const activeTokens: Gauge<string>;
+export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal, activeTokens, register };
+export declare class StvorApp {
+    private relay;
+    private config;
+    private connectedClients;
+    private metricsAttestation;
+    private backendUrl;
+    private appToken;
+    constructor(config: Required<StvorAppConfig>);
+    isReady(): boolean;
+    /**
+     * Get attestation engine for recording metrics
+     */
+    getMetricsAttestationEngine(): MetricsAttestationEngine;
+    /**
+     * Periodically send metrics attestations to backend
+     * Backend verifies and stores only valid attestations
+     */
+    sendMetricsAttestation(): Promise<void>;
+    /**
+     * Flush metrics to backend
+     * Sends current metrics attestation (if there is any activity)
+     * Called explicitly by user or on disconnect
+     */
+    flushMetrics(): Promise<void>;
+    connect(userId: UserId): Promise<StvorFacadeClient>;
+    disconnect(userId?: UserId): Promise<void>;
+    private initClient;
+}
 export declare class StvorFacadeClient {
-    readonly userId: UserId;
-    private readonly relay;
-    private readonly defaultTimeout;
-    private crypto;
-    private handlers;
-    private userAvailableHandlers;
-    private knownPubKeys;
-    private pendingKeyResolvers;
-    constructor(userId: UserId, relay: RelayClient, defaultTimeout?: number);
-    private handleRelayMessage;
+    private userId;
+    private relay;
+    private metricsAttestation;
+    private initialized;
+    private cryptoSession;
+    private messageHandlers;
+    private messageQueue;
+    private isReceiving;
+    constructor(userId: UserId, relay: RelayClient, metricsAttestation: MetricsAttestationEngine);
     internalInitialize(): Promise<void>;
-    /**
-     * Check if a user's public key is available locally
-     */
-    isUserAvailable(userId: UserId): boolean;
-    /**
-     * Get list of all known users (whose public keys we have)
-     */
-    getAvailableUsers(): UserId[];
-    /**
-     * Wait until a specific user's public key becomes available.
-     * This is the recommended way to ensure you can send messages.
-     *
-     * @param userId - The user to wait for
-     * @param timeoutMs - Maximum time to wait (default: 10000ms)
-     * @throws StvorError with RECIPIENT_TIMEOUT if timeout expires
-     *
-     * @example
-     * ```typescript
-     * await alice.waitForUser('bob@example.com');
-     * await alice.send('bob@example.com', 'Hello!');
-     * ```
-     */
-    waitForUser(userId: UserId, timeoutMs?: number): Promise<void>;
+    private initialize;
     /**
      * Send an encrypted message to a recipient.
      *
-     * If the recipient's public key is not yet available, this method will
-     * automatically wait up to `timeoutMs` for the key to arrive via the relay.
+     * By default, if the recipient is not yet registered, the method will
+     * poll up to `options.timeout` ms for their keys to appear on the relay.
+     * Set `options.waitForRecipient: false` to throw immediately instead.
      *
-     * @param recipientId - The recipient's user ID
-     * @param content - Message content (string or Uint8Array)
-     * @param options - Optional: { timeout: number, waitForRecipient: boolean }
-     * @throws StvorError with RECIPIENT_TIMEOUT if recipient key doesn't arrive in time
-     *
-     * @example
-     * ```typescript
-     * // Auto-waits for recipient (recommended)
-     * await alice.send('bob@example.com', 'Hello!');
-     *
-     * // Skip waiting (throws immediately if not available)
-     * await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
-     * ```
+     * @param recipientId  - The recipient's user ID
+     * @param content      - Message content (string or Uint8Array)
+     * @param options      - Optional settings:
+     *   - `timeout`           — Max wait time in ms (default: 10 000)
+     *   - `waitForRecipient`  — Auto-wait for recipient keys (default: true)
      */
     send(recipientId: UserId, content: MessageContent, options?: {
         timeout?: number;
         waitForRecipient?: boolean;
     }): Promise<void>;
     /**
-     * Register a handler for incoming messages
+     * Check current quota usage from the relay server
      */
-    onMessage(handler: MessageHandler): () => void;
+    private checkQuota;
     /**
-     * Register a handler that fires when a new user becomes available.
-     * This is triggered when we receive a user's public key announcement.
+     * Wait for a specific recipient's public keys to become available on the relay.
+     * Polls the relay at 500ms intervals until the keys appear or timeout expires.
      *
-     * **Edge-triggered**: Fires only ONCE per user, on first key discovery.
-     * Will NOT fire again if user reconnects with same identity.
-     *
-     * @example
-     * ```typescript
-     * client.onUserAvailable((userId) => {
-     *   console.log(`${userId} is now available for messaging`);
-     * });
-     * ```
+     * @param recipientId - The user ID of the recipient
+     * @param timeoutMs   - Max time to wait in milliseconds (default: 10000)
+     * @returns The recipient's serialized public keys, or null if timeout
      */
-    onUserAvailable(handler: UserAvailableHandler): () => void;
-}
-export declare class StvorApp {
-    private readonly config;
-    private clients;
-    constructor(config: StvorAppConfig);
-    connect(userId: UserId): Promise<StvorFacadeClient>;
+    waitForUser(recipientId: UserId, timeoutMs?: number): Promise<boolean>;
+    private waitForRecipientKeys;
+    onMessage(handler: (msg: DecryptedMessage) => void): () => void;
+    getUserId(): UserId;
+    private decryptMessage;
+    private startMessagePolling;
     /**
-     * Get a connected client by user ID
+     * Disconnect the client from the relay server.
      */
-    getClient(userId: UserId): StvorFacadeClient | undefined;
-    /**
-     * Check if a user is connected locally
-     */
-    isConnected(userId: UserId): boolean;
-    disconnect(userId?: UserId): Promise<void>;
+    disconnect(): Promise<void>;
 }
 export declare function init(config: StvorAppConfig): Promise<StvorApp>;
 export declare const createApp: typeof init;
@@ -102,4 +110,3 @@ export declare const Stvor: {
     init: typeof init;
     createApp: typeof init;
 };
-export {};

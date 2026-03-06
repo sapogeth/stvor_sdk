@@ -1,452 +1,473 @@
-import sodium from 'libsodium-wrappers';
-import { ensureSodiumReady } from '../facade/sodium-singleton.js';
-
 /**
  * X3DH + Double Ratchet Implementation
- * This module handles session establishment and message encryption/decryption.
+ * Uses ONLY Node.js built-in crypto module — zero external dependencies
+ *
+ * Implements the Signal Protocol Double Ratchet with deferred initialization:
+ *   - First send  → "initiator" DH ratchet (DH with peer's SPK)
+ *   - First receive → "responder" DH ratchet (use own SPK, then fresh key)
+ * This allows either side to send first after symmetric X3DH key agreement.
+ *
+ * Provides:
+ *   - X3DH key agreement (symmetric variant, both sides derive same SK)
+ *   - Double Ratchet with DH ratchet + symmetric-key ratchet
+ *   - AES-256-GCM AEAD encryption with header as AAD
+ *   - ECDSA P-256 signing / verification
+ *   - HKDF-SHA256 key derivation
+ *   - HMAC-based chain-key ratchet (Signal-style)
  */
 
-// Updated Session State Structure
+import crypto from 'crypto';
+
+/* ================================================================
+ * Types
+ * ================================================================ */
+
+export interface KeyPair {
+  publicKey: Buffer;  // 65 bytes — uncompressed P-256
+  privateKey: Buffer; // 32 bytes
+}
+
 export interface SessionState {
-  identityKey: Uint8Array; // Long-term identity key
-  signedPreKey: Uint8Array; // Semi-ephemeral pre-key
-  oneTimePreKey: Uint8Array; // One-time pre-key
-  rootKey: Uint8Array; // Root key for Double Ratchet
-  sendingChainKey: Uint8Array; // Sending chain key
-  receivingChainKey: Uint8Array; // Receiving chain key
-  skippedMessageKeys: Map<string, Uint8Array>; // Skipped message keys for out-of-order handling
-  isPostCompromise: boolean; // Marked as post-compromise
+  /* peer identity */
+  myIdentityPublicKey: Buffer;
+  peerIdentityPublicKey: Buffer;
+
+  /* Double Ratchet core */
+  rootKey: Buffer;           // 32 bytes
+  sendingChainKey: Buffer;   // 32 bytes (zeros until first DH ratchet)
+  receivingChainKey: Buffer; // 32 bytes (zeros until first DH ratchet)
+
+  /* DH ratchet keys */
+  myRatchetKeyPair: KeyPair;
+  theirRatchetPublicKey: Buffer | null;
+
+  /* counters */
+  sendCount: number;
+  recvCount: number;
+  prevSendCount: number;
+
+  /* skipped message keys: "hexPub:msgNum" → messageKey */
+  skippedKeys: Map<string, Buffer>;
+
+  isPostCompromise: boolean;
+
+  /* ---- deferred DH-ratchet init (consumed on first send/receive) ---- */
+  peerSPK: Buffer | null;       // peer's signed pre-key, for initiator role
+  mySPKPair: KeyPair | null;    // my signed pre-key pair, for responder role
+
+  /* ---- legacy aliases (backward compat) ---- */
+  identityKey: Uint8Array;
+  signedPreKey: Uint8Array;
+  oneTimePreKey: Uint8Array;
+  sendingChainMessageNumber: number;
+  receivingChainMessageNumber: number;
+  previousSendingChainLength: number;
 }
 
-// Initialize libsodium (safe to call multiple times)
-export async function initializeCrypto(): Promise<void> {
-  await ensureSodiumReady();
-}
+/* ================================================================
+ * Constants
+ * ================================================================ */
 
-/**
- * X3DH Session Establishment
- * @param identityKeyPair - The user's identity key pair
- * @param signedPreKeyPair - The user's signed pre-key pair
- * @param oneTimePreKey - A one-time pre-key
- * @param recipientIdentityKey - The recipient's identity key
- * @param recipientSignedPreKey - The recipient's signed pre-key
- * @param recipientOneTimePreKey - The recipient's one-time pre-key
- * @param recipientSPKSignature - Signature of SPK by recipient's identity key
- * @param protocolVersion - The protocol version
- * @param cipherSuite - The cipher suite
- * @returns SessionState
- */
-export function establishSession(
-  identityKeyPair: { publicKey: Uint8Array; privateKey: Uint8Array },
-  signedPreKeyPair: { publicKey: Uint8Array; privateKey: Uint8Array },
-  oneTimePreKey: Uint8Array,
-  recipientIdentityKey: Uint8Array,
-  recipientSignedPreKey: Uint8Array,
-  recipientOneTimePreKey: Uint8Array,
-  recipientSPKSignature: Uint8Array,
-  protocolVersion: string,
-  cipherSuite: string
-): SessionState {
-  // Validate protocol version and cipher suite
-  validateProtocolVersion(protocolVersion);
-  validateCipherSuite(cipherSuite);
+const CURVE = 'prime256v1';
+const PUB_LEN = 65;        // uncompressed P-256 public key
+const HEADER_LEN = 85;     // 65 + 4 + 4 + 12
+const MAX_SKIP = 256;
 
-  // Verify SPK signature
-  verifySPKSignature(recipientSignedPreKey, recipientSPKSignature, recipientIdentityKey);
+/* ================================================================
+ * Init (no-op — Node.js crypto is always ready)
+ * ================================================================ */
 
-  // Derive shared secret with cryptographic binding
-  const sharedSecret = deriveSharedSecret(
-    identityKeyPair.publicKey,
-    recipientSignedPreKey,
-    recipientOneTimePreKey,
-    protocolVersion,
-    cipherSuite
-  );
+export async function initializeCrypto(): Promise<void> {}
 
-  if (!sharedSecret) {
-    throw new Error('Failed to derive shared secret');
-  }
+/* ================================================================
+ * Key generation
+ * ================================================================ */
 
-  // Derive root key
-  const rootKey = deriveKey(sharedSecret, 'x3dh-root-key', sodium.from_string(protocolVersion));
-
+export function generateKeyPair(): KeyPair {
+  const ecdh = crypto.createECDH(CURVE);
+  ecdh.generateKeys();
   return {
-    identityKey: identityKeyPair.publicKey,
-    signedPreKey: signedPreKeyPair.publicKey,
-    oneTimePreKey,
-    rootKey,
-    sendingChainKey: rootKey,
-    receivingChainKey: rootKey,
-    skippedMessageKeys: new Map(),
-    isPostCompromise: false,
+    publicKey: Buffer.from(ecdh.getPublicKey()),
+    privateKey: Buffer.from(ecdh.getPrivateKey()),
   };
 }
 
-/**
- * Double Ratchet Encryption
- * @param plaintext - The message to encrypt
- * @param session - The current session state
- * @returns { ciphertext: Uint8Array; header: { publicKey: Uint8Array; nonce: Uint8Array } }
- */
-export function encryptMessage(plaintext: string, session: SessionState) {
-  // Generate a new ratchet key pair
-  const ratchetKeyPair = sodium.crypto_kx_keypair();
+/* ================================================================
+ * Low-level crypto helpers
+ * ================================================================ */
 
-  // Perform a Diffie-Hellman exchange with the recipient's public key
-  const sharedSecret = sodium.crypto_kx_client_session_keys(
-    ratchetKeyPair.publicKey,
-    ratchetKeyPair.privateKey,
-    session.identityKey
-  );
+/** ECDH shared secret */
+function ecdhSecret(priv: Buffer, pub: Buffer): Buffer {
+  const ecdh = crypto.createECDH(CURVE);
+  ecdh.setPrivateKey(priv);
+  return Buffer.from(ecdh.computeSecret(pub));
+}
 
-  // Update root key and derive new sending chain key
-  const newRootKey = sodium.crypto_generichash(32, new Uint8Array([...session.rootKey, ...sharedSecret.sharedTx]));
-  const newSendingChainKey = sodium.crypto_generichash(32, newRootKey);
+/** HKDF-SHA256 */
+function hkdf(ikm: Buffer, salt: Buffer, info: string, len: number): Buffer {
+  return Buffer.from(crypto.hkdfSync('sha256', ikm, salt, info, len));
+}
 
-  // Derive a message key
-  const messageKey = sodium.crypto_generichash(32, newSendingChainKey);
-
-  // Encrypt the message
-  const nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
-  const ciphertext = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
-    sodium.from_string(plaintext),
-    null, // No additional data
-    null,
-    nonce,
-    messageKey
-  );
-
-  // Update session state
-  session.rootKey = newRootKey;
-  session.sendingChainKey = newSendingChainKey;
-
+/** Root-key KDF → new rootKey + chainKey */
+function kdfRK(rk: Buffer, dhOut: Buffer): { rootKey: Buffer; chainKey: Buffer } {
+  const d = hkdf(dhOut, rk, 'stvor-rk', 64);
   return {
-    ciphertext,
-    header: {
-      publicKey: ratchetKeyPair.publicKey,
-      nonce,
+    rootKey: Buffer.from(d.subarray(0, 32)),
+    chainKey: Buffer.from(d.subarray(32, 64)),
+  };
+}
+
+/** Chain-key KDF → new chainKey + messageKey */
+function kdfCK(ck: Buffer): { chainKey: Buffer; messageKey: Buffer } {
+  return {
+    chainKey: Buffer.from(
+      crypto.createHmac('sha256', ck).update('\x01').digest(),
+    ),
+    messageKey: Buffer.from(
+      crypto.createHmac('sha256', ck).update('\x02').digest(),
+    ),
+  };
+}
+
+/** AES-256-GCM encrypt with AAD */
+function aeadEnc(key: Buffer, pt: Buffer, nonce: Buffer, aad: Buffer): Buffer {
+  const c = crypto.createCipheriv('aes-256-gcm', key, nonce);
+  c.setAAD(aad);
+  const enc = Buffer.concat([c.update(pt), c.final()]);
+  return Buffer.concat([enc, c.getAuthTag()]); // ciphertext ‖ 16-byte tag
+}
+
+/** AES-256-GCM decrypt with AAD */
+function aeadDec(key: Buffer, ct: Buffer, nonce: Buffer, aad: Buffer): Buffer {
+  const d = crypto.createDecipheriv('aes-256-gcm', key, nonce);
+  d.setAAD(aad);
+  d.setAuthTag(ct.subarray(-16));
+  return Buffer.concat([d.update(ct.subarray(0, -16)), d.final()]);
+}
+
+/* ================================================================
+ * ECDSA P-256  — sign / verify
+ * ================================================================ */
+
+function toPrivKeyObj(pub: Buffer, priv: Buffer): crypto.KeyObject {
+  return crypto.createPrivateKey({
+    key: {
+      kty: 'EC', crv: 'P-256',
+      x: pub.subarray(1, 33).toString('base64url'),
+      y: pub.subarray(33, 65).toString('base64url'),
+      d: priv.toString('base64url'),
     },
-  };
-}
-
-/**
- * Double Ratchet Decryption
- * @param ciphertext - The encrypted message
- * @param header - The message header containing the sender's public key and nonce
- * @param session - The current session state
- * @returns The decrypted plaintext
- */
-export function decryptMessage(
-  ciphertext: Uint8Array,
-  header: { publicKey: Uint8Array; nonce: Uint8Array },
-  session: SessionState
-): string {
-  // Check for skipped message keys
-  const skippedKey = session.skippedMessageKeys.get(header.nonce.toString());
-  if (skippedKey) {
-    session.skippedMessageKeys.delete(header.nonce.toString());
-    const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-      null,
-      ciphertext,
-      null, // No additional data
-      header.nonce,
-      skippedKey
-    );
-    return sodium.to_string(plaintext);
-  }
-
-  // Perform a Diffie-Hellman exchange with the sender's public key
-  const sharedSecret = sodium.crypto_kx_client_session_keys(
-    session.identityKey,
-    session.signedPreKey,
-    header.publicKey
-  );
-
-  // Update root key and derive new receiving chain key
-  const newRootKey = sodium.crypto_generichash(32, new Uint8Array([...session.rootKey, ...sharedSecret.sharedTx]));
-  const newReceivingChainKey = sodium.crypto_generichash(32, newRootKey);
-
-  // Derive the message key
-  const messageKey = sodium.crypto_generichash(32, newReceivingChainKey);
-
-  // Decrypt the message
-  const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-    null,
-    ciphertext,
-    null, // No additional data
-    header.nonce,
-    messageKey
-  );
-
-  // Update session state
-  session.rootKey = newRootKey;
-  session.receivingChainKey = newReceivingChainKey;
-
-  return sodium.to_string(plaintext);
-}
-
-// Enhanced KDF with explicit domain separation and transcript binding
-function deriveKey(inputKey: Uint8Array, context: string, transcript: Uint8Array): Uint8Array {
-  const label = sodium.from_string(context);
-  return sodium.crypto_generichash(32, new Uint8Array([...label, ...inputKey, ...transcript]));
-}
-
-function hkdfExtract(salt: Uint8Array, inputKeyMaterial: Uint8Array): Uint8Array {
-  return sodium.crypto_generichash(32, new Uint8Array([...salt, ...inputKeyMaterial]));
-}
-
-function hkdfExpand(prk: Uint8Array, info: string, length: number): Uint8Array {
-  const infoBytes = sodium.from_string(info);
-  return sodium.crypto_generichash(length, new Uint8Array([...prk, ...infoBytes]));
-}
-
-function deriveRootKey(oldRootKey: Uint8Array, dhOutput: Uint8Array, transcript: Uint8Array): Uint8Array {
-  const salt = deriveKey(oldRootKey, 'DR:dh', transcript);
-  const prk = hkdfExtract(salt, dhOutput);
-  return hkdfExpand(prk, 'DR:root', 32);
-}
-
-function deriveChainKey(rootKey: Uint8Array, transcript: Uint8Array): Uint8Array {
-  const prk = hkdfExtract(rootKey, sodium.from_string('DR:chain'));
-  return hkdfExpand(prk, 'DR:chain', 32);
-}
-
-function deriveMessageKey(chainKey: Uint8Array, transcript: Uint8Array): Uint8Array {
-  const prk = hkdfExtract(chainKey, sodium.from_string('DR:message'));
-  return hkdfExpand(prk, 'DR:message', 32);
-}
-
-// Updated skipped keys handling with bounds
-const MAX_SKIPPED_KEYS = 50; // Limit to prevent DoS
-
-// Enhanced skipped keys handling with state exhaustion protection
-const MAX_TOTAL_SKIPPED_KEYS = 500; // Global limit across sessions
-let totalSkippedKeys = 0;
-
-export function addSkippedKey(session: SessionState, header: { publicKey: Uint8Array; nonce: Uint8Array }, messageKey: Uint8Array): void {
-  const keyId = `${header.publicKey.toString()}:${header.nonce.toString()}`;
-
-  if (session.skippedMessageKeys.size >= MAX_SKIPPED_KEYS) {
-    throw new Error('Skipped keys limit exceeded for session');
-  }
-
-  if (totalSkippedKeys >= MAX_TOTAL_SKIPPED_KEYS) {
-    throw new Error('Global skipped keys limit exceeded');
-  }
-
-  session.skippedMessageKeys.set(keyId, messageKey);
-  totalSkippedKeys++;
-}
-
-export function removeSkippedKey(session: SessionState, header: { publicKey: Uint8Array; nonce: Uint8Array }): void {
-  const keyId = `${header.publicKey.toString()}:${header.nonce.toString()}`;
-  if (session.skippedMessageKeys.delete(keyId)) {
-    totalSkippedKeys--;
-  }
-}
-
-// Improved skipped keys eviction policy
-function cleanUpSkippedKeys(session: SessionState): void {
-  const currentTime = Date.now();
-  session.skippedMessageKeys.forEach((_, keyId) => {
-    const [timestamp] = keyId.split(':');
-    if (currentTime - parseInt(timestamp, 10) > 300000) { // Evict keys older than 5 minutes
-      session.skippedMessageKeys.delete(keyId);
-      totalSkippedKeys--;
-    }
+    format: 'jwk',
   });
 }
 
-export function processSkippedKeys(session: SessionState): void {
-  cleanUpSkippedKeys(session);
+function toPubKeyObj(pub: Buffer): crypto.KeyObject {
+  return crypto.createPublicKey({
+    key: {
+      kty: 'EC', crv: 'P-256',
+      x: pub.subarray(1, 33).toString('base64url'),
+      y: pub.subarray(33, 65).toString('base64url'),
+    },
+    format: 'jwk',
+  });
 }
 
-// Updated simultaneous send handling
-export function handleSimultaneousSend(session: SessionState, isInitiator: boolean): void {
-  if (isInitiator) {
-    // Initiator ratchets forward
-    session.sendingChainKey = deriveChainKey(session.sendingChainKey, sodium.from_string('initiator'));
-  } else {
-    // Responder ratchets forward
-    session.receivingChainKey = deriveChainKey(session.receivingChainKey, sodium.from_string('responder'));
-  }
-}
-
-// Updated SPK signature verification with downgrade protection
-function verifySPKSignature(spk: Uint8Array, spkSignature: Uint8Array, identityKey: Uint8Array): void {
-  const isValid = sodium.crypto_sign_verify_detached(spkSignature, spk, identityKey);
-  if (!isValid) {
-    throw new Error('Invalid SPK signature');
-  }
-}
-
-// Updated OPK exhaustion handling
-const OPK_POOL_SIZE = 100; // Example pool size
-let opkPool: Uint8Array[] = [];
-
-export function generateOPKPool(): void {
-  opkPool = Array.from({ length: OPK_POOL_SIZE }, () => sodium.crypto_kx_keypair().publicKey);
-}
-
-// Improved X3DH race safety and OPK handling
-const OPK_LOCK = new Map<string, boolean>(); // Lock for atomic OPK consumption
-
-export function consumeOPKAtomically(userId: string): Uint8Array {
-  if (OPK_LOCK.get(userId)) {
-    throw new Error('OPK consumption in progress');
-  }
-
-  OPK_LOCK.set(userId, true);
-  try {
-    const opk = consumeOPK();
-    return opk;
-  } finally {
-    OPK_LOCK.delete(userId);
-  }
-}
-
-// Enhanced X3DH with cryptographic binding and explicit abort semantics
-function deriveSharedSecret(ik: Uint8Array, spk: Uint8Array, opk: Uint8Array, protocolVersion: string, cipherSuite: string): Uint8Array {
-  const context = sodium.from_string(`${protocolVersion}:${cipherSuite}`);
-  return sodium.crypto_generichash(32, new Uint8Array([...ik, ...spk, ...opk, ...context]));
-}
-
-// Final improvements for X3DH
-function validateProtocolVersion(version: string): void {
-  const supportedVersions = ['1.0'];
-  if (!supportedVersions.includes(version)) {
-    throw new Error(`Unsupported protocol version: ${version}`);
-  }
-}
-
-function validateCipherSuite(cipherSuite: string): void {
-  const supportedSuites = ['AES-GCM'];
-  if (!supportedSuites.includes(cipherSuite)) {
-    throw new Error(`Unsupported cipher suite: ${cipherSuite}`);
-  }
-}
-
-/**
- * Policy for forced DH rotation.
- * Triggers a DH ratchet step based on:
- * - Number of messages sent.
- * - Time elapsed since the last ratchet.
- * - Explicit compromise flag.
- */
-const DH_RATCHET_POLICY = {
-  maxMessages: 50, // Trigger after 50 messages
-  maxTime: 10 * 60 * 1000, // Trigger after 10 minutes
-};
-
-let lastRatchetTime = Date.now();
-let messageCounter = 0;
-
-export function enforceDHRatchetPolicy(session: SessionState, remotePublicKey: Uint8Array, suspectedCompromise = false): void {
-  const currentTime = Date.now();
-
-  // Check if policy conditions are met
-  if (
-    messageCounter >= DH_RATCHET_POLICY.maxMessages ||
-    currentTime - lastRatchetTime >= DH_RATCHET_POLICY.maxTime ||
-    suspectedCompromise
-  ) {
-    forceDHRatchet(session, remotePublicKey);
-
-    // Reset counters
-    lastRatchetTime = currentTime;
-    messageCounter = 0;
-  }
-}
-
-/**
- * Increment message counter and enforce policy.
- */
-export function incrementMessageCounter(session: SessionState, remotePublicKey: Uint8Array): void {
-  messageCounter++;
-  enforceDHRatchetPolicy(session, remotePublicKey);
-}
-
-/**
- * Force a DH ratchet step to enable PCS.
- * @param session - The current session state.
- * @param remotePublicKey - The remote party's ephemeral public key.
- */
-export function forceDHRatchet(session: SessionState, remotePublicKey: Uint8Array): void {
-  // Generate a new ephemeral key pair
-  const ephemeralKeyPair = sodium.crypto_kx_keypair();
-
-  // Perform a Diffie-Hellman exchange
-  const dhOutput = sodium.crypto_kx_client_session_keys(
-    ephemeralKeyPair.publicKey,
-    ephemeralKeyPair.privateKey,
-    remotePublicKey
+/** ECDSA-P256-SHA256 sign */
+export function ecSign(data: Buffer, kp: KeyPair): Buffer {
+  return Buffer.from(
+    crypto.sign('sha256', data, toPrivKeyObj(kp.publicKey, kp.privateKey)),
   );
-
-  // Update the root key
-  const newRootKey = deriveRootKey(session.rootKey, dhOutput.sharedTx, sodium.from_string('dh-ratchet-recovery'));
-
-  // Clear compromised keys
-  session.sendingChainKey = newRootKey;
-  session.receivingChainKey = newRootKey;
-  session.skippedMessageKeys.clear();
-
-  // Update session state
-  session.rootKey = newRootKey;
 }
 
-/**
- * Ensure rootKey updates only occur through DH ratchet.
- * @param session - The current session state.
- * @param dhOutput - The DH output used to update the root key.
- */
-function enforceDHRatchetOnly(session: SessionState, dhOutput: Uint8Array): void {
-  if (!dhOutput) {
-    throw new Error('Root key updates must occur through DH ratchet');
+/** ECDSA-P256-SHA256 verify */
+export function ecVerify(data: Buffer, sig: Buffer, pub: Buffer): boolean {
+  return crypto.verify('sha256', data, toPubKeyObj(pub), sig);
+}
+
+/* ================================================================
+ * X3DH — Symmetric Variant
+ *
+ * Both sides independently derive the SAME shared secret from
+ * their own (IK, SPK) and the peer's (IK, SPK).
+ * Canonical ordering by comparing IK public keys.
+ * ================================================================ */
+
+export function x3dhSymmetric(
+  myIK: KeyPair, mySPK: KeyPair,
+  peerIK: Buffer, peerSPK: Buffer,
+): Buffer {
+  const iAmLower = Buffer.compare(myIK.publicKey, peerIK) < 0;
+
+  const d1 = iAmLower
+    ? ecdhSecret(myIK.privateKey, peerSPK)
+    : ecdhSecret(mySPK.privateKey, peerIK);
+
+  const d2 = iAmLower
+    ? ecdhSecret(mySPK.privateKey, peerIK)
+    : ecdhSecret(myIK.privateKey, peerSPK);
+
+  const d3 = ecdhSecret(mySPK.privateKey, peerSPK);
+
+  return hkdf(Buffer.concat([d1, d2, d3]), Buffer.alloc(32), 'X3DH', 32);
+}
+
+/* ================================================================
+ * Session Establishment
+ *
+ * Creates a "pending" session.  The first send triggers an
+ * initiator DH ratchet; the first receive triggers a responder
+ * DH ratchet.  Either side can go first.
+ * ================================================================ */
+
+export function establishSession(
+  myIK: KeyPair,
+  mySPK: KeyPair,
+  peerIK: Buffer,
+  peerSPK: Buffer,
+): SessionState {
+  const sk = x3dhSymmetric(myIK, mySPK, peerIK, peerSPK);
+  const ratchetKP = generateKeyPair();
+
+  return {
+    myIdentityPublicKey: Buffer.from(myIK.publicKey),
+    peerIdentityPublicKey: Buffer.from(peerIK),
+
+    rootKey: sk,                       // raw shared secret
+    sendingChainKey: Buffer.alloc(32), // set by first DH ratchet
+    receivingChainKey: Buffer.alloc(32),
+
+    myRatchetKeyPair: ratchetKP,
+    theirRatchetPublicKey: null,
+
+    sendCount: 0,
+    recvCount: 0,
+    prevSendCount: 0,
+
+    skippedKeys: new Map(),
+    isPostCompromise: false,
+
+    /* deferred init data */
+    peerSPK: Buffer.from(peerSPK),
+    mySPKPair: {
+      publicKey: Buffer.from(mySPK.publicKey),
+      privateKey: Buffer.from(mySPK.privateKey),
+    },
+
+    /* legacy compat */
+    identityKey: myIK.publicKey,
+    signedPreKey: mySPK.publicKey,
+    oneTimePreKey: new Uint8Array(0),
+    sendingChainMessageNumber: 0,
+    receivingChainMessageNumber: 0,
+    previousSendingChainLength: 0,
+  };
+}
+
+/* ================================================================
+ * Double Ratchet — Encrypt
+ *
+ * Header layout (85 bytes):
+ *  [0..64]   ratchet public key   (65 B)
+ *  [65..68]  prev sending chain length  (u32 BE)
+ *  [69..72]  message number             (u32 BE)
+ *  [73..84]  AES-GCM nonce              (12 B)
+ * ================================================================ */
+
+export function encryptMessage(
+  session: SessionState,
+  plaintext: Buffer,
+): { ciphertext: Buffer; header: Buffer } {
+  /* ---- Deferred init: initiator DH ratchet on first send ---- */
+  if (!session.theirRatchetPublicKey && session.peerSPK) {
+    const dhOut = ecdhSecret(session.myRatchetKeyPair.privateKey, session.peerSPK);
+    const r = kdfRK(session.rootKey, dhOut);
+    session.rootKey = r.rootKey;
+    session.sendingChainKey = r.chainKey;
+    session.theirRatchetPublicKey = Buffer.from(session.peerSPK);
+    session.peerSPK = null;   // consumed
+    session.mySPKPair = null;
   }
 
-  // Update the root key
-  const newRootKey = deriveRootKey(session.rootKey, dhOutput, sodium.from_string('dh-ratchet-only'));
-  session.rootKey = newRootKey;
+  /* ---- Symmetric ratchet ---- */
+  const { chainKey, messageKey } = kdfCK(session.sendingChainKey);
+  session.sendingChainKey = chainKey;
+
+  const nonce = crypto.randomBytes(12);
+
+  const header = Buffer.alloc(HEADER_LEN);
+  session.myRatchetKeyPair.publicKey.copy(header, 0);
+  header.writeUInt32BE(session.prevSendCount, PUB_LEN);
+  header.writeUInt32BE(session.sendCount, PUB_LEN + 4);
+  nonce.copy(header, PUB_LEN + 8);
+
+  const ct = aeadEnc(messageKey, plaintext, nonce, header);
+
+  session.sendCount++;
+  session.sendingChainMessageNumber = session.sendCount;
+
+  return { ciphertext: ct, header };
 }
 
-/**
- * Trigger PCS recovery only after receiving a new DH public key.
- * @param session - The current session state.
- * @param remotePublicKey - The new DH public key from the remote party.
- */
-export function receiveNewDHPublicKey(session: SessionState, remotePublicKey: Uint8Array): void {
-  // Generate a new ephemeral key pair
-  const ephemeralKeyPair = sodium.crypto_kx_keypair();
+/* ================================================================
+ * Double Ratchet — Decrypt
+ * ================================================================ */
 
-  // Perform a Diffie-Hellman exchange
-  const dhOutput = sodium.crypto_kx_client_session_keys(
-    ephemeralKeyPair.publicKey,
-    ephemeralKeyPair.privateKey,
-    remotePublicKey
-  );
-
-  // Update the root key
-  const newRootKey = deriveRootKey(session.rootKey, dhOutput, sodium.from_string('dh-ratchet-recovery'));
-
-  // Clear compromised keys
-  session.sendingChainKey = newRootKey;
-  session.receivingChainKey = newRootKey;
-  session.skippedMessageKeys.clear();
-
-  // Update session state
-  session.rootKey = newRootKey;
+function skipKeys(s: SessionState, until: number): void {
+  if (until - s.recvCount > MAX_SKIP) throw new Error('Too many skipped messages');
+  while (s.recvCount < until) {
+    const { chainKey, messageKey } = kdfCK(s.receivingChainKey);
+    s.receivingChainKey = chainKey;
+    s.skippedKeys.set(
+      `${s.theirRatchetPublicKey!.toString('hex')}:${s.recvCount}`,
+      messageKey,
+    );
+    s.recvCount++;
+  }
 }
 
-/**
- * Define and enforce state transitions between epochs.
- * @param session - The current session state.
- */
-function transitionToPostCompromiseEpoch(session: SessionState): void {
-  // Clear all pre-compromise state
-  session.sendingChainKey = null;
-  session.receivingChainKey = null;
-  session.skippedMessageKeys.clear();
+function dhRatchetStep(s: SessionState, theirNewKey: Buffer): void {
+  s.prevSendCount = s.sendCount;
+  s.sendCount = 0;
+  s.recvCount = 0;
+  s.theirRatchetPublicKey = Buffer.from(theirNewKey);
 
-  // Mark the session as post-compromise
+  // Derive receiving chain
+  const dh1 = ecdhSecret(s.myRatchetKeyPair.privateKey, theirNewKey);
+  const r1 = kdfRK(s.rootKey, dh1);
+  s.rootKey = r1.rootKey;
+  s.receivingChainKey = r1.chainKey;
+
+  // New ratchet key pair → derive sending chain
+  s.myRatchetKeyPair = generateKeyPair();
+  const dh2 = ecdhSecret(s.myRatchetKeyPair.privateKey, theirNewKey);
+  const r2 = kdfRK(s.rootKey, dh2);
+  s.rootKey = r2.rootKey;
+  s.sendingChainKey = r2.chainKey;
+}
+
+export function decryptMessage(
+  session: SessionState,
+  ciphertext: Buffer,
+  header: Buffer,
+): Buffer {
+  const theirPub = header.subarray(0, PUB_LEN);
+  const prevChain = header.readUInt32BE(PUB_LEN);
+  const msgNum = header.readUInt32BE(PUB_LEN + 4);
+  const nonce = header.subarray(PUB_LEN + 8, HEADER_LEN);
+
+  /* ---- Deferred init: responder role on first receive ---- */
+  if (!session.theirRatchetPublicKey && session.mySPKPair) {
+    // Use our SPK as ratchet key for the first DH step
+    // so DH(mySPK, theirRatchetKey) matches initiator's DH(theirRatchetKey, mySPK)
+    session.myRatchetKeyPair = session.mySPKPair;
+    session.mySPKPair = null;  // consumed
+    session.peerSPK = null;
+  }
+
+  // 1. Try skipped key
+  const skId = `${theirPub.toString('hex')}:${msgNum}`;
+  const skMK = session.skippedKeys.get(skId);
+  if (skMK) {
+    session.skippedKeys.delete(skId);
+    return aeadDec(skMK, ciphertext, nonce, header);
+  }
+
+  // 2. DH ratchet if new ratchet key
+  const needsRatchet =
+    !session.theirRatchetPublicKey ||
+    Buffer.compare(session.theirRatchetPublicKey, theirPub) !== 0;
+
+  if (needsRatchet) {
+    if (session.theirRatchetPublicKey) {
+      skipKeys(session, prevChain);
+    }
+    dhRatchetStep(session, theirPub);
+  }
+
+  // 3. Skip to this message number
+  skipKeys(session, msgNum);
+
+  // 4. Derive message key
+  const { chainKey, messageKey } = kdfCK(session.receivingChainKey);
+  session.receivingChainKey = chainKey;
+  session.recvCount++;
+  session.receivingChainMessageNumber = session.recvCount;
+
+  return aeadDec(messageKey, ciphertext, nonce, header);
+}
+
+/* ================================================================
+ * Force Ratchet (post-compromise security)
+ * ================================================================ */
+
+export function forceRatchet(session: SessionState): void {
+  session.myRatchetKeyPair = generateKeyPair();
+  session.sendCount = 0;
+  session.recvCount = 0;
+  session.prevSendCount = 0;
   session.isPostCompromise = true;
+}
+
+/* ================================================================
+ * Serialisation / Deserialisation
+ * ================================================================ */
+
+export function serializeSession(s: SessionState): Buffer {
+  const sk: Record<string, number[]> = {};
+  for (const [k, v] of s.skippedKeys) sk[k] = Array.from(v);
+
+  return Buffer.from(JSON.stringify({
+    myIK: Array.from(s.myIdentityPublicKey),
+    peerIK: Array.from(s.peerIdentityPublicKey),
+    rk: Array.from(s.rootKey),
+    sck: Array.from(s.sendingChainKey),
+    rck: Array.from(s.receivingChainKey),
+    mrk: {
+      pub: Array.from(s.myRatchetKeyPair.publicKey),
+      priv: Array.from(s.myRatchetKeyPair.privateKey),
+    },
+    trpk: s.theirRatchetPublicKey ? Array.from(s.theirRatchetPublicKey) : null,
+    sc: s.sendCount, rc: s.recvCount, psc: s.prevSendCount,
+    sk, ipc: s.isPostCompromise ? 1 : 0,
+    pspk: s.peerSPK ? Array.from(s.peerSPK) : null,
+    mspk: s.mySPKPair
+      ? { pub: Array.from(s.mySPKPair.publicKey), priv: Array.from(s.mySPKPair.privateKey) }
+      : null,
+  }));
+}
+
+export function deserializeSession(data: Buffer): SessionState {
+  const o = JSON.parse(data.toString());
+  const skipped = new Map<string, Buffer>();
+  if (o.sk) {
+    for (const [k, v] of Object.entries(o.sk)) {
+      skipped.set(k, Buffer.from(v as number[]));
+    }
+  }
+  const myIK = Buffer.from(o.myIK);
+  return {
+    myIdentityPublicKey: myIK,
+    peerIdentityPublicKey: Buffer.from(o.peerIK),
+    rootKey: Buffer.from(o.rk),
+    sendingChainKey: Buffer.from(o.sck),
+    receivingChainKey: Buffer.from(o.rck),
+    myRatchetKeyPair: {
+      publicKey: Buffer.from(o.mrk.pub),
+      privateKey: Buffer.from(o.mrk.priv),
+    },
+    theirRatchetPublicKey: o.trpk ? Buffer.from(o.trpk) : null,
+    sendCount: o.sc, recvCount: o.rc, prevSendCount: o.psc,
+    skippedKeys: skipped,
+    isPostCompromise: o.ipc === 1,
+    peerSPK: o.pspk ? Buffer.from(o.pspk) : null,
+    mySPKPair: o.mspk
+      ? { publicKey: Buffer.from(o.mspk.pub), privateKey: Buffer.from(o.mspk.priv) }
+      : null,
+    identityKey: myIK,
+    signedPreKey: myIK,
+    oneTimePreKey: new Uint8Array(0),
+    sendingChainMessageNumber: o.sc,
+    receivingChainMessageNumber: o.rc,
+    previousSendingChainLength: o.psc,
+  };
 }

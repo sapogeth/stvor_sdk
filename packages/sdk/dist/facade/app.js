@@ -1,241 +1,376 @@
+/**
+ * STVOR DX Facade - Main Application Classes
+ *
+ * Security Guarantees:
+ * - X3DH + Double Ratchet (Signal Protocol)
+ * - Forward Secrecy via automatic DH ratchet rotation
+ * - Post-Compromise Security via forced ratchet steps
+ * - TOFU (Trust On First Use) for identity verification
+ * - Replay protection via nonce validation
+ * - Cryptographically verified metrics (HMAC-SHA256)
+ * - Node.js crypto for all cryptographic operations
+ */
 import { Errors, StvorError } from './errors.js';
+export { StvorError, Errors };
 import { RelayClient } from './relay-client.js';
-import { CryptoSession } from './crypto.js';
-/** Default timeout for waiting for recipient keys (ms) */
-const DEFAULT_RECIPIENT_TIMEOUT = 10000;
-/** Polling interval for key resolution (ms) */
-const KEY_POLL_INTERVAL = 100;
+import { Counter, Gauge, register } from 'prom-client';
+import { CryptoSessionManager } from './crypto-session.js';
+import { verifyFingerprint } from './tofu-manager.js';
+import { validateMessageWithNonce } from './replay-manager.js';
+import { MetricsAttestationEngine } from './metrics-attestation.js';
+// Define Prometheus metrics
+const messagesDeliveredTotal = new Counter({
+    name: 'messages_delivered_total',
+    help: 'Total number of messages successfully delivered',
+});
+const quotaExceededTotal = new Counter({
+    name: 'quota_exceeded_total',
+    help: 'Total number of quota exceeded events',
+});
+const rateLimitedTotal = new Counter({
+    name: 'rate_limited_total',
+    help: 'Total number of rate-limited events',
+});
+const activeTokens = new Gauge({
+    name: 'active_tokens',
+    help: 'Number of currently active tokens',
+});
+// Export metrics for use in the application
+export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal, activeTokens, register };
+export class StvorApp {
+    constructor(config) {
+        this.connectedClients = new Map();
+        this.config = config;
+        this.relay = new RelayClient(config.relayUrl, config.appToken, config.timeout);
+        this.metricsAttestation = new MetricsAttestationEngine(config.appToken);
+        this.appToken = config.appToken;
+        this.backendUrl = config.backendUrl || 'http://localhost:3000';
+    }
+    isReady() {
+        return this.relay.isConnected();
+    }
+    /**
+     * Get attestation engine for recording metrics
+     */
+    getMetricsAttestationEngine() {
+        return this.metricsAttestation;
+    }
+    /**
+     * Periodically send metrics attestations to backend
+     * Backend verifies and stores only valid attestations
+     */
+    async sendMetricsAttestation() {
+        const attestation = this.metricsAttestation.createAttestation();
+        try {
+            const response = await fetch(`${this.backendUrl}/api/metrics/attest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    appToken: this.appToken,
+                    attestation,
+                }),
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('[STVOR] Metrics attestation rejected:', error.reason);
+                return;
+            }
+            console.debug('[STVOR] Metrics attestation verified and stored');
+        }
+        catch (error) {
+            console.error('[STVOR] Failed to send metrics attestation:', error);
+        }
+    }
+    /**
+     * Flush metrics to backend
+     * Sends current metrics attestation (if there is any activity)
+     * Called explicitly by user or on disconnect
+     */
+    async flushMetrics() {
+        await this.sendMetricsAttestation().catch(err => console.debug('[STVOR] Metrics flush failed:', err));
+    }
+    async connect(userId) {
+        const existingClient = this.connectedClients.get(userId);
+        if (existingClient) {
+            console.warn(`[STVOR] Warning: User "${userId}" is already connected. Returning cached client.`);
+            return existingClient;
+        }
+        const client = new StvorFacadeClient(userId, this.relay, this.metricsAttestation);
+        await this.initClient(client);
+        this.connectedClients.set(userId, client);
+        return client;
+    }
+    async disconnect(userId) {
+        if (userId) {
+            const client = this.connectedClients.get(userId);
+            if (client) {
+                await client.disconnect();
+                this.connectedClients.delete(userId);
+            }
+        }
+        else {
+            for (const client of this.connectedClients.values()) {
+                await client.disconnect();
+            }
+            this.connectedClients.clear();
+            this.relay.disconnect();
+            // Flush any pending metrics before disconnect
+            await this.flushMetrics();
+        }
+    }
+    async initClient(client) {
+        await client.internalInitialize();
+    }
+}
 export class StvorFacadeClient {
-    constructor(userId, relay, defaultTimeout = DEFAULT_RECIPIENT_TIMEOUT) {
+    constructor(userId, relay, metricsAttestation) {
+        this.initialized = false;
+        this.messageHandlers = new Map();
+        this.messageQueue = [];
+        this.isReceiving = false;
         this.userId = userId;
         this.relay = relay;
-        this.defaultTimeout = defaultTimeout;
-        this.handlers = [];
-        this.userAvailableHandlers = [];
-        this.knownPubKeys = new Map();
-        this.pendingKeyResolvers = new Map();
-        this.crypto = new CryptoSession();
-        // listen relay messages
-        this.relay.onMessage((m) => this.handleRelayMessage(m));
-        // announce our public key
-        this.relay.send({ type: 'announce', user: this.userId, pub: this.crypto.exportPublic() });
-    }
-    async handleRelayMessage(m) {
-        if (!m || typeof m !== 'object')
-            return;
-        if (m.type === 'announce' && m.user && m.pub) {
-            const wasKnown = this.knownPubKeys.has(m.user);
-            this.knownPubKeys.set(m.user, m.pub);
-            // Notify pending resolvers
-            const resolvers = this.pendingKeyResolvers.get(m.user);
-            if (resolvers) {
-                resolvers.forEach(resolve => resolve());
-                this.pendingKeyResolvers.delete(m.user);
-            }
-            // Notify user available handlers (only for new users)
-            if (!wasKnown) {
-                for (const h of this.userAvailableHandlers) {
-                    try {
-                        h(m.user);
-                    }
-                    catch { }
-                }
-            }
-            return;
-        }
-        if (m.type === 'message' && m.to === this.userId && m.payload) {
-            const payload = m.payload;
-            const sender = m.from;
-            try {
-                const plain = this.crypto.decrypt(payload, payload.senderPub);
-                const text = new TextDecoder().decode(plain);
-                for (const h of this.handlers)
-                    h(sender, text);
-            }
-            catch (e) {
-                // ignore decryption errors
-            }
-        }
+        this.metricsAttestation = metricsAttestation;
+        this.cryptoSession = new CryptoSessionManager(userId);
     }
     async internalInitialize() {
-        // nothing for now; announce already sent in constructor
+        await this.initialize();
     }
-    /**
-     * Check if a user's public key is available locally
-     */
-    isUserAvailable(userId) {
-        return this.knownPubKeys.has(userId);
-    }
-    /**
-     * Get list of all known users (whose public keys we have)
-     */
-    getAvailableUsers() {
-        return Array.from(this.knownPubKeys.keys()).filter(id => id !== this.userId);
-    }
-    /**
-     * Wait until a specific user's public key becomes available.
-     * This is the recommended way to ensure you can send messages.
-     *
-     * @param userId - The user to wait for
-     * @param timeoutMs - Maximum time to wait (default: 10000ms)
-     * @throws StvorError with RECIPIENT_TIMEOUT if timeout expires
-     *
-     * @example
-     * ```typescript
-     * await alice.waitForUser('bob@example.com');
-     * await alice.send('bob@example.com', 'Hello!');
-     * ```
-     */
-    async waitForUser(userId, timeoutMs = this.defaultTimeout) {
-        // Already available
-        if (this.knownPubKeys.has(userId)) {
+    async initialize() {
+        if (this.initialized)
             return;
-        }
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                // Remove from pending
-                const resolvers = this.pendingKeyResolvers.get(userId);
-                if (resolvers) {
-                    const idx = resolvers.indexOf(resolveHandler);
-                    if (idx >= 0)
-                        resolvers.splice(idx, 1);
-                    if (resolvers.length === 0)
-                        this.pendingKeyResolvers.delete(userId);
-                }
-                reject(new StvorError(Errors.RECIPIENT_TIMEOUT, `Timed out waiting for user "${userId}" after ${timeoutMs}ms. ` +
-                    `The user may not be connected to the relay. ` +
-                    `Ensure both parties are online before sending messages.`, 'Verify the recipient is connected, or increase timeout', true));
-            }, timeoutMs);
-            const resolveHandler = () => {
-                clearTimeout(timeout);
-                resolve();
-            };
-            // Add to pending resolvers
-            if (!this.pendingKeyResolvers.has(userId)) {
-                this.pendingKeyResolvers.set(userId, []);
-            }
-            this.pendingKeyResolvers.get(userId).push(resolveHandler);
-        });
+        // Initialize libsodium and generate identity keys
+        await this.cryptoSession.initialize();
+        // Get serialized public keys for relay registration
+        const publicKeys = this.cryptoSession.getPublicKeys();
+        // Register with relay server
+        await this.relay.register(this.userId, publicKeys);
+        this.initialized = true;
+        this.startMessagePolling();
     }
     /**
      * Send an encrypted message to a recipient.
      *
-     * If the recipient's public key is not yet available, this method will
-     * automatically wait up to `timeoutMs` for the key to arrive via the relay.
+     * By default, if the recipient is not yet registered, the method will
+     * poll up to `options.timeout` ms for their keys to appear on the relay.
+     * Set `options.waitForRecipient: false` to throw immediately instead.
      *
-     * @param recipientId - The recipient's user ID
-     * @param content - Message content (string or Uint8Array)
-     * @param options - Optional: { timeout: number, waitForRecipient: boolean }
-     * @throws StvorError with RECIPIENT_TIMEOUT if recipient key doesn't arrive in time
-     *
-     * @example
-     * ```typescript
-     * // Auto-waits for recipient (recommended)
-     * await alice.send('bob@example.com', 'Hello!');
-     *
-     * // Skip waiting (throws immediately if not available)
-     * await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
-     * ```
+     * @param recipientId  - The recipient's user ID
+     * @param content      - Message content (string or Uint8Array)
+     * @param options      - Optional settings:
+     *   - `timeout`           — Max wait time in ms (default: 10 000)
+     *   - `waitForRecipient`  — Auto-wait for recipient keys (default: true)
      */
     async send(recipientId, content, options) {
-        const { timeout = this.defaultTimeout, waitForRecipient = true } = options ?? {};
-        // Try to resolve recipient key
-        let recipientPub = this.knownPubKeys.get(recipientId);
-        if (!recipientPub) {
-            if (!waitForRecipient) {
-                throw new StvorError(Errors.RECIPIENT_NOT_FOUND, `Recipient "${recipientId}" is not available. ` +
-                    `Their public key has not been announced to the relay. ` +
-                    `Use waitForUser() or enable waitForRecipient option.`, 'Call waitForUser(recipientId) before sending, or ensure recipient is connected', false);
-            }
-            // Wait for recipient key with timeout
-            await this.waitForUser(recipientId, timeout);
-            recipientPub = this.knownPubKeys.get(recipientId);
-            if (!recipientPub) {
-                // Should not happen, but safety check
-                throw new StvorError(Errors.RECIPIENT_NOT_FOUND, `Recipient "${recipientId}" key resolution failed unexpectedly.`, 'This is an internal error, please report it', false);
+        if (!this.initialized) {
+            throw Errors.clientNotReady();
+        }
+        const { timeout = 10000, waitForRecipient = true } = options ?? {};
+        // Check quota for production tokens (skip for local dev tokens)
+        const appToken = this.relay.getAppToken();
+        if (!appToken.startsWith('stvor_local_') && !appToken.startsWith('stvor_dev_')) {
+            const quota = await this.checkQuota();
+            if (quota && quota.used >= quota.limit && quota.limit !== -1) {
+                quotaExceededTotal.inc();
+                throw Errors.quotaExceeded();
             }
         }
-        const plain = typeof content === 'string' ? new TextEncoder().encode(content) : content;
-        const payload = this.crypto.encrypt(plain, recipientPub);
-        const msg = { type: 'message', to: recipientId, from: this.userId, payload };
-        this.relay.send(msg);
+        const contentBytes = typeof content === 'string'
+            ? new TextEncoder().encode(content)
+            : content;
+        // Ensure session with recipient exists
+        if (!this.cryptoSession.hasSession(recipientId)) {
+            // Fetch recipient's public keys (with optional polling)
+            let recipientPublicKeys = await this.relay.getPublicKeys(recipientId);
+            // If not found and waitForRecipient is enabled, poll until timeout
+            if (!recipientPublicKeys && waitForRecipient) {
+                recipientPublicKeys = await this.waitForRecipientKeys(recipientId, timeout);
+            }
+            if (!recipientPublicKeys) {
+                throw Errors.recipientNotFound(recipientId);
+            }
+            // TOFU: Verify fingerprint (throws on mismatch)
+            const recipientIdentityKey = Buffer.from(recipientPublicKeys.identityKey, 'base64url');
+            await verifyFingerprint(recipientId, recipientIdentityKey);
+            // Establish X3DH session
+            await this.cryptoSession.establishSessionWithPeer(recipientId, recipientPublicKeys);
+        }
+        // Encrypt using Double Ratchet
+        const plaintext = new TextDecoder().decode(contentBytes);
+        const { ciphertext, header } = this.cryptoSession.encryptForPeer(recipientId, plaintext);
+        // METRIC: Record successful encryption (AFTER AEAD completes)
+        this.metricsAttestation.recordMessageEncrypted();
+        try {
+            await this.relay.send({
+                to: recipientId,
+                from: this.userId,
+                ciphertext,
+                header,
+            });
+            messagesDeliveredTotal.inc();
+        }
+        catch (e) {
+            if (e.code === 'QUOTA_EXCEEDED') {
+                quotaExceededTotal.inc();
+                throw Errors.quotaExceeded();
+            }
+            throw e;
+        }
     }
     /**
-     * Register a handler for incoming messages
+     * Check current quota usage from the relay server
      */
+    async checkQuota() {
+        try {
+            const response = await fetch(`${this.relay.getBaseUrl()}/usage`, {
+                headers: {
+                    'Authorization': `Bearer ${this.relay.getAppToken()}`
+                },
+            });
+            if (!response.ok)
+                return null;
+            return await response.json();
+        }
+        catch {
+            // If quota check fails, allow the request (fail open for availability)
+            return null;
+        }
+    }
+    /**
+     * Wait for a specific recipient's public keys to become available on the relay.
+     * Polls the relay at 500ms intervals until the keys appear or timeout expires.
+     *
+     * @param recipientId - The user ID of the recipient
+     * @param timeoutMs   - Max time to wait in milliseconds (default: 10000)
+     * @returns The recipient's serialized public keys, or null if timeout
+     */
+    async waitForUser(recipientId, timeoutMs = 10000) {
+        const keys = await this.waitForRecipientKeys(recipientId, timeoutMs);
+        return keys !== null;
+    }
+    async waitForRecipientKeys(recipientId, timeoutMs) {
+        const start = Date.now();
+        const pollInterval = 500;
+        while (Date.now() - start < timeoutMs) {
+            const keys = await this.relay.getPublicKeys(recipientId);
+            if (keys)
+                return keys;
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+        return null;
+    }
+    // Note: blocking receive()/seal()/open() APIs are NOT part of SDK v0.1 facade.
+    // Use onMessage() for incoming messages and send() to transmit messages.
     onMessage(handler) {
-        this.handlers.push(handler);
+        const id = crypto.randomUUID();
+        this.messageHandlers.set(id, handler);
         return () => {
-            const i = this.handlers.indexOf(handler);
-            if (i >= 0)
-                this.handlers.splice(i, 1);
+            this.messageHandlers.delete(id);
         };
     }
-    /**
-     * Register a handler that fires when a new user becomes available.
-     * This is triggered when we receive a user's public key announcement.
-     *
-     * **Edge-triggered**: Fires only ONCE per user, on first key discovery.
-     * Will NOT fire again if user reconnects with same identity.
-     *
-     * @example
-     * ```typescript
-     * client.onUserAvailable((userId) => {
-     *   console.log(`${userId} is now available for messaging`);
-     * });
-     * ```
-     */
-    onUserAvailable(handler) {
-        this.userAvailableHandlers.push(handler);
-        return () => {
-            const i = this.userAvailableHandlers.indexOf(handler);
-            if (i >= 0)
-                this.userAvailableHandlers.splice(i, 1);
-        };
+    getUserId() {
+        return this.userId;
     }
-}
-export class StvorApp {
-    constructor(config) {
-        this.config = config;
-        this.clients = new Map();
-    }
-    async connect(userId) {
-        const existing = this.clients.get(userId);
-        if (existing)
-            return existing;
-        const relay = new RelayClient(this.config.relayUrl ?? 'wss://stvor.xyz/relay', this.config.appToken, this.config.timeout ?? 10000);
-        // Wait for relay handshake - throws if API key is invalid
-        await relay.init();
-        const client = new StvorFacadeClient(userId, relay, this.config.timeout ?? 10000);
-        await client.internalInitialize();
-        this.clients.set(userId, client);
-        return client;
-    }
-    /**
-     * Get a connected client by user ID
-     */
-    getClient(userId) {
-        return this.clients.get(userId);
-    }
-    /**
-     * Check if a user is connected locally
-     */
-    isConnected(userId) {
-        return this.clients.has(userId);
-    }
-    async disconnect(userId) {
-        if (userId) {
-            this.clients.delete(userId);
-            return;
+    async decryptMessage(msg) {
+        // Ensure session with sender exists
+        if (!this.cryptoSession.hasSession(msg.from)) {
+            // Fetch sender's public keys
+            const senderPublicKeys = await this.relay.getPublicKeys(msg.from);
+            if (!senderPublicKeys) {
+                throw Errors.recipientNotFound(msg.from);
+            }
+            // TOFU: Verify fingerprint (throws on mismatch)
+            const senderIdentityKey = Buffer.from(senderPublicKeys.identityKey, 'base64url');
+            await verifyFingerprint(msg.from, senderIdentityKey);
+            // Establish X3DH session
+            await this.cryptoSession.establishSessionWithPeer(msg.from, senderPublicKeys);
         }
-        this.clients.clear();
+        // Replay protection: extract nonce from header (bytes 73-84)
+        const headerBuf = Buffer.from(msg.header, 'base64url');
+        const nonce = headerBuf.subarray(73, 85);
+        const timestamp = Math.floor(new Date(msg.timestamp).getTime() / 1000);
+        try {
+            await validateMessageWithNonce(msg.from, nonce, timestamp);
+        }
+        catch (e) {
+            // METRIC: Record replay attempt
+            this.metricsAttestation.recordReplayAttempt();
+            throw e; // Re-throw to prevent decryption
+        }
+        // Decrypt using Double Ratchet
+        try {
+            const plaintext = this.cryptoSession.decryptFromPeer(msg.from, msg.ciphertext, msg.header);
+            // METRIC: Record successful decryption (AFTER AAD verification)
+            this.metricsAttestation.recordMessageDecrypted();
+            return {
+                id: msg.id || crypto.randomUUID(),
+                senderId: msg.from,
+                content: plaintext,
+                timestamp: new Date(msg.timestamp),
+            };
+        }
+        catch (e) {
+            // METRIC: Record failed decryption (auth failure)
+            this.metricsAttestation.recordMessageRejected();
+            // Decryption failed — surface as delivery failure
+            throw Errors.deliveryFailed(msg.from);
+        }
+    }
+    startMessagePolling() {
+        const poll = async () => {
+            try {
+                const messages = await this.relay.fetchMessages(this.userId);
+                if (messages.length > 0) {
+                    const msg = await this.decryptMessage(messages[0]);
+                    for (const handler of this.messageHandlers.values()) {
+                        try {
+                            handler(msg);
+                        }
+                        catch (err) {
+                            console.error('[StvorApp] Handler error:', err);
+                        }
+                    }
+                }
+            }
+            catch (err) {
+                console.error('[StvorApp] Poll error:', err);
+            }
+            if (this.initialized) {
+                setTimeout(poll, 1000);
+            }
+        };
+        poll();
+    }
+    /**
+     * Disconnect the client from the relay server.
+     */
+    async disconnect() {
+        this.initialized = false;
+        // Stop message polling
+        // Note: The polling interval will naturally stop checking once initialized is false
     }
 }
 export async function init(config) {
-    if (!config.appToken.startsWith('stvor_')) {
-        throw new StvorError(Errors.INVALID_APP_TOKEN, 'Invalid app token');
+    const relayUrl = config.relayUrl || 'https://relay.stvor.io';
+    const timeout = config.timeout || 10000;
+    if (!config.appToken || !config.appToken.startsWith('stvor_')) {
+        throw Errors.invalidAppToken();
     }
-    return new StvorApp(config);
+    const appConfig = {
+        appToken: config.appToken,
+        relayUrl,
+        timeout,
+    };
+    const app = new StvorApp(appConfig);
+    try {
+        const relay = new RelayClient(relayUrl, config.appToken, timeout);
+        await relay.healthCheck();
+    }
+    catch (err) {
+        console.error('[StvorApp] Relay health check failed:', err);
+        throw Errors.relayUnavailable();
+    }
+    return app;
 }
 // Alias for createApp
 export const createApp = init;

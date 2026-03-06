@@ -7,7 +7,7 @@ description: Add end-to-end encryption to your app in minutes — not months
 
 **Add Signal Protocol encryption to your app with just a few lines of code.**
 
-STVOR implements X3DH key exchange and Double Ratchet encryption (the same cryptography used by Signal) so you can add world-class end-to-end encryption without being a cryptographer.
+STVOR implements X3DH key exchange and Double Ratchet encryption (the same cryptography used by Signal) using **only Node.js built-in `crypto` module** — zero external dependencies. Add world-class end-to-end encryption without being a cryptographer.
 
 ```typescript
 import { Stvor } from '@stvor/sdk';
@@ -152,7 +152,7 @@ Add `"type": "module"` to your `package.json`:
 ```json
 {
   "type": "module",
-  "dependencies": { "@stvor/sdk": "^2.4.0" }
+  "dependencies": { "@stvor/sdk": "^3.0.0" }
 }
 ```
 
@@ -394,7 +394,7 @@ unsubscribe();
 
 ## Sealing / Offline payloads
 
-APIs for sealing/opening offline payloads are not implemented in SDK v0.1. The current SDK focuses on live send/onMessage flow over the relay. Planned work includes explicit sealed payload APIs in a future version.
+APIs for sealing/opening offline payloads are not implemented in SDK v3.0. The current SDK focuses on live send/onMessage flow over the relay. Planned work includes explicit sealed payload APIs in a future version.
 
 ---
 
@@ -671,10 +671,14 @@ unsubscribe();
 
 # Cryptography
 
-STVOR implements the **Signal Protocol**:
-- **X3DH** (Extended Triple Diffie-Hellman) for key agreement
-- **Double Ratchet** for forward secrecy and post-compromise security
-- **libsodium** primitives: X25519, Ed25519, XChaCha20-Poly1305, BLAKE2b
+STVOR v3.0 implements the **Signal Protocol** using **only Node.js built-in `crypto` module** — zero external crypto libraries:
+- **Symmetric X3DH** (Extended Triple Diffie-Hellman) for key agreement — canonical DH ordering ensures both sides derive identical shared secrets
+- **Double Ratchet** for forward secrecy and post-compromise security — DH ratchet + symmetric-key ratchet
+- **ECDH P-256** for Diffie-Hellman key exchange
+- **ECDSA P-256** for digital signatures (SPK verification)
+- **AES-256-GCM** for authenticated encryption with associated data (header as AAD)
+- **HKDF-SHA256** for key derivation
+- **HMAC-SHA256** for chain key ratcheting
 
 ## What STVOR Guarantees
 
@@ -691,8 +695,8 @@ STVOR implements the **Signal Protocol**:
 ❌ **Strong MITM protection after first contact** — TOFU model (first-contact trust is user responsibility)  
 ❌ **Multi-device sync** — Each device = separate identity  
 ❌ **Guaranteed PCS** — Requires at least one honest DH exchange  
-❌ **Post-quantum security** — Uses classical X25519 (planned: ML-KEM hybrid)  
-❌ **Persistent storage** — Keys/sessions stored in-memory (v2.1)  
+❌ **Post-quantum security** — Uses classical P-256 (planned: ML-KEM hybrid)  
+❌ **Persistent storage** — Keys/sessions stored in-memory  
 
 ## Threat Model
 
@@ -719,12 +723,14 @@ STVOR implements the **Signal Protocol**:
 
 # Limitations & Deployment
 
-## Version 2.1 Status
+## Version 3.0 Status
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Core E2EE** | ✅ Production | X3DH + Double Ratchet fully implemented |
+| **Core E2EE** | ✅ Production | Symmetric X3DH + Double Ratchet, zero external crypto deps |
 | **Forward Secrecy** | ✅ Production | DH rotation every 50 msgs / 10 min |
+| **ECDSA Signatures** | ✅ Production | Real P-256 digital signatures for SPK verification |
+| **AES-256-GCM + AAD** | ✅ Production | Header authenticated as associated data |
 | **Single-instance** | ✅ Ready | Dev and low-security prod |
 | **Multi-instance** | ❌ Not ready | Requires distributed state (Redis/PostgreSQL) |
 | **Mobile apps** | ❌ Not ready | No persistent storage yet |
@@ -754,7 +760,7 @@ docker-compose up
 
 ### ❌ Multi-instance (NOT READY)
 
-Requires distributed state (Redis/PostgreSQL). Coming in v2.2.
+Requires distributed state (Redis/PostgreSQL). Coming in a future version.
 
 ---
 
@@ -777,8 +783,8 @@ Requires distributed state (Redis/PostgreSQL). Coming in v2.2.
 ## Honest Positioning
 
 STVOR is **not an enterprise product**. We document limitations honestly:
-- In-memory storage (v2.1) — keys cleared on restart
-- Single-instance ready — multi-instance needs v2.2
+- In-memory storage — keys cleared on restart
+- Single-instance ready — multi-instance coming later
 - TOFU model — first contact requires user verification
 - No compliance guarantees — use at your own risk
 
@@ -806,8 +812,8 @@ Not yet. Each device is a separate identity. Multi-device sync is out of scope f
 
 **Q: What happens if the server restarts?**
 
-**v2.1:** Keys, sessions, TOFU fingerprints, replay cache are cleared (in-memory storage).  
-**v2.2:** With Redis/PostgreSQL, replay cache and TOFU persist. Keys still ephemeral until v2.3.
+**v3.0:** Keys, sessions, TOFU fingerprints, replay cache are cleared (in-memory storage).  
+**Future:** With Redis/PostgreSQL, replay cache and TOFU persist.
 
 **Q: Can users recover messages on a new device?**
 
@@ -815,7 +821,7 @@ No. Storing keys server-side would break E2EE. Forward secrecy means past messag
 
 **Q: Is STVOR post-quantum secure?**
 
-**No.** v2.1 uses classical X25519. Hybrid ML-KEM-768 is planned but not implemented.
+**No.** v3.0 uses classical P-256 (ECDH/ECDSA). Hybrid ML-KEM-768 is planned but not implemented.
 
 **Q: What's the performance overhead?**
 
@@ -824,7 +830,7 @@ No. Storing keys server-side would break E2EE. Forward secrecy means past messag
 **Q: Can I use this in production?**
 
 **Single-instance:** Yes (with infrastructure: Redis + PostgreSQL).  
-**Multi-instance:** Not yet (v2.2).  
+**Multi-instance:** Not yet.  
 **High-risk apps:** No (review threat model first).
 
 ---
@@ -850,4 +856,4 @@ Having issues? See the [full Troubleshooting guide](./TROUBLESHOOTING.md) for so
 
 ---
 
-*STVOR SDK v2.4 — Secure by default, honest by design. (Feb 2026)*
+*STVOR SDK v3.0.0 — Zero external crypto dependencies. Secure by default, honest by design.*

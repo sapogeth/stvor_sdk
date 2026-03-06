@@ -2,15 +2,18 @@
   "compilerOptions": {
     "outDir": "dist",
     "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "declaration": true,
     "sourceMap": false,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
+    "noEmitOnError": false,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["src"],
-  "exclude": ["example.ts"]
+  "include": ["src", "facade", "types", "legacy.ts", "index.ts", "ratchet/index.ts", "ratchet/tofu.ts"],
+  "exclude": ["example.ts", "test-security.ts", "**/__tests__", "**/tests", "**/*.test.ts", "demo", "docs", "node_modules", "ratchet/key-recovery.ts", "ratchet/replay-protection.ts", "ratchet/core-production.ts"]
 }

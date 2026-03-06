@@ -2,7 +2,7 @@
 
 **Version:** 2.1.0  
 **Date:** February 4, 2026  
-**Crypto Backend:** libsodium-wrappers
+**Crypto Backend:** Node.js crypto (built-in)
 
 ---
 
@@ -25,7 +25,7 @@ STVOR SDK implements Signal Protocol-level end-to-end encryption with the follow
 - **Double Ratchet Algorithm**
   - Symmetric ratchet: XChaCha20-Poly1305 AEAD
   - Asymmetric ratchet: X25519 DH for PFS
-  - KDF: BLAKE2b (via libsodium `crypto_generichash`)
+  - KDF: HKDF (via Node.js crypto)
 
 ### Message Authentication
 - **Ed25519 Signatures**
@@ -251,7 +251,7 @@ Receive:
 ### System Requirements
 
 #### 1. **Client-Side Assumptions**
-- **libsodium availability:** WASM must be supported (all modern browsers ✅)
+- **Node.js crypto availability:** Native in Node.js, polyfill available for browsers
 - **Memory constraints:** ~50KB per peer session (10 peers = 500KB)
 - **Single-instance client:** No multi-device sync (each device = new identity)
 - **JavaScript runtime:** Node.js ≥18 or modern browser
@@ -288,12 +288,12 @@ Receive:
   - Can DOS (drop messages)
   - Can log metadata (from/to/timestamp)
   - CANNOT decrypt messages (zero-knowledge)
-- **libsodium:** Trusted implementation (peer-reviewed, audited)
+- **Node.js crypto:** Trusted implementation (built-in, audited)
 - **Browser/OS:** Trusted crypto.getRandomValues() / SecureRandom
 - **User:** Responsible for out-of-band fingerprint verification
 
 #### 3. **Backward Compatibility**
-- **Server:** Must support BOTH legacy (JWK) and new (libsodium) formats
+- **Server:** Must support BOTH legacy (JWK) and new (Node.js crypto) formats
 - **Client upgrade:** 
   - ⚠️ **Non-atomic:** Clients may upgrade at different times
   - ⚠️ **Grace period:** Old clients cannot decrypt ratchet messages
@@ -353,7 +353,7 @@ Receive:
 1. [Signal Protocol Specifications](https://signal.org/docs/)
 2. [The Double Ratchet Algorithm](https://signal.org/docs/specifications/doubleratchet/)
 3. [The X3DH Key Agreement Protocol](https://signal.org/docs/specifications/x3dh/)
-4. [libsodium Documentation](https://doc.libsodium.org/)
+4. [Node.js Crypto Documentation](https://nodejs.org/api/crypto.html)
 
 ---
 

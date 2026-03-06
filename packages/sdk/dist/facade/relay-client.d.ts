@@ -1,36 +1,35 @@
 /**
  * STVOR DX Facade - Relay Client
  */
-type JSONable = Record<string, any>;
-export type RelayHandler = (msg: JSONable) => void;
+import type { SerializedPublicKeys } from './crypto-session';
+interface OutgoingMessage {
+    to: string;
+    from: string;
+    ciphertext: string;
+    header: string;
+}
+interface IncomingMessage {
+    id?: string;
+    from: string;
+    ciphertext: string;
+    header: string;
+    timestamp: string;
+}
 export declare class RelayClient {
     private relayUrl;
     private timeout;
     private appToken;
-    private ws?;
     private connected;
-    private handshakeComplete;
-    private backoff;
-    private queue;
-    private handlers;
-    private reconnecting;
-    private connectPromise?;
-    private connectResolve?;
-    private connectReject?;
-    private authFailed;
     constructor(relayUrl: string, appToken: string, timeout?: number);
-    /**
-     * Initialize the connection and wait for handshake.
-     * Throws StvorError if API key is rejected.
-     */
-    init(): Promise<void>;
+    getAppToken(): string;
+    getBaseUrl(): string;
     private getAuthHeaders;
-    private connect;
-    private scheduleReconnect;
-    private doSend;
-    send(obj: JSONable): void;
-    onMessage(h: RelayHandler): void;
+    healthCheck(): Promise<void>;
     isConnected(): boolean;
-    isAuthenticated(): boolean;
+    register(userId: string, publicKeys: SerializedPublicKeys): Promise<void>;
+    getPublicKeys(userId: string): Promise<SerializedPublicKeys | null>;
+    send(message: OutgoingMessage): Promise<void>;
+    fetchMessages(userId: string): Promise<IncomingMessage[]>;
+    disconnect(): void;
 }
 export {};
