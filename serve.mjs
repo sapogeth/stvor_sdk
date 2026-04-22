@@ -420,7 +420,7 @@ const server = http.createServer((req, res) => {
   // Static files
   let filePath;
   if (req.url === '/') {
-    filePath = path.join(__dirname, 'ui', 'index-new.html');
+    filePath = path.join(__dirname, 'index.html');
   } else if (req.url === '/dashboard' || req.url === '/dashboard.html') {
     filePath = path.join(__dirname, 'ui', 'dashboard-minimal.html');
   } else if (req.url === '/getting-started' || req.url === '/getting-started.html') {
