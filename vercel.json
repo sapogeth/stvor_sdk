@@ -4,6 +4,8 @@
   "framework": null,
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/docs.html", "destination": "/docs.html" },
     { "source": "/dashboard", "destination": "/ui/dashboard-minimal.html" },
     { "source": "/dashboard.html", "destination": "/ui/dashboard-minimal.html" },
     { "source": "/getting-started", "destination": "/ui/getting-started.html" },

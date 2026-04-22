@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STVOR SDK — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090b;
+      --bg2: #111113;
+      --bg3: #18181b;
+      --border: #27272a;
+      --border2: #3f3f46;
+      --fg: #fafafa;
+      --fg2: #a1a1aa;
+      --fg3: #71717a;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.12);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.1);
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --sidebar: 260px;
+      --topbar: 56px;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--topbar);
+      background: rgba(9,9,11,0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 200;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar-logo {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.5px;
+      color: var(--fg);
+    }
+
+    .topbar-logo span { color: var(--accent); }
+
+    .topbar-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border2);
+    }
+
+    .topbar-title {
+      font-size: 14px;
+      color: var(--fg3);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .topbar-right a {
+      font-size: 13.5px;
+      color: var(--fg3);
+      transition: color 0.15s;
+    }
+
+    .topbar-right a:hover { color: var(--fg2); }
+
+    .topbar-btn {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+
+    .topbar-btn:hover { opacity: 0.85; }
+
+    .version-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 100px;
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      padding-top: var(--topbar);
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      position: fixed;
+      top: var(--topbar);
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 24px 0 40px;
+      background: var(--bg);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    .sidebar-group {
+      margin-bottom: 8px;
+    }
+
+    .sidebar-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--fg3);
+      padding: 12px 20px 6px;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 7px 20px;
+      font-size: 13.5px;
+      color: var(--fg3);
+      border-left: 2px solid transparent;
+      transition: all 0.12s;
+      cursor: pointer;
+    }
+
+    .sidebar-link:hover {
+      color: var(--fg2);
+      background: var(--bg2);
+    }
+
+    .sidebar-link.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: var(--sidebar);
+      flex: 1;
+      min-width: 0;
+    }
+
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 48px 48px 120px;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: var(--fg);
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 56px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 80px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      color: var(--fg);
+      scroll-margin-top: 80px;
+    }
+
+    p {
+      color: var(--fg2);
+      margin-bottom: 16px;
+    }
+
+    strong { color: var(--fg); font-weight: 600; }
+
+    .lead {
+      font-size: 17px;
+      color: var(--fg2);
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    /* ── CODE ── */
+    code {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--yellow);
+    }
+
+    .code-block {
+      position: relative;
+      margin: 20px 0;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg3);
+    }
+
+    .code-lang {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--fg3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--fg3);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: var(--sans);
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { color: var(--fg2); border-color: var(--fg3); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    .code-block pre {
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #e4e4e7;
+    }
+
+    .code-block code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .callout-tip {
+      background: rgba(34,197,94,0.07);
+      border: 1px solid rgba(34,197,94,0.2);
+      color: var(--fg2);
+    }
+
+    .callout-tip strong { color: var(--green); }
+
+    .callout-warn {
+      background: rgba(251,191,36,0.07);
+      border: 1px solid rgba(251,191,36,0.2);
+      color: var(--fg2);
+    }
+
+    .callout-warn strong { color: var(--yellow); }
+
+    .callout-danger {
+      background: rgba(248,113,113,0.07);
+      border: 1px solid rgba(248,113,113,0.2);
+      color: var(--fg2);
+    }
+
+    .callout-danger strong { color: var(--red); }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 20px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 13.5px;
+    }
+
+    thead th {
+      background: var(--bg3);
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg3);
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 11px 16px;
+      color: var(--fg2);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody td:first-child {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--fg);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+
+    .badge-green { background: var(--green-dim); color: var(--green); }
+    .badge-yellow { background: rgba(251,191,36,0.1); color: var(--yellow); }
+    .badge-red { background: rgba(248,113,113,0.1); color: var(--red); }
+
+    /* ── DIVIDER ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    ul, ol {
+      padding-left: 20px;
+      color: var(--fg2);
+      margin-bottom: 16px;
+    }
+
+    li { margin-bottom: 6px; }
+    li::marker { color: var(--accent); }
+
+    /* ── MOBILE ── */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--fg2);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle { display: block; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.2s;
+        z-index: 150;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .content { padding: 32px 20px 80px; }
+      h1 { font-size: 28px; }
+      h2 { font-size: 20px; margin-top: 40px; }
+      .topbar-right .topbar-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="topbar-logo">ST<span>V</span>OR</a>
+      <div class="topbar-sep"></div>
+      <span class="topbar-title">Documentation</span>
+      <span class="version-badge">v3.3.0</span>
+    </div>
+    <div class="topbar-right">
+      <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank">npm</a>
+      <a href="/" class="topbar-btn">← Home</a>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Getting Started</div>
+        <a class="sidebar-link" href="#overview">Overview</a>
+        <a class="sidebar-link" href="#install">Installation</a>
+        <a class="sidebar-link" href="#quickstart">Quick Start</a>
+        <a class="sidebar-link" href="#mock-relay">Local Dev Relay</a>
+        <a class="sidebar-link" href="#module-setup">Module Setup</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Core API</div>
+        <a class="sidebar-link" href="#stvor-connect">Stvor.connect()</a>
+        <a class="sidebar-link" href="#client-send">client.send()</a>
+        <a class="sidebar-link" href="#client-onmessage">client.onMessage()</a>
+        <a class="sidebar-link" href="#client-disconnect">client.disconnect()</a>
+        <a class="sidebar-link" href="#client-waitforuser">client.waitForUser()</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Browser SDK</div>
+        <a class="sidebar-link" href="#web-sdk">StvorWebSDK.create()</a>
+        <a class="sidebar-link" href="#web-onmessage">web.onMessage()</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Data Types</div>
+        <a class="sidebar-link" href="#data-types">Supported Types</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Security</div>
+        <a class="sidebar-link" href="#crypto">Cryptography</a>
+        <a class="sidebar-link" href="#guarantees">Guarantees</a>
+        <a class="sidebar-link" href="#limitations">Limitations</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Help</div>
+        <a class="sidebar-link" href="#troubleshooting">Troubleshooting</a>
+        <a class="sidebar-link" href="#migration">Migration v3.0→v3.3</a>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="content">
+
+        <!-- OVERVIEW -->
+        <section id="overview">
+          <h1>STVOR SDK</h1>
+          <p class="lead">Add Signal Protocol end-to-end encryption to any app in minutes. X3DH + Double Ratchet — the same cryptography used by Signal — with a three-line API. Zero cryptography expertise required.</p>
+
+          <div class="callout callout-tip">
+            <strong>Zero dependencies.</strong> Node.js SDK uses only the built-in <code>node:crypto</code> module. Browser SDK uses Web Crypto API. No WASM, no libsodium, no npm bloat.
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Feature</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>X3DH + Double Ratchet</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Forward Secrecy</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Browser (Web Crypto API)</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>All JS data types</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Replay protection</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Simultaneous send</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Multi-device sync</td><td><span class="badge badge-red">Not ready</span></td></tr>
+                <tr><td>Multi-instance (distributed)</td><td><span class="badge badge-red">Not ready</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- INSTALLATION -->
+        <section id="install">
+          <h2>Installation</h2>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>npm install @stvor/sdk</code></pre>
+          </div>
+
+          <p><strong>Requirements:</strong> Node.js ≥ 18 or any modern browser. No other dependencies.</p>
+        </section>
+
+        <!-- QUICKSTART -->
+        <section id="quickstart">
+          <h2>Quick Start</h2>
+          <p>Two users, one encrypted message, zero crypto knowledge needed.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
+
+const bob = await Stvor.connect({
+  userId:   'bob@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
+
+bob.onMessage((msg) => {
+  console.log(msg.from, msg.data);
+  // "alice@example.com" "Hello!"
+});
+
+await alice.send('bob@example.com', 'Hello!');
+
+await alice.disconnect();
+await bob.disconnect();</code></pre>
+          </div>
+
+          <div class="callout callout-warn">
+            <strong>Never hardcode tokens.</strong> Use <code>process.env.STVOR_APP_TOKEN</code> in production.
+          </div>
+        </section>
+
+        <!-- MOCK RELAY -->
+        <section id="mock-relay">
+          <h2>Local Dev Relay</h2>
+          <p>The SDK includes a built-in mock relay for local development. No account, no internet needed.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code># Start on port 4444 (default)
+npx @stvor/sdk mock-relay
+
+# Custom port
+PORT=9000 npx @stvor/sdk mock-relay</code></pre>
+          </div>
+
+          <p>The mock relay accepts any token starting with <code>stvor_</code> and stores everything in memory.</p>
+        </section>
+
+        <!-- MODULE SETUP -->
+        <section id="module-setup">
+          <h2>Module Setup</h2>
+
+          <h3>ESM (recommended)</h3>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>import { Stvor } from '@stvor/sdk';</code></pre>
+          </div>
+
+          <h3>CommonJS</h3>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">javascript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>const { Stvor } = require('@stvor/sdk');</code></pre>
+          </div>
+
+          <h3>TypeScript config</h3>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">json</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  }
+}</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- STVOR.CONNECT -->
+        <section id="stvor-connect">
+          <h2>Stvor.connect()</h2>
+          <p>Creates identity keys, registers with the relay, and starts polling — all in one call.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>const client = await Stvor.connect(config: StvorConfig): Promise&lt;StvorClient&gt;</code></pre>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>userId</td><td>string</td><td><span class="badge badge-red">Yes</span></td><td>User identifier — email, UUID, username</td></tr>
+                <tr><td>appToken</td><td>string</td><td><span class="badge badge-red">Yes</span></td><td>Token starting with <code>stvor_</code></td></tr>
+                <tr><td>relayUrl</td><td>string</td><td><span class="badge badge-red">Yes</span></td><td>Relay server URL</td></tr>
+                <tr><td>timeout</td><td>number</td><td>No</td><td>Request timeout ms (default: 10000)</td></tr>
+                <tr><td>pollIntervalMs</td><td>number</td><td>No</td><td>Message polling interval ms (default: 1000)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>const alice = await Stvor.connect({
+  userId:         'alice@example.com',
+  appToken:       process.env.STVOR_APP_TOKEN,
+  relayUrl:       'https://relay.stvor.io',
+  timeout:        15_000,
+  pollIntervalMs: 500,
+});</code></pre>
+          </div>
+
+          <p><strong>Errors:</strong> <code>INVALID_APP_TOKEN</code> if token doesn't start with <code>stvor_</code>. <code>RELAY_UNAVAILABLE</code> if relay is unreachable.</p>
+        </section>
+
+        <!-- CLIENT.SEND -->
+        <section id="client-send">
+          <h2>client.send()</h2>
+          <p>Encrypts and sends data to a recipient. Automatically waits for the recipient to register (configurable).</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>await client.send(recipientId, data, options?)</code></pre>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+              <tbody>
+                <tr><td>recipientId</td><td>string</td><td>Recipient's userId</td></tr>
+                <tr><td>data</td><td>any</td><td>Any JS value — see <a href="#data-types" style="color:var(--accent)">Data Types</a></td></tr>
+                <tr><td>options.waitForRecipient</td><td>boolean</td><td>Auto-wait for recipient (default: true)</td></tr>
+                <tr><td>options.timeout</td><td>number</td><td>Max wait ms (default: 10000)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>// Text
+await alice.send('bob', 'Hello!');
+
+// Object
+await alice.send('bob', { text: 'Hi', ts: new Date() });
+
+// Binary
+await alice.send('bob', new Uint8Array([1, 2, 3]));
+
+// Fail immediately if recipient not registered
+await alice.send('bob', 'Hey', { waitForRecipient: false });</code></pre>
+          </div>
+        </section>
+
+        <!-- CLIENT.ONMESSAGE -->
+        <section id="client-onmessage">
+          <h2>client.onMessage()</h2>
+          <p>Subscribes to incoming messages. Returns an unsubscribe function.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>interface StvorMessage {
+  from:      string;   // Sender's userId
+  data:      unknown;  // Original type preserved
+  timestamp: Date;
+  id:        string;
+}
+
+const unsubscribe = client.onMessage((msg: StvorMessage) => {
+  console.log(msg.from, msg.data);
+});
+
+// Stop receiving
+unsubscribe();</code></pre>
+          </div>
+        </section>
+
+        <!-- CLIENT.DISCONNECT -->
+        <section id="client-disconnect">
+          <h2>client.disconnect()</h2>
+          <p>Stops polling and closes the connection. Call on logout or app shutdown.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>await alice.disconnect();</code></pre>
+          </div>
+        </section>
+
+        <!-- CLIENT.WAITFORUSER -->
+        <section id="client-waitforuser">
+          <h2>client.waitForUser()</h2>
+          <p>Waits for a user to register. Returns <code>true</code> if available, <code>false</code> on timeout. Not needed before <code>send()</code> — it waits automatically.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>const online = await alice.waitForUser('bob', 30_000);
+if (online) {
+  await alice.send('bob', 'Hey!');
+}</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- WEB SDK -->
+        <section id="web-sdk">
+          <h2>StvorWebSDK.create() — Browser</h2>
+          <p>Browser equivalent of <code>Stvor.connect()</code>. Uses Web Crypto API — no Node.js, no WASM, no dependencies.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>import { StvorWebSDK } from '@stvor/sdk/web';
+
+const alice = await StvorWebSDK.create({
+  userId:   'alice@example.com',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.io',
+});
+
+await alice.send('bob@example.com', { text: 'Hello!' });
+alice.disconnect();</code></pre>
+          </div>
+        </section>
+
+        <!-- WEB.ONMESSAGE -->
+        <section id="web-onmessage">
+          <h2>web.onMessage() — Browser</h2>
+          <p>Browser handler receives <code>from</code> and <code>data</code> as separate arguments.</p>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>alice.onMessage((from: string, data: unknown) => {
+  console.log(from, data);
+});</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- DATA TYPES -->
+        <section id="data-types">
+          <h2>Supported Data Types</h2>
+          <p>The SDK uses a marker-byte codec to preserve the exact JavaScript type end-to-end. No manual serialization needed.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Example</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>string</td><td>'Hello, world!'</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>number</td><td>42, 3.14, -7</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>boolean</td><td>true, false</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>null</td><td>null</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>Uint8Array / Buffer</td><td>Binary files, images</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>object / array</td><td>{ key: 'val' }, [1,2,3]</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>Date</td><td>new Date()</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>Set</td><td>new Set([1,2,3])</td><td><span class="badge badge-green">Supported</span></td></tr>
+                <tr><td>Map</td><td>new Map([['a',1]])</td><td><span class="badge badge-green">Supported</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>await alice.send('bob', 'text');
+await alice.send('bob', 42);
+await alice.send('bob', new Uint8Array([1,2,3]));
+await alice.send('bob', new Date());
+await alice.send('bob', new Map([['key', 'val']]));
+
+// Recipient gets the exact original type:
+bob.onMessage((msg) => {
+  if (msg.data instanceof Map) { /* ... */ }
+});</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- CRYPTO -->
+        <section id="crypto">
+          <h2>Cryptography</h2>
+          <p>STVOR v3.3 implements the Signal Protocol using only native crypto APIs — no external libraries.</p>
+
+          <ul>
+            <li><strong>X3DH</strong> — Extended Triple Diffie-Hellman for initial key agreement</li>
+            <li><strong>Double Ratchet</strong> — DH ratchet + symmetric ratchet for forward secrecy</li>
+            <li><strong>ECDH P-256</strong> — Diffie-Hellman key exchange</li>
+            <li><strong>ECDSA P-256</strong> — Digital signatures (SPK verification)</li>
+            <li><strong>AES-256-GCM</strong> — Authenticated encryption, header as AAD</li>
+            <li><strong>HKDF-SHA256</strong> — Key derivation</li>
+            <li><strong>HMAC-SHA256</strong> — Chain key ratcheting</li>
+          </ul>
+        </section>
+
+        <!-- GUARANTEES -->
+        <section id="guarantees">
+          <h2>Security Guarantees</h2>
+
+          <ul>
+            <li>✅ <strong>End-to-end encryption</strong> — plaintext never leaves the device</li>
+            <li>✅ <strong>Forward Secrecy</strong> — DH ratchet per message</li>
+            <li>✅ <strong>Post-Compromise Security</strong> — automatic ratchet advancement</li>
+            <li>✅ <strong>Authenticated encryption</strong> — AES-256-GCM with AEAD</li>
+            <li>✅ <strong>Replay protection</strong> — nonce + timestamp validation</li>
+            <li>✅ <strong>TOFU verification</strong> — identity verified on first contact</li>
+            <li>✅ <strong>Simultaneous send</strong> — both parties can send before receiving</li>
+          </ul>
+
+          <div class="callout callout-warn">
+            <strong>What STVOR does NOT protect:</strong> metadata (relay sees sender/recipient/timing), multi-device sync, post-quantum attacks, persistent storage.
+          </div>
+        </section>
+
+        <!-- LIMITATIONS -->
+        <section id="limitations">
+          <h2>Limitations</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Multi-device sync</td><td><span class="badge badge-red">Not ready</span></td><td>Each device = separate identity</td></tr>
+                <tr><td>Multi-instance relay</td><td><span class="badge badge-red">Not ready</span></td><td>Requires distributed state</td></tr>
+                <tr><td>Persistent storage</td><td><span class="badge badge-yellow">In-memory</span></td><td>Keys cleared on restart</td></tr>
+                <tr><td>Post-quantum security</td><td><span class="badge badge-red">Not ready</span></td><td>Uses classical P-256</td></tr>
+                <tr><td>Metadata privacy</td><td><span class="badge badge-red">Not provided</span></td><td>Relay sees sender/recipient</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- TROUBLESHOOTING -->
+        <section id="troubleshooting">
+          <h2>Troubleshooting</h2>
+
+          <h3>INVALID_APP_TOKEN</h3>
+          <p>Token must start with <code>stvor_</code>. Use <code>stvor_dev_test123</code> for local development.</p>
+
+          <h3>RELAY_UNAVAILABLE</h3>
+          <p>Run <code>npx @stvor/sdk mock-relay</code> for local dev, or check your <code>relayUrl</code>.</p>
+
+          <h3>RECIPIENT_NOT_FOUND</h3>
+          <p>Recipient hasn't connected yet. <code>send()</code> waits automatically by default — increase <code>timeout</code> if needed.</p>
+
+          <h3>DELIVERY_FAILED</h3>
+          <p>Decryption error — usually a session state mismatch. Disconnect and reconnect both clients.</p>
+
+          <h3>ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
+          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.3.0</code>.</p>
+        </section>
+
+        <!-- MIGRATION -->
+        <section id="migration">
+          <h2>Migration v3.0 → v3.3</h2>
+
+          <div class="callout callout-danger">
+            <strong>Breaking change:</strong> The two-step <code>Stvor.init()</code> + <code>app.connect()</code> API is gone. Use <code>Stvor.connect()</code> instead.
+          </div>
+
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>// ❌ v3.0 (old)
+const app = await Stvor.init({ appToken: '...', relayUrl: '...' });
+const alice = await app.connect('alice');
+alice.onMessage((msg) => console.log(msg.senderId, msg.content));
+
+// ✅ v3.3 (new)
+const alice = await Stvor.connect({
+  userId: 'alice', appToken: '...', relayUrl: '...',
+});
+alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
+          </div>
+
+          <p>Also update the message handler: <code>msg.senderId</code> → <code>msg.from</code>, <code>msg.content</code> → <code>msg.data</code>.</p>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre');
+      navigator.clipboard.writeText(pre.textContent.trim()).then(() => {
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // Active sidebar link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const links = document.querySelectorAll('.sidebar-link');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.sidebar-link[href="#${e.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+
+    // Smooth scroll for sidebar links
+    links.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          document.querySelector(href)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('sidebar').classList.remove('open');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
