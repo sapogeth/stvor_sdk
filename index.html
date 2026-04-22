@@ -1081,7 +1081,7 @@ chat.on('message', (msg) => {
     <nav class="sidebar">
       <div class="sidebar-header">
         <a href="#" class="logo">STVOR</a>
-        <div class="logo-tagline">E2EE SDK v3.0.0</div>
+        <div class="logo-tagline">E2EE SDK v3.3.0</div>
       </div>
       
       <div class="nav-section">
@@ -1147,7 +1147,7 @@ chat.on('message', (msg) => {
         </header>
 
         <div class="intro-card">
-          <p><strong>STVOR v3.0.0</strong> — настоящее end-to-end шифрование на основе Signal Protocol (X3DH + Double Ratchet). Сообщения шифруются на клиенте — сервер никогда не видит открытый текст. <strong>Ноль внешних крипто-зависимостей</strong> — только Node.js built-in <code>crypto</code> module.</p>
+          <p><strong>STVOR v3.3.0</strong> — настоящее end-to-end шифрование на основе Signal Protocol (X3DH + Double Ratchet). Сообщения шифруются на клиенте — сервер никогда не видит открытый текст. <strong>Ноль внешних крипто-зависимостей</strong> — только Node.js built-in <code>crypto</code> module. Поддержка браузеров через Web Crypto API.</p>
           <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div>
               <strong style="color: var(--success);">✅ Криптография:</strong>
@@ -1178,10 +1178,10 @@ chat.on('message', (msg) => {
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h4>Install the SDK (v3.0.0)</h4>
+            <h4>Install the SDK (v3.3.0)</h4>
             <div class="code-block">
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-              <pre><code>npm install @stvor/sdk@^3.0.0</code></pre>
+              <pre><code>npm install @stvor/sdk@^3.3.0</code></pre>
             </div>
           </div>
         </div>
@@ -1203,9 +1203,10 @@ chat.on('message', (msg) => {
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           <pre><code>import { Stvor } from '@stvor/sdk';
 
-const app = await Stvor.init({
+const alice = await Stvor.connect({
+  userId:   'alice',
   appToken: 'stvor_dev_test123',
-  relayUrl: 'ws://localhost:4444'
+  relayUrl: 'http://localhost:4444',
 });</code></pre>
         </div>
 
@@ -1213,14 +1214,12 @@ const app = await Stvor.init({
         <p>Works with <code>require()</code> in <code>.cjs</code> files or projects without <code>"type": "module"</code>:</p>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>const sdk = require('@stvor/sdk');
+          <pre><code>const { Stvor } = require('@stvor/sdk');
 
-// Use the async loader
-const { Stvor } = await sdk.load();
-
-const app = await Stvor.init({
+const alice = await Stvor.connect({
+  userId:   'alice',
   appToken: 'stvor_dev_test123',
-  relayUrl: 'ws://localhost:4444'
+  relayUrl: 'http://localhost:4444',
 });</code></pre>
         </div>
 
@@ -1244,55 +1243,56 @@ const app = await Stvor.init({
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^3.0.0",
-    "ws": "^8.13.0"
+    "@stvor/sdk": "^3.3.0"
   }
 }</code></pre>
         </div>
 
         <!-- QUICK START -->
-        <h2 id="quickstart">Quick Start (v3.0.0)</h2>
+        <h2 id="quickstart">Quick Start (v3.3.0)</h2>
         <p>Два пользователя, зашифрованное сообщение — без знания криптографии:</p>
-        
+
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>import { createApp } from '@stvor/sdk';
+          <pre><code>import { Stvor } from '@stvor/sdk';
 
-// Инициализация
-const app = await createApp({
-  appToken: 'sk_live_xxx',
-  relayUrl: 'http://localhost:3002'
+// Подключение пользователей (один вызов — ключи, регистрация, поллинг)
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
 });
 
-// Подключение пользователей
-const alice = await app.connect('alice@example.com');
-const bob = await app.connect('bob@example.com');
+const bob = await Stvor.connect({
+  userId:   'bob@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
 
 // Подписка на сообщения
 bob.onMessage((msg) => {
-  console.log(`📩 ${msg.senderId}: ${msg.content}`);
+  console.log(`${msg.from}: ${msg.data}`);
 });
 
 // E2EE отправка — X3DH + Double Ratchet автоматически
-await alice.send('bob@example.com', 'Hello! 🔐');
-console.log('✅ Sent');</code></pre>
+await alice.send('bob@example.com', 'Hello!');
+console.log('Sent');</code></pre>
         </div>
         
         <h3>Minimal Example (Dev Mode)</h3>
-        <p>For development/testing without storage adapters:</p>
-        
+        <p>For development/testing with the mock relay:</p>
+
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>import { createApp } from '@stvor/sdk';
+          <pre><code>import { Stvor } from '@stvor/sdk';
 
-const app = await createApp({
-  appToken: 'demo_token',
-  relayUrl: 'ws://localhost:8080'
-  // Storage adapters optional in dev mode
+const user = await Stvor.connect({
+  userId:   'user@test.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
 });
 
-const user = await app.connect('user@test.com');
-user.onMessage((from, msg) => console.log(msg));
+user.onMessage((msg) => console.log(msg.from, msg.data));
 await user.send('peer@test.com', 'Encrypted message!');</code></pre>
         </div>
 
@@ -1315,9 +1315,9 @@ STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay</code></pre>
         <div class="success-box">
           <h4 style="margin: 0 0 8px 0; color: var(--success);">✅ Что Mock Relay умеет:</h4>
           <ul style="margin: 0; color: var(--text-primary);">
-            <li>WebSocket на <code>ws://localhost:4444</code></li>
+            <li>HTTP на <code>http://localhost:4444</code></li>
             <li>Health check: <code>GET http://localhost:4444/health</code></li>
-            <li>Автороутинг сообщений между подключёнными клиентами</li>
+            <li>Маршрутизация сообщений между клиентами</li>
             <li>Хранение сообщений для оффлайн-получателей</li>
             <li>Принимает любой AppToken начинающийся с <code>stvor_</code></li>
           </ul>
@@ -1328,20 +1328,23 @@ STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay</code></pre>
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           <pre><code>import { Stvor } from '@stvor/sdk';
 
-// Укажите адрес mock relay вместо продакшен-сервера
-const app = await Stvor.init({
+const alice = await Stvor.connect({
+  userId:   'alice',
   appToken: 'stvor_dev_test123',   // любой токен с stvor_ префиксом
-  relayUrl: 'ws://localhost:4444'  // mock relay
+  relayUrl: 'http://localhost:4444',
 });
 
-const alice = await app.connect('alice');
-const bob = await app.connect('bob');
-
-bob.onMessage((from, msg) => {
-  console.log(`${from}: ${msg}`);
+const bob = await Stvor.connect({
+  userId:   'bob',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
 });
 
-await alice.send('bob', 'Hello from local dev! 🔐');</code></pre>
+bob.onMessage((msg) => {
+  console.log(`${msg.from}: ${msg.data}`);
+});
+
+await alice.send('bob', 'Hello from local dev!');</code></pre>
         </div>
 
         <h3>Проверка статуса</h3>
@@ -1355,7 +1358,7 @@ curl http://localhost:4444/status/alice</code></pre>
         </div>
 
         <!-- IMPROVEMENTS -->
-        <h2 id="improvements">What's New in v3.0</h2>
+        <h2 id="improvements">What's New in v3.3</h2>
         
         <div class="card">
           <h3 style="margin-top: 0;">Breaking Changes from v2.4</h3>
@@ -1392,37 +1395,52 @@ curl http://localhost:4444/status/alice</code></pre>
         </div>
 
         <!-- MIGRATION GUIDE -->
-        <h2 id="migration">Migration Guide: v2.4 → v3.0</h2>
-        
+        <h2 id="migration">Migration Guide: v3.0 → v3.3</h2>
+
         <div class="warning">
-          <strong>⚠️ Breaking Changes</strong><br>
-          v3.0 полностью переписывает крипто-модуль. Сессии, созданные в v2.4, <strong>несовместимы</strong> с v3.0. Все пользователи должны переподключиться.
+          <strong>Breaking API Change</strong><br>
+          v3.3 заменяет двухшаговый <code>Stvor.init()</code> + <code>app.connect()</code> на единый <code>Stvor.connect()</code>. Сессии, созданные в v3.0, <strong>несовместимы</strong> с v3.3.
         </div>
 
         <h3>Шаг 1: Обновите SDK</h3>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code># Обновление до v3.0.0
-npm install @stvor/sdk@^3.0.0
-
-# Удалите libsodium (больше не нужен)
-npm uninstall libsodium-wrappers</code></pre>
+          <pre><code>npm install @stvor/sdk@^3.3.0</code></pre>
         </div>
 
-        <h3>Шаг 2: Удалите старые сессии</h3>
-        <p>Крипто-формат полностью изменился. Старые сессии не могут быть десериализованы:</p>
+        <h3>Шаг 2: Обновите вызовы API</h3>
+        <p>Старый двухшаговый API заменён одним вызовом:</p>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code># Если используете Redis — очистите кеш сессий:
-redis-cli FLUSHDB
+          <pre><code>// v3.0 (старый)
+const app = await Stvor.init({ appToken: '...', relayUrl: '...' });
+const alice = await app.connect('alice');
 
-# Если используете PostgreSQL:
-# DELETE FROM sessions;
-# DELETE FROM tofu_fingerprints;</code></pre>
+// v3.3 (новый — один вызов)
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: '...',
+  relayUrl: '...',
+});</code></pre>
         </div>
 
-        <h3>Шаг 3: Обновите код (если использовали низкоуровневое API)</h3>
-        <p>Высокоуровневый API (<code>createApp</code>, <code>Stvor.init</code>, <code>send</code>, <code>onMessage</code>) — <strong>не изменился</strong>. Если вы использовали только его — обновление автоматическое.</p>
+        <h3>Шаг 3: Обновите обработчик сообщений</h3>
+        <p>Тип сообщения изменился: поля теперь <code>msg.from</code> и <code>msg.data</code> вместо <code>msg.senderId</code> и <code>msg.content</code>:</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// v3.0 (старый)
+client.onMessage((msg) => {
+  console.log(msg.senderId, msg.content);
+});
+
+// v3.3 (новый)
+client.onMessage((msg) => {
+  console.log(msg.from, msg.data);
+});</code></pre>
+        </div>
+
+        <h3>Шаг 4: (опционально) обновите низкоуровневое API</h3>
+        <p>Если вы использовали ratchet/crypto-session напрямую:</p>
         <p>Если вы использовали ratchet/crypto-session напрямую:</p>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -1449,14 +1467,13 @@ const { ciphertext, header } = encryptMessage(session, plaintext);
 npx @stvor/sdk mock-relay
 
 # 2. В другом терминале — тест E2EE
-node -e "
-import { createApp } from '@stvor/sdk';
-const app = await createApp({ appToken: 'stvor_test', relayUrl: 'ws://localhost:4444' });
-const alice = await app.connect('alice');
-const bob = await app.connect('bob');
-bob.onMessage((from, msg) => { console.log('✅ E2EE работает:', msg); process.exit(0); });
-await alice.send('bob', 'Hello from v3.0! 🔐');
-"</code></pre>
+node --input-type=module &lt;&lt;'EOF'
+import { Stvor } from '@stvor/sdk';
+const alice = await Stvor.connect({ userId: 'alice', appToken: 'stvor_test', relayUrl: 'http://localhost:4444' });
+const bob   = await Stvor.connect({ userId: 'bob',   appToken: 'stvor_test', relayUrl: 'http://localhost:4444' });
+bob.onMessage((msg) => { console.log('E2EE работает:', msg.data); process.exit(0); });
+await alice.send('bob', 'Hello from v3.3!');
+EOF</code></pre>
         </div>
 
         <h3>Что изменилось внутри</h3>
@@ -1631,55 +1648,19 @@ interface IIdentityStore {
         
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>import { createApp } from '@stvor/sdk';
-import Redis from 'redis';
-import { Pool } from 'pg';
+          <pre><code>import { Stvor } from '@stvor/sdk';
 
-// Redis for replay protection (fast, ephemeral)
-const redis = Redis.createClient({ url: 'redis://localhost:6379' });
-
-// PostgreSQL for durable storage
-const pg = new Pool({ 
-  connectionString: 'postgres://user:pass@localhost/stvor'
+// Connect with production relay
+const alice = await Stvor.connect({
+  userId:   'alice@yourapp.com',
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: 'https://relay.stvor.io',
+  timeout:  15_000,
 });
 
-// Create storage adapters
-const replayCache = {
-  async checkAndMark(peerId, nonce) {
-    const key = `replay:${peerId}:${Buffer.from(nonce).toString('hex')}`;
-    const exists = await redis.getex(key, { EX: 300 }); // 5 min TTL
-    if (exists) return true; // Replay detected
-    await redis.set(key, '1', { EX: 300 });
-    return false; // First time seeing this nonce
-  }
-};
-
-const sessionStore = {
-  async save(peerId, state) {
-    const encrypted = await encryptState(state); // User's KMS
-    await pg.query(
-      'INSERT INTO sessions (peer_id, encrypted_state, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (peer_id) DO UPDATE SET encrypted_state = $2, updated_at = NOW()',
-      [peerId, encrypted]
-    );
-  },
-  async load(peerId) {
-    const result = await pg.query('SELECT encrypted_state FROM sessions WHERE peer_id = $1', [peerId]);
-    if (!result.rows[0]) return null;
-    return await decryptState(result.rows[0].encrypted_state);
-  }
-};
-
-// Create app with adapters
-const app = await createApp({
-  appToken: 'sk_live_xxx',
-  relayUrl: 'wss://relay.stvor.com',
-  storageAdapters: {
-    replay: replayCache,
-    sessions: sessionStore,
-    // ... other adapters
-  },
-  productionMode: true // Hard-fail if adapters missing
-});</code></pre>
+// All replay protection and session management is handled by the SDK internally
+alice.onMessage((msg) => console.log(msg.from, msg.data));
+await alice.send('bob@yourapp.com', { text: 'Hello!' });</code></pre>
         </div>
 
         <!-- SECURITY MODEL -->
@@ -1738,133 +1719,81 @@ const app = await createApp({
         <h2 id="full-example">Full Working Example</h2>
         <p>Copy these files to get E2EE working in 2 minutes:</p>
 
-        <h3>Step 1: Create relay-server.mjs</h3>
-        
-        <div class="warning">
-          <strong>⚠️ Demo Transport Only</strong><br>
-          This relay server is a minimal example for local development. It is NOT the STVOR API — it's a simple WebSocket forwarder to help you test encryption. For production, you'll need proper auth, persistence, and scaling.
-        </div>
-        
-        <p>The relay server forwards encrypted messages between clients. It cannot decrypt anything.</p>
-        
+        <h3>Step 1: Start the mock relay</h3>
+
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>// relay-server.mjs
-import WebSocket, { WebSocketServer } from 'ws';
-
-const PORT = 8080;
-const wss = new WebSocketServer({ port: PORT });
-console.log(`🔌 Relay running on ws://localhost:${PORT}`);
-
-const clients = new Map();
-const pubkeys = new Map();
-
-wss.on('connection', (ws) => {
-  // Send all known keys to new client
-  for (const [user, pub] of pubkeys.entries()) {
-    ws.send(JSON.stringify({ type: 'announce', user, pub }));
-  }
-
-  ws.on('message', (data) => {
-    let msg;
-    try { msg = JSON.parse(data.toString()); } catch { return; }
-
-    if (msg.type === 'announce' && msg.user) {
-      clients.set(msg.user, ws);
-      pubkeys.set(msg.user, msg.pub);
-      // Broadcast to all
-      for (const [_, client] of clients) {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ 
-            type: 'announce', 
-            user: msg.user, 
-            pub: msg.pub 
-          }));
-        }
-      }
-    }
-
-    if (msg.type === 'message' && msg.to) {
-      const target = clients.get(msg.to);
-      if (target && target.readyState === WebSocket.OPEN) {
-        target.send(JSON.stringify(msg));
-      }
-    }
-  });
-});</code></pre>
+          <pre><code>npx @stvor/sdk mock-relay</code></pre>
         </div>
 
-        <h3>Step 2: Create app.mjs</h3>
-        <p>Your application code with E2EE messaging (only STVOR imports needed!):</p>
-        
-        <div class="code-block">
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code>// app.mjs
-import { createApp } from '@stvor/sdk';
-
-async function main() {
-  const app = await createApp({
-    appToken: 'stvor_demo_token',
-    relayUrl: 'ws://localhost:8080'
-  });
-
-  // Connect Bob (receiver)
-  const bob = await app.connect('bob@example.com');
-  bob.onMessage((from, msg) => {
-    console.log(`📩 [Bob] from ${from}: ${msg}`);
-  });
-
-  // Connect Alice (sender)
-  const alice = await app.connect('alice@example.com');
-  alice.onMessage((from, msg) => {
-    console.log(`📩 [Alice] from ${from}: ${msg}`);
-  });
-
-  // SDK handles all E2EE internally (no WebSocket code needed!)
-  await alice.send('bob@example.com', 'Hello Bob! This is E2EE! 🔐');
-  console.log('✅ Alice sent message');
-
-  // Bob replies
-  await bob.send('alice@example.com', 'Hi Alice! Got it! 🎉');
-  console.log('✅ Bob sent message');
-
-  // Keep alive to see messages
-  await new Promise(r => setTimeout(r, 1000));
-}
-
-main().catch(console.error);</code></pre>
-        </div>
-
-        <h3>Step 3: Create package.json</h3>
+        <h3>Step 2: Create package.json</h3>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           <pre><code>{
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
-    "@stvor/sdk": "^3.0.0",
-    "ws": "^8.13.0"
+    "@stvor/sdk": "^3.3.0"
   }
 }</code></pre>
+        </div>
+
+        <h3>Step 3: Create app.mjs</h3>
+
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// app.mjs
+import { Stvor } from '@stvor/sdk';
+
+async function main() {
+  // Connect Bob (receiver)
+  const bob = await Stvor.connect({
+    userId:   'bob@example.com',
+    appToken: 'stvor_demo_token',
+    relayUrl: 'http://localhost:4444',
+  });
+
+  bob.onMessage((msg) => {
+    console.log(`[Bob] from ${msg.from}: ${msg.data}`);
+  });
+
+  // Connect Alice (sender)
+  const alice = await Stvor.connect({
+    userId:   'alice@example.com',
+    appToken: 'stvor_demo_token',
+    relayUrl: 'http://localhost:4444',
+  });
+
+  alice.onMessage((msg) => {
+    console.log(`[Alice] from ${msg.from}: ${msg.data}`);
+  });
+
+  await alice.send('bob@example.com', 'Hello Bob! This is E2EE!');
+  console.log('Alice sent message');
+
+  await bob.send('alice@example.com', 'Hi Alice! Got it!');
+  console.log('Bob sent message');
+
+  await new Promise(r => setTimeout(r, 2000));
+  await alice.disconnect();
+  await bob.disconnect();
+}
+
+main().catch(console.error);</code></pre>
         </div>
 
         <h3>Step 4: Run it!</h3>
         <div class="code-block">
           <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          <pre><code># Terminal 1: Start relay
-node relay-server.mjs
-
-# Terminal 2: Run app
-npm install
-node app.mjs</code></pre>
+          <pre><code>npm install && node app.mjs</code></pre>
         </div>
 
         <div class="success-box">
           <h4 style="margin: 0 0 12px 0; color: var(--success);">✅ Expected Output:</h4>
-          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>✅ Alice sent message
-✅ Bob sent message
-📩 [Bob] from alice@example.com: Hello Bob! This is E2EE! 🔐
-📩 [Alice] from bob@example.com: Hi Alice! Got it! 🎉</code></pre>
+          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>Alice sent message
+Bob sent message
+[Bob] from alice@example.com: Hello Bob! This is E2EE!
+[Alice] from bob@example.com: Hi Alice! Got it!</code></pre>
         </div>
 
         <!-- SECURITY -->
@@ -1977,38 +1906,27 @@ node app.mjs</code></pre>
         </div>
 
         <div class="card">
-          <h3 style="margin-top: 0;">Cannot find module 'ws'</h3>
-          <div class="code-block" style="margin-bottom: 12px;">
-            <pre><code>Error: Cannot find module 'ws'</code></pre>
-          </div>
-          <p><strong>Решение:</strong></p>
-          <div class="code-block">
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-            <pre><code>npm install ws</code></pre>
-          </div>
-          <p style="color: var(--text-muted); font-size: 13px;"><code>ws</code> — dependency SDK. Устанавливается автоматически, но в некоторых пакетных менеджерах (pnpm) нужно устанавливать явно.</p>
-        </div>
-
-        <div class="card">
           <h3 style="margin-top: 0;">INVALID_APP_TOKEN / AUTH_FAILED</h3>
-          <p>Убедитесь что токен начинается с <code>stvor_</code> для mock relay. Для продакшен — получите токен через <a href="/dashboard.html">Dashboard</a>.</p>
+          <p>Убедитесь что токен начинается с <code>stvor_</code>. Для mock relay используйте <code>stvor_dev_test123</code>. Для продакшен — получите токен через <a href="/dashboard.html">Dashboard</a>.</p>
         </div>
 
         <div class="card">
-          <h3 style="margin-top: 0;">CommonJS: require() возвращает Proxy</h3>
-          <p>В CommonJS SDK экспортирует Proxy-объект. Используйте async <code>.load()</code>:</p>
+          <h3 style="margin-top: 0;">CommonJS: require() не работает</h3>
+          <p>Используйте destructured import напрямую:</p>
           <div class="code-block">
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-            <pre><code>const sdk = require('@stvor/sdk');
-const { Stvor } = await sdk.load();
+            <pre><code>const { Stvor } = require('@stvor/sdk');
 
-// Теперь Stvor доступен
-const app = await Stvor.init({ ... });</code></pre>
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});</code></pre>
           </div>
         </div>
 
         <footer>
-          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.0.0</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">STVOR SDK v3.3.0</div>
           <div>Production-grade E2EE — Signal Protocol (X3DH + Double Ratchet) on native Node.js crypto. Zero external dependencies. (Mar 2026)</div>
         </footer>
         

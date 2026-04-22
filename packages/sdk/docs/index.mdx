@@ -12,18 +12,19 @@ STVOR implements X3DH key exchange and Double Ratchet encryption (the same crypt
 ```typescript
 import { Stvor } from '@stvor/sdk';
 
-// Initialize with your app token
-const app = await Stvor.init({ appToken: 'sk_live_...' });
-
-// Connect a user
-const alice = await app.connect('alice@example.com');
+// One call: generates keys, registers with relay, starts polling
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: 'stvor_live_...',
+  relayUrl: 'https://relay.stvor.io',
+});
 
 // Send encrypted messages — E2EE happens automatically
 await alice.send('bob@example.com', 'Hello, Bob!');
 
-// Receive messages with a callback
-alice.onMessage((senderId, message) => {
-  console.log(`${senderId}: ${message}`);
+// Receive messages
+alice.onMessage((msg) => {
+  console.log(`${msg.from}: ${msg.data}`);
 });
 ```
 
@@ -76,22 +77,28 @@ The mock relay lets you test E2EE without production credentials.
 ```typescript
 import { Stvor } from '@stvor/sdk';
 
-const app = await Stvor.init({
-  appToken: 'stvor_dev_test123',  // Any stvor_* token works locally
-  relayUrl: 'ws://localhost:4444'
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: 'stvor_dev_test123',      // any stvor_* token works locally
+  relayUrl: 'http://localhost:4444',
 });
 
-const alice = await app.connect('alice@example.com');
-const bob = await app.connect('bob@example.com');
+const bob = await Stvor.connect({
+  userId:   'bob@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
+
+// Receive messages
+bob.onMessage((msg) => {
+  console.log(`${msg.from}: ${msg.data}`);
+  // "alice@example.com: Hello from Alice!"
+});
 
 // Send an encrypted message
 await alice.send('bob@example.com', 'Hello from Alice!');
 
-// Receive messages
-bob.onMessage((sender, message) => {
-  console.log(`${sender}: ${message}`); // "alice@example.com: Hello from Alice!"
-});
-
+// Disconnect when done
 await alice.disconnect();
 await bob.disconnect();
 ```
@@ -99,22 +106,13 @@ await bob.disconnect();
 <Warning>
 **Never commit tokens to version control.** Use environment variables:
 ```typescript
-const app = await Stvor.init({
-  appToken: process.env.STVOR_APP_TOKEN
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: process.env.STVOR_RELAY_URL,
 });
 ```
 </Warning>
-
----
-
-## Interactive Examples
-
-Try STVOR in your browser without any setup:
-
-- **CodeSandbox**: [STVOR Quickstart Template](https://codesandbox.io/s/stvor-sdk-quickstart)
-- **StackBlitz**: [STVOR Quickstart Template](https://stackblitz.com/edit/stvor-sdk-quickstart)
-
-These sandboxes include a pre-configured mock relay so you can experiment with E2E encryption immediately.
 
 ---
 
@@ -136,7 +134,6 @@ yarn add @stvor/sdk
 
 **Requirements:**
 - Node.js ≥18.0.0 or modern browser
-- WebSocket support (built into browsers, use `ws` package for Node.js)
 - No cryptography experience needed
 
 ---
@@ -152,27 +149,32 @@ Add `"type": "module"` to your `package.json`:
 ```json
 {
   "type": "module",
-  "dependencies": { "@stvor/sdk": "^3.0.0" }
+  "dependencies": { "@stvor/sdk": "^3.3.0" }
 }
 ```
 
 ```typescript
 import { Stvor } from '@stvor/sdk';
-const app = await Stvor.init({ appToken: 'stvor_dev_...' });
+
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_dev_...',
+  relayUrl: 'http://localhost:4444',
+});
 ```
 
 ### CommonJS
 
-For projects using `require()`, use the async `load()` pattern:
-
 ```javascript
-const sdk = require('@stvor/sdk');
+const { Stvor } = require('@stvor/sdk');
 
 async function main() {
-  const { Stvor } = await sdk.load();
-  const app = await Stvor.init({ appToken: 'stvor_dev_...' });
-  const alice = await app.connect('alice@example.com');
-  await alice.send('bob@example.com', 'Hello from CJS!');
+  const alice = await Stvor.connect({
+    userId:   'alice',
+    appToken: 'stvor_dev_...',
+    relayUrl: 'http://localhost:4444',
+  });
+  await alice.send('bob', 'Hello from CJS!');
 }
 main();
 ```
@@ -191,8 +193,26 @@ Use `NodeNext` module resolution in `tsconfig.json`:
 }
 ```
 
+### Browser (Web SDK)
+
+```typescript
+import { StvorWebSDK } from '@stvor/sdk/web';
+
+const alice = await StvorWebSDK.create({
+  userId:   'alice@example.com',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
+
+await alice.send('bob@example.com', { text: 'Hello from browser!' });
+
+alice.onMessage((from, data) => {
+  console.log(from, data);
+});
+```
+
 <Tip>
-See [examples/](https://github.com/sapogeth/stvor_sdk/tree/main/packages/sdk/examples) for complete working examples in ESM, CJS, and TypeScript.
+The Web SDK uses the browser's native Web Crypto API — zero Node.js dependencies, zero WASM bundles.
 </Tip>
 
 ---
@@ -209,494 +229,353 @@ npx @stvor/sdk mock-relay
 
 # Custom port
 PORT=9000 npx @stvor/sdk mock-relay
-
-# Verbose logging
-STVOR_MOCK_VERBOSE=1 npx @stvor/sdk mock-relay
 ```
 
 ### Use in Your App
 
 ```typescript
-const app = await Stvor.init({
-  appToken: 'stvor_dev_test123',  // any token starting with "stvor_"
-  relayUrl: 'ws://localhost:4444'  // mock relay URL
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_dev_test123',   // any token starting with "stvor_"
+  relayUrl: 'http://localhost:4444',
 });
-```
-
-### Docker
-
-```bash
-docker run -p 4444:4444 stvor/mock-relay
-```
-
-Or with Docker Compose:
-
-```yaml
-services:
-  relay:
-    image: node:20-alpine
-    working_dir: /app
-    command: npx @stvor/sdk mock-relay
-    ports:
-      - "4444:4444"
-    environment:
-      - STVOR_MOCK_VERBOSE=1
 ```
 
 The mock relay:
 - Accepts **any** `stvor_*` token
 - Stores data **in-memory** (resets on restart)
-- Supports all SDK operations (register, send, receive)
+- Supports all SDK operations (register, send, receive, delete)
 - Provides a `/health` endpoint for readiness checks
 
 ---
 
 # SDK Basics
 
-## Initialization
+## Connecting a User
 
 ```typescript
-const app = await Stvor.init({ appToken: 'sk_live_...' });
+const client = await Stvor.connect(config);
 ```
 
-Creates SDK instance. Call once at app startup.
+Connects a user, generates their identity keys, and registers them with the relay — all in one call.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `config.userId` | `string` | Yes | User identifier (email, username, UUID) |
+| `config.appToken` | `string` | Yes | Token from developer dashboard |
+| `config.relayUrl` | `string` | Yes | Relay server URL |
+| `config.timeout` | `number` | No | Request timeout ms (default: 10000) |
+| `config.pollIntervalMs` | `number` | No | Message polling interval ms (default: 1000) |
 
 | Returns | Description |
 |---------|-------------|
-| `StvorApp` | Main SDK instance for creating users |
+| `Promise<StvorClient>` | Client instance for this user |
 
 ```typescript
-// Check if ready
-app.isReady(); // boolean
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: 'https://relay.stvor.io',
+});
 
-// Cleanup when done
-await app.disconnect();
+// Get user ID
+alice.getUserId(); // 'alice@example.com'
 ```
-
----
-
-## Users & Identity
-
-```typescript
-const user = await app.connect('alice@example.com');
-```
-
-Connects a user and establishes their encryption identity.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `userId` | `string` | User identifier (email, username, UUID) |
-
-| Returns | Description |
-|---------|-------------|
-| `StvorClient` | Client instance for this user |
-
-```typescript
-// Get current user ID
-user.getUserId(); // 'alice@example.com'
-
-// Multiple users
-const bob = await app.connect('bob@example.com');
-await alice.send('bob@example.com', 'Hey Bob!');
-```
-
-<Tip>
-Each device = separate user. Same user on different devices has different identity.
-</Tip>
 
 ---
 
 ## Sending Messages
 
 ```typescript
-await alice.send('bob@example.com', 'Hello Bob!');
-await alice.send('bob@example.com', new Uint8Array([1, 2, 3]));
+await client.send(recipientId, data, options?);
 ```
 
-Sends an encrypted message to a recipient. **Automatically waits** for the recipient to be available (configurable).
+Sends an encrypted message. **Automatically waits** for the recipient to register (configurable).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `recipientId` | `string` | Recipient's user ID |
-| `content` | `string \| Uint8Array` | Message text or binary data |
-| `options.timeout` | `number` | Max wait time for recipient (ms, default: 10000) |
+| `data` | any | Message data — any JavaScript type (see Data Types table) |
 | `options.waitForRecipient` | `boolean` | Auto-wait for recipient (default: true) |
-
-| Returns | Description |
-|---------|-------------|
-| `Promise<void>` | Resolves when message is sent |
+| `options.timeout` | `number` | Max wait for recipient ms (default: 10000) |
 
 ```typescript
-// Send text (auto-waits for recipient)
+// Send text
 await alice.send('bob@example.com', 'Hello!');
 
 // Send with custom timeout
 await alice.send('bob@example.com', 'Hello!', { timeout: 30000 });
 
-// Send binary (files, images)
-const fileData = await fetchFile();
-await alice.send('bob@example.com', fileData);
-
-// Skip waiting — fail immediately if recipient not found
+// Skip waiting — throws immediately if recipient not found
 await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 ```
 
-<Tip>
-The `send()` method waits for the recipient by default. You no longer need to call `waitForUser()` before sending — it's built in!
-</Tip>
+---
 
-<Warning>
-Message is delivered asynchronously. Use `await` to ensure message is sent.
-</Warning>
+## Supported Data Types
+
+The SDK preserves the exact JavaScript type — no data is lost through serialization.
+
+| Type | Example |
+|------|---------|
+| `string` | `'Hello, world!'` |
+| `number` | `42`, `3.14`, `-7` |
+| `boolean` | `true`, `false` |
+| `null` | `null` |
+| `Uint8Array` / `Buffer` | Binary files, images, audio |
+| `object` / `array` | `{ key: 'value' }`, `[1, 2, 3]` |
+| `Date` | `new Date()` |
+| `Set` | `new Set([1, 2, 3])` |
+| `Map` | `new Map([['a', 1]])` |
+
+```typescript
+// All of these work out of the box:
+await alice.send('bob', 'text message');
+await alice.send('bob', 42);
+await alice.send('bob', true);
+await alice.send('bob', null);
+await alice.send('bob', new Uint8Array([1, 2, 3]));
+await alice.send('bob', { user: 'alice', score: 100 });
+await alice.send('bob', new Date());
+await alice.send('bob', new Set(['a', 'b', 'c']));
+await alice.send('bob', new Map([['key', 'value']]));
+
+// Recipient gets the original type back:
+client.onMessage((msg) => {
+  // msg.data is the exact type that was sent
+  if (msg.data instanceof Date) {
+    console.log('Received date:', msg.data.toISOString());
+  }
+});
+```
 
 ---
 
 ## Receiving Messages
 
 ```typescript
-const message = await alice.receive();
-console.log(message.content);
+const unsubscribe = client.onMessage(handler);
 ```
 
-Blocks until a message is available, then returns decrypted content.
+Subscribes to incoming messages. Messages arrive via background polling.
 
-| Returns | Description |
-|---------|-------------|
-| `Promise<DecryptedMessage>` | Decrypted message object |
+**Node.js SDK:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `handler` | `(msg: StvorMessage) => void` | Called for each message |
 
 ```typescript
-interface DecryptedMessage {
-  id: string;        // Message identifier
-  senderId: string;  // Sender's user ID
-  content: string | Uint8Array;
-  timestamp: Date;   // When message was sent
+interface StvorMessage {
+  from:      string;   // Sender's user ID
+  data:      unknown;  // Original type preserved
+  timestamp: Date;
+  id:        string;   // Message identifier
 }
+
+const unsubscribe = bob.onMessage((msg) => {
+  console.log(`${msg.from}: ${msg.data}`);
+});
+
+unsubscribe(); // Stop receiving
 ```
+
+**Browser SDK:**
 
 ```typescript
-// Blocking receive
-const msg = await alice.receive();
-console.log(`${msg.senderId}: ${msg.content}`);
-
-// Non-blocking with subscription
-const unsubscribe = alice.onMessage((msg) => {
-  console.log(`[Push] ${msg.senderId}: ${msg.content}`);
+// Browser handler receives (from, data) separately
+alice.onMessage((from, data) => {
+  console.log(from, data);
 });
-// Later...
-unsubscribe();
 ```
-
-<Tip>
-`receive()` blocks indefinitely. For production, use `onMessage()` subscription pattern.
-</Tip>
 
 ---
 
-## Sealing / Offline payloads
+## Disconnecting
 
-APIs for sealing/opening offline payloads are not implemented in SDK v3.0. The current SDK focuses on live send/onMessage flow over the relay. Planned work includes explicit sealed payload APIs in a future version.
+```typescript
+await alice.disconnect();
+```
+
+Stops message polling and closes the relay connection. Call when the user logs out or the app closes.
 
 ---
 
 # API Reference
 
-## Stvor.init()
+## `Stvor.connect()` — Node.js
 
 ```typescript
-function init(config: StvorAppConfig): Promise<StvorApp>
+function connect(config: StvorConfig): Promise<StvorClient>
 ```
 
-Initializes the SDK with your AppToken.
+Single-call API: creates identity keys, registers with relay, starts polling.
 
 ### Parameters
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `config.appToken` | `string` | Yes | Token from developer dashboard |
-| `config.relayUrl` | `string` | No | Relay server URL |
-| `config.timeout` | `number` | No | Connection timeout (ms) |
+| `config.userId` | `string` | Yes | User identifier |
+| `config.appToken` | `string` | Yes | Token from developer dashboard (must start with `stvor_`) |
+| `config.relayUrl` | `string` | Yes | Relay URL |
+| `config.timeout` | `number` | No | Timeout in ms (default: 10000) |
+| `config.pollIntervalMs` | `number` | No | Polling interval in ms (default: 1000) |
 
 ### Returns
 
-`Promise<StvorApp>` — Main SDK instance
+`Promise<StvorClient>`
 
 ### Example
 
 ```typescript
-const app = await Stvor.init({
+import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
   appToken: process.env.STVOR_APP_TOKEN,
   relayUrl: 'https://relay.stvor.io',
-  timeout: 15000
 });
 ```
 
 ### Errors
 
-- `AUTH_FAILED` — Invalid or revoked AppToken
+- `INVALID_APP_TOKEN` — Token doesn't start with `stvor_`
 - `RELAY_UNAVAILABLE` — Cannot connect to relay
 
 ---
 
-## StvorApp.connect()
+## `StvorWebSDK.create()` — Browser
 
 ```typescript
-function connect(userId: string): Promise<StvorClient>
+static async create(options: WebSDKOptions): Promise<StvorWebSDK>
 ```
 
-Connects a user and returns a client for messaging operations.
+Browser equivalent of `Stvor.connect()`. Uses Web Crypto API (ECDH P-256, AES-GCM, HKDF) — no Node.js modules, no WASM.
 
 ### Parameters
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `userId` | `string` | Yes | User identifier |
-
-### Returns
-
-`Promise<StvorClient>` — Client for messaging
+| `options.userId` | `string` | Yes | User identifier |
+| `options.appToken` | `string` | Yes | Token from developer dashboard |
+| `options.relayUrl` | `string` | Yes | Relay URL |
+| `options.pollIntervalMs` | `number` | No | Polling interval in ms (default: 1000) |
 
 ### Example
 
 ```typescript
-const alice = await app.connect('alice@example.com');
-await alice.send('bob@example.com', 'Hello!');
+import { StvorWebSDK } from '@stvor/sdk/web';
+
+const alice = await StvorWebSDK.create({
+  userId:   'alice@example.com',
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: 'https://relay.stvor.io',
+});
+
+await alice.send('bob@example.com', { text: 'Hello from browser!' });
+
+alice.onMessage((from, data) => {
+  console.log(from, data);
+});
 ```
 
 ---
 
-## StvorClient.send()
+## `StvorClient.send()`
 
 ```typescript
 function send(
   recipientId: string,
-  content: string | Uint8Array,
-  options?: { timeout?: number; waitForRecipient?: boolean }
+  data: unknown,
+  options?: { waitForRecipient?: boolean; timeout?: number }
 ): Promise<void>
-```
-
-Sends an encrypted message to a recipient. By default, automatically waits for the recipient's public keys if they haven't connected yet.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `recipientId` | `string` | Yes | Recipient's user ID |
-| `content` | `string \| Uint8Array` | Yes | Message content |
-| `options.timeout` | `number` | No | Max wait time for recipient (ms, default: 10000) |
-| `options.waitForRecipient` | `boolean` | No | Auto-wait for recipient (default: true) |
-
-### Returns
-
-`Promise<void>` — Resolves when sent
-
-### Example
-
-```typescript
-// Basic send (auto-waits for recipient)
-await alice.send('bob@example.com', 'Hello Bob!');
-
-// Send binary data
-await alice.send('bob@example.com', binaryData);
-
-// Custom timeout
-await alice.send('bob@example.com', 'Hello!', { timeout: 30000 });
-
-// Skip waiting — throws immediately if recipient not available
-await alice.send('bob@example.com', 'Hello!', { waitForRecipient: false });
 ```
 
 ### Errors
 
-- `RECIPIENT_NOT_FOUND` — Recipient not registered (when waitForRecipient: false)
-- `RECIPIENT_TIMEOUT` — Timed out waiting for recipient keys
+- `RECIPIENT_NOT_FOUND` — Recipient not registered (when `waitForRecipient: false`)
 - `DELIVERY_FAILED` — Message could not be delivered
 - `QUOTA_EXCEEDED` — Monthly message limit reached
 
 ---
 
-## StvorClient.waitForUser()
+## `StvorClient.onMessage()` — Node.js
+
+```typescript
+function onMessage(handler: (msg: StvorMessage) => void | Promise<void>): () => void
+```
+
+Returns an unsubscribe function.
+
+---
+
+## `StvorWebSDK.onMessage()` — Browser
+
+```typescript
+function onMessage(handler: (from: string, data: unknown) => void | Promise<void>): void
+```
+
+---
+
+## `StvorClient.waitForUser()`
 
 ```typescript
 function waitForUser(userId: string, timeoutMs?: number): Promise<boolean>
 ```
 
-Explicitly wait for a user's public keys to become available on the relay. Returns `true` if the user became available, or `false` on timeout.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `userId` | `string` | Yes | User ID to wait for |
-| `timeoutMs` | `number` | No | Timeout in ms (default: 10000) |
-
-### Example
+Waits for a user to register. Returns `true` if available, `false` on timeout. Usually not needed — `send()` waits automatically.
 
 ```typescript
-// Wait for Bob to connect
-const available = await alice.waitForUser('bob@example.com', 30000);
-if (available) {
-  await alice.send('bob@example.com', 'Hello!');
-} else {
-  console.log('Bob did not connect in time');
+const online = await alice.waitForUser('bob@example.com', 30000);
+if (online) {
+  await alice.send('bob@example.com', 'Hey!');
 }
 ```
 
-<Tip>
-You don't need to call `waitForUser()` before `send()` — the `send()` method automatically waits by default. Use `waitForUser()` only when you need to check availability without sending.
-</Tip>
-
 ---
 
-## StvorClient.receive()
+## `StvorClient.disconnect()`
 
 ```typescript
-function receive(): Promise<DecryptedMessage>
+function disconnect(): Promise<void>
 ```
 
-Receives and decrypts the next message.
-
-### Parameters
-
-None
-
-### Returns
-
-`Promise<DecryptedMessage>` — Decrypted message
-
-```typescript
-interface DecryptedMessage {
-  id: string;
-  senderId: string;
-  content: string | Uint8Array;
-  timestamp: Date;
-}
-```
-
-### Example
-
-```typescript
-const msg = await alice.receive();
-console.log(msg.content);
-```
-
-### Errors
-
-- `MESSAGE_INTEGRITY_FAILED` — Message corrupted or tampered
-
----
-
-## StvorClient.seal()
-
-```typescript
-function seal(data: string | Uint8Array, recipientId: string): Promise<SealedPayload>
-```
-
-Encrypts data for a specific recipient.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `data` | `string \| Uint8Array` | Yes | Data to encrypt |
-| `recipientId` | `string` | Yes | Recipient's user ID |
-
-### Returns
-
-`Promise<SealedPayload>` — Encrypted payload
-
-### Example
-
-```typescript
-const sealed = await alice.seal(fileData, 'bob@example.com');
-```
-
----
-
-## StvorClient.open()
-
-```typescript
-function open(sealed: SealedPayload): Promise<Uint8Array>
-```
-
-Decrypts sealed data.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `sealed` | `SealedPayload` | Yes | Sealed payload |
-
-### Returns
-
-`Promise<Uint8Array>` — Decrypted data
-
-### Example
-
-```typescript
-const decrypted = await bob.open(sealed);
-```
-
----
-
-## StvorClient.onMessage()
-
-```typescript
-function onMessage(handler: (msg: DecryptedMessage) => void): () => void
-```
-
-Subscribes to incoming messages.
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `handler` | `function` | Yes | Message callback |
-
-### Returns
-
-`() => void` — Unsubscribe function
-
-### Example
-
-```typescript
-const unsubscribe = alice.onMessage((msg) => {
-  console.log(`${msg.senderId}: ${msg.content}`);
-});
-
-// Unsubscribe later
-unsubscribe();
-```
+Stops polling and closes the relay connection.
 
 ---
 
 # Cryptography
 
-STVOR v3.0 implements the **Signal Protocol** using **only Node.js built-in `crypto` module** — zero external crypto libraries:
-- **Symmetric X3DH** (Extended Triple Diffie-Hellman) for key agreement — canonical DH ordering ensures both sides derive identical shared secrets
-- **Double Ratchet** for forward secrecy and post-compromise security — DH ratchet + symmetric-key ratchet
+STVOR v3.3 implements the **Signal Protocol** — zero external crypto libraries.
+
+**Node.js SDK** uses the built-in `node:crypto` module:
+- **X3DH** (Extended Triple Diffie-Hellman) for initial key agreement
+- **Double Ratchet** for forward secrecy and post-compromise security
 - **ECDH P-256** for Diffie-Hellman key exchange
 - **ECDSA P-256** for digital signatures (SPK verification)
-- **AES-256-GCM** for authenticated encryption with associated data (header as AAD)
+- **AES-256-GCM** for authenticated encryption (header as AAD)
 - **HKDF-SHA256** for key derivation
 - **HMAC-SHA256** for chain key ratcheting
 
-## What STVOR Guarantees
+**Browser SDK** uses the Web Crypto API — identical security, no Node.js, no WASM.
+
+## Security Guarantees
 
 ✅ **End-to-end encryption** — Plaintext never leaves the device  
-✅ **Forward Secrecy** — DH key rotation every 50 messages / 10 minutes  
-✅ **Post-Compromise Security** — Assuming at least one successful DH ratchet  
-✅ **Authenticated encryption** — AEAD prevents tampering  
-✅ **Replay protection** — Within documented operational limits  
-✅ **TOFU fingerprint verification** — Optional identity verification  
+✅ **Forward Secrecy** — DH key rotation every message  
+✅ **Post-Compromise Security** — Automatic DH ratchet advancement  
+✅ **Authenticated encryption** — AES-256-GCM with AEAD  
+✅ **Replay protection** — Nonce + timestamp validation  
+✅ **TOFU fingerprint verification** — Identity verification on first contact  
+✅ **Simultaneous-send support** — Both parties can send before receiving  
 
 ## What STVOR Does NOT Guarantee
 
 ❌ **Metadata privacy** — Relay sees sender, recipient, message timing  
-❌ **Strong MITM protection after first contact** — TOFU model (first-contact trust is user responsibility)  
+❌ **Strong MITM after first contact** — TOFU model (first-contact trust is user responsibility)  
 ❌ **Multi-device sync** — Each device = separate identity  
-❌ **Guaranteed PCS** — Requires at least one honest DH exchange  
 ❌ **Post-quantum security** — Uses classical P-256 (planned: ML-KEM hybrid)  
-❌ **Persistent storage** — Keys/sessions stored in-memory  
+❌ **Persistent storage** — Keys/sessions stored in-memory (restart clears state)  
 
 ## Threat Model
 
@@ -708,59 +587,61 @@ STVOR v3.0 implements the **Signal Protocol** using **only Node.js built-in `cry
 **What attacker CANNOT do:**
 - Decrypt message content (without private keys)
 - Forge authenticated messages
+- Replay previously delivered messages
 
 **Out of scope:**
 - Device compromise (malware, root access)
 - Social engineering
 - Screen capture / screenshots
-- Metadata analysis
 
 <Warning>
-**First-contact trust**: TOFU model means first contact requires user verification. After first contact, strong MITM protection is active. Use `verifyFingerprint()` for high-security scenarios.
+**First-contact trust**: TOFU model means first contact requires user verification. After first contact, strong MITM protection is active.
 </Warning>
 
 ---
 
 # Limitations & Deployment
 
-## Version 3.0 Status
+## Version 3.3 Status
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Core E2EE** | ✅ Production | Symmetric X3DH + Double Ratchet, zero external crypto deps |
-| **Forward Secrecy** | ✅ Production | DH rotation every 50 msgs / 10 min |
+| **Core E2EE** | ✅ Production | X3DH + Double Ratchet, zero external crypto deps |
+| **Forward Secrecy** | ✅ Production | DH ratchet per message |
 | **ECDSA Signatures** | ✅ Production | Real P-256 digital signatures for SPK verification |
 | **AES-256-GCM + AAD** | ✅ Production | Header authenticated as associated data |
-| **Single-instance** | ✅ Ready | Dev and low-security prod |
-| **Multi-instance** | ❌ Not ready | Requires distributed state (Redis/PostgreSQL) |
+| **All data types** | ✅ Production | String, number, boolean, null, binary, object, Date, Set, Map |
+| **Simultaneous send** | ✅ Production | Both sides can send before receiving |
+| **Browser support** | ✅ Production | Web Crypto API, zero dependencies |
+| **Replay protection** | ✅ Production | Nonce + timestamp validation |
+| **Single-instance** | ✅ Ready | Dev and production |
+| **Multi-instance** | ❌ Not ready | Requires distributed state (Redis) |
 | **Mobile apps** | ❌ Not ready | No persistent storage yet |
-| **Replay protection** | 🟡 Demo-level | In-memory (operational limits), requires Redis for full guarantees |
-| **TOFU persistence** | 🟡 Demo-level | In-memory only, requires PostgreSQL for prod |
+| **Multi-device sync** | ❌ Not ready | Each device = separate identity |
 
 ## Deployment Scenarios
 
-### ✅ Single-instance dev (READY)
+### ✅ Local development (READY)
 
 ```bash
-# No infrastructure needed
-npm run dev
+npx @stvor/sdk mock-relay
 ```
-- In-memory storage sufficient
-- Keys lost on restart (acceptable for dev)
 
-### 🟡 Single-instance production (CONDITIONAL)
+No infrastructure needed. Keys reset on restart.
 
-```bash
-# Requires Redis + PostgreSQL
-docker-compose up
+### ✅ Single-instance production (READY)
+
+```typescript
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: process.env.STVOR_APP_TOKEN,
+  relayUrl: 'https://relay.stvor.io',
+});
 ```
-- Persistent replay protection cache
-- Persistent TOFU fingerprints
-- Keys still in-memory (v2.3)
 
 ### ❌ Multi-instance (NOT READY)
 
-Requires distributed state (Redis/PostgreSQL). Coming in a future version.
+Requires distributed state (Redis). Coming in a future version.
 
 ---
 
@@ -771,6 +652,7 @@ Requires distributed state (Redis/PostgreSQL). Coming in a future version.
 - Need transparent E2EE without vendor lock-in
 - Running single-instance deployments
 - Want Signal Protocol without complexity
+- Building real-time chat, collaboration, or messaging apps
 
 ❌ **Don't use STVOR if:**
 - Enterprise compliance required (SOC 2, GDPR)
@@ -780,40 +662,27 @@ Requires distributed state (Redis/PostgreSQL). Coming in a future version.
 
 ---
 
-## Honest Positioning
-
-STVOR is **not an enterprise product**. We document limitations honestly:
-- In-memory storage — keys cleared on restart
-- Single-instance ready — multi-instance coming later
-- TOFU model — first contact requires user verification
-- No compliance guarantees — use at your own risk
-
-**What we promise:**
-- Transparent code (no black boxes)
-- Honest security claims (no marketing fluff)
-- Production-grade crypto (Signal Protocol)
-- Zero vendor lock-in (self-hostable)
-
----
-
 # FAQ
 
 **Q: Do I need to understand cryptography?**
 
-No. X3DH handshake and Double Ratchet are fully automatic. Keys generated on `connect()`, rotated transparently.
+No. X3DH handshake and Double Ratchet are fully automatic. Keys are generated on `connect()` and rotated transparently.
 
 **Q: Is this really end-to-end encrypted?**
 
-Yes. Plaintext never leaves the device. Relay only forwards ciphertext and cannot decrypt messages.
+Yes. Plaintext never leaves the device. The relay only forwards ciphertext and cannot decrypt messages.
+
+**Q: What data types can I send?**
+
+Any JavaScript value: strings, numbers, booleans, null, binary (Uint8Array/Buffer), objects, arrays, Date, Set, and Map. The original type is preserved on the receiving end.
 
 **Q: Can users have multiple devices?**
 
-Not yet. Each device is a separate identity. Multi-device sync is out of scope for v2.1.
+Not yet. Each device is a separate identity. Multi-device sync is planned for a future version.
 
 **Q: What happens if the server restarts?**
 
-**v3.0:** Keys, sessions, TOFU fingerprints, replay cache are cleared (in-memory storage).  
-**Future:** With Redis/PostgreSQL, replay cache and TOFU persist.
+Keys, sessions, TOFU fingerprints, and the replay cache are cleared (in-memory storage). Clients need to reconnect.
 
 **Q: Can users recover messages on a new device?**
 
@@ -821,39 +690,26 @@ No. Storing keys server-side would break E2EE. Forward secrecy means past messag
 
 **Q: Is STVOR post-quantum secure?**
 
-**No.** v3.0 uses classical P-256 (ECDH/ECDSA). Hybrid ML-KEM-768 is planned but not implemented.
+No. v3.3 uses classical P-256 (ECDH/ECDSA). Hybrid ML-KEM-768 is planned but not yet implemented.
 
-**Q: What's the performance overhead?**
+**Q: Can I use this in the browser?**
 
-~150% slower than raw WebSocket (X3DH + Double Ratchet). Acceptable for <1000 msg/sec workloads.
-
-**Q: Can I use this in production?**
-
-**Single-instance:** Yes (with infrastructure: Redis + PostgreSQL).  
-**Multi-instance:** Not yet.  
-**High-risk apps:** No (review threat model first).
-
----
-
-## Next Steps
-
-1. **[Run Quickstart](#quickstart)** — Copy-paste working example
-2. **[Review Limitations](#limitations--deployment)** — Understand what's ready
-3. **[API Reference](#api-reference)** — Explore full SDK
-4. **[Security Model](#security-model)** — Verify threat model fit
+Yes. Import from `@stvor/sdk/web` and use `StvorWebSDK.create()`. It uses the browser's native Web Crypto API with zero external dependencies.
 
 ---
 
 ## Troubleshooting
 
-Having issues? See the [full Troubleshooting guide](./TROUBLESHOOTING.md) for solutions to:
+**`INVALID_APP_TOKEN`** — Your token must start with `stvor_`. Use `stvor_dev_test123` for local development.
 
-- **ERR_PACKAGE_PATH_NOT_EXPORTED** — Module import issues
-- **Relay handshake timeout** — Connection problems
-- **Timed out waiting for user** — Recipient not available
-- **CommonJS vs ESM** — Module system configuration
-- And more...
+**`RELAY_UNAVAILABLE`** — Make sure the mock relay is running (`npx @stvor/sdk mock-relay`) or the relay URL is correct.
+
+**`RECIPIENT_NOT_FOUND`** — The recipient hasn't connected yet. Either wait longer, or use the default `waitForRecipient: true`.
+
+**`DELIVERY_FAILED`** — Decryption failed on receive. Usually means a session state mismatch — disconnect and reconnect both clients.
+
+**`ERR_PACKAGE_PATH_NOT_EXPORTED`** — Make sure you're importing from the correct path: `@stvor/sdk` for Node.js, `@stvor/sdk/web` for browser.
 
 ---
 
-*STVOR SDK v3.0.0 — Zero external crypto dependencies. Secure by default, honest by design.*
+*STVOR SDK v3.3.0 — Zero external crypto dependencies. Secure by default, honest by design.*
