@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEPLOYMENT - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .nav a:hover {
+      color: var(--accent);
+    }
+    .nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+    .nav a:hover::after {
+      width: 100%;
+    }
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 35px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: clamp(32px, 8vw, 48px);
+      line-height: 1.2;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: clamp(24px, 6vw, 32px);
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: clamp(18px, 4vw, 24px);
+      color: var(--fg-secondary);
+    }
+    h4 {
+      font-size: clamp(16px, 3vw, 20px);
+      color: var(--fg-secondary);
+    }
+    p {
+      margin: 15px 0;
+      color: var(--fg-secondary);
+      word-break: break-word;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    code {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+      word-break: break-word;
+    }
+    pre {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: clamp(12px, 3vw, 20px);
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(10px, 2vw, 13px);
+      line-height: 1.6;
+      -webkit-overflow-scrolling: touch;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #ffd700;
+      font-size: inherit;
+    }
+    ul, ol {
+      margin: 15px 0;
+    }
+    li {
+      margin: 8px 0;
+      margin-left: 25px;
+      color: var(--fg-secondary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      text-align: left;
+      padding: clamp(10px, 2vw, 15px);
+      border-bottom: 1px solid var(--border-light);
+      word-break: break-word;
+    }
+    th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    td {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    strong {
+      color: var(--fg-primary);
+      font-weight: 700;
+    }
+    em {
+      color: var(--accent);
+    }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--fg-secondary);
+      font-style: italic;
+    }
+    footer {
+      margin-top: 80px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+    footer a {
+      color: var(--accent);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+      .nav {
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+      .nav a {
+        font-size: 12px;
+      }
+      h1 { margin-bottom: 20px; }
+      h2 { margin-top: 30px; }
+      p { font-size: clamp(13px, 3vw, 14px); }
+      pre {
+        padding: 12px;
+        font-size: 11px;
+        margin: 15px -15px;
+        border-radius: 0;
+        overflow-x: auto;
+      }
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+      .nav {
+        gap: 12px;
+        margin-bottom: 20px;
+        font-size: 11px;
+      }
+      .nav a {
+        font-size: 11px;
+      }
+      h1 { font-size: 28px; margin-bottom: 15px; }
+      h2 { font-size: 20px; }
+      h3 { font-size: 16px; }
+      pre {
+        padding: 10px;
+        font-size: 10px;
+      }
+      footer {
+        margin-top: 40px;
+        padding-top: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme.html">Overview</a>
+      <a href="/architecture.html">Architecture</a>
+      <a href="/api.html">API</a>
+      <a href="/security.html">Security</a>
+      <a href="/deployment.html">Deployment</a>
+    </div>
+    <h1>STVOR Deployment</h1><p>Complete deployment and setup guide.</p><p>---</p><h2>Quick Start (Local Development)</h2><h3>Prerequisites</h3><ul><li>Docker 24+</li></ul>
+<li>Docker Compose 2+</li>
+<li>Node.js 20+</li></p><h3>1. Clone &amp; Setup</h3><pre><code>bash
+git clone https://github.com/sapogeth/stvor_sdk.git
+cd stvor_sdk
+npm install
+cd packages/sdk &amp;&amp; npm install</code></pre><h3>2. Start Services (Docker)</h3><pre><code>bash
+docker-compose up</code></pre><p><strong>Services</strong>:
+<li>API: http://localhost:3001</li>
+<li>Relay: http://localhost:3002</li>
+<li>Dashboard: http://localhost:3001/dashboard</li>
+<li>PostgreSQL: localhost:5433</li>
+<li>Redis: localhost:6379</li></p><h3>3. Bootstrap Project</h3><pre><code>bash
+curl -X POST http://localhost:3001/bootstrap</code></pre><p>Response:
+<pre><code>json
+{
+  "project_id": "uuid-xxx",
+  "api_key": "stvor_live_xxx"
+}</code></pre><h3>4. Test Connection</h3><pre><code>bash
+<h1>Terminal 1: Alice</h1>
+node -e "
+const { Stvor } = require('@stvor/sdk');
+(async () =&gt; {
+  const alice = await Stvor.connect({
+    userId: 'alice',
+    appToken: 'stvor_live_xxx',
+    relayUrl: 'http://localhost:3002',
+  });
+  console.log('Alice connected:', alice.userId);
+  alice.onMessage(m =&gt; console.log('Alice received:', m.data));
+  await new Promise(() =&gt; {});
+})();
+"</p><h1>Terminal 2: Bob</h1>
+node -e "
+const { Stvor } = require('@stvor/sdk');
+(async () =&gt; {
+  const bob = await Stvor.connect({
+    userId: 'bob',
+    appToken: 'stvor_live_xxx',
+    relayUrl: 'http://localhost:3002',
+  });
+  console.log('Bob connected:', bob.userId);
+  await bob.send('alice', 'Hello from Bob!');
+})();
+"</code></pre><p>---</p><h2>Production Deployment</h2><h3>Architecture Checklist</h3><p><li>[ ] HTTPS/TLS (certificate from Let's Encrypt)</li>
+<li>[ ] PostgreSQL 15+ (managed service or HA setup)</li>
+<li>[ ] Redis 7+ (for replay protection)</li>
+<li>[ ] Load balancer (Nginx/HAProxy)</li>
+<li>[ ] Monitoring (Prometheus + Grafana)</li>
+<li>[ ] Log aggregation (ELK Stack)</li>
+<li>[ ] Backup &amp; restore strategy</li>
+<li>[ ] Disaster recovery plan</li></p><h3>1. Environment Setup</h3><p>Create <code>.env.production</code>:</p><pre><code>bash
+<h1>Node</h1>
+NODE_ENV=production
+PORT=3001
+LOG_LEVEL=info</p><h1>Database</h1>
+DATABASE_URL=postgresql://user:pass@db.prod.internal:5432/stvor
+DB_POOL_MAX=20
+DB_TIMEOUT=5000</p><h1>Redis</h1>
+REDIS_URL=redis://redis.prod.internal:6379
+REDIS_PASSWORD=secure_password</p><h1>Security</h1>
+API_KEY_PREFIX=stvor_live
+RATE_LIMIT=100  # per minute per IP
+CORS_ORIGIN=https://example.com</p><h1>Relay</h1>
+RELAY_PORT=3002
+RELAY_MESSAGE_TTL=600000  # 10 minutes
+RELAY_MAX_QUEUE=10000</p><h1>Analytics</h1>
+METRICS_ENABLED=true
+METRICS_RETENTION=7  # days</code></pre><h3>2. Database Setup</h3><p>#### 2a. PostgreSQL (Managed)</p><p>Use AWS RDS, Azure Database, or Google Cloud SQL:</p><pre><code>Recommended:
+<li>Instance: db.r6i.xlarge (4 CPU, 32GB RAM)</li>
+<li>Storage: 500GB SSD (auto-scaling enabled)</li>
+<li>Backups: Daily, 30-day retention</li>
+<li>Replication: Multi-AZ</li>
+<li>Monitoring: CloudWatch + Datadog</code></pre></li></p><p><strong>SSL Connection</strong>:
+<pre><code>bash
+<h1>Download certificate</h1>
+wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem</p><h1>Update connection string</h1>
+DATABASE_URL="postgresql://user:pass@db.prod:5432/stvor?sslmode=require&amp;sslrootcert=global-bundle.pem"</code></pre><p>#### 2b. Local PostgreSQL (Docker)</p><pre><code>yaml
+<h1>docker-compose.prod.yml</h1>
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: stvor
+      POSTGRES_USER: stvor
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"</code></pre><p>#### 2c. Run Migrations</p><pre><code>bash
+<h1>Local</h1>
+npm run migrate</p><h1>Production (via CI/CD)</h1>
+node migrate.js --env production</code></pre><p><strong>Migration files</strong>:
+<pre><code>migrations/
+├── 001_initial_schema.sql
+├── 002_metrics_schema.sql
+├── 003_analytics_schema.sql
+└── 004_analytics_handshakes.sql</code></pre><h3>3. Redis Setup</h3><p>#### 3a. AWS ElastiCache</p><pre><code>Recommended:
+<li>Node type: cache.r6g.xlarge (4 CPU, 32GB RAM)</li>
+<li>Engine: Redis 7.0</li>
+<li>Replication: Multi-AZ (automatic failover)</li>
+<li>Encryption: TLS in transit + at rest</li>
+<li>Backup: Daily automated snapshots</code></pre></li></p><p>#### 3b. Self-Hosted Redis</p><pre><code>bash
+<h1>Install on Linux</h1>
+sudo apt-get install redis-server</p><h1>Start</h1>
+sudo systemctl start redis-server</p><h1>Enable on boot</h1>
+sudo systemctl enable redis-server</p><h1>Verify</h1>
+redis-cli ping  # Should return PONG</code></pre><p><strong>Redis Configuration</strong> (<code>/etc/redis/redis.conf</code>):</p><pre><code>conf
+<h1>Security</h1>
+requirepass your_secure_password
+maxclients 10000</p><h1>Memory</h1>
+maxmemory 16gb
+maxmemory-policy allkeys-lru</p><h1>Persistence</h1>
+save 900 1        # Save if 1 key changes in 900s
+save 300 10       # Save if 10 keys change in 300s
+appendonly yes    # AOF (durability)
+appendfsync everysec</code></pre><h3>4. API Server Setup</h3><p>#### 4a. Docker Image</p><p>Build:
+<pre><code>bash
+docker build -t stvor-api:3.3.0 .</code></pre><p>Push to registry:
+<pre><code>bash
+docker tag stvor-api:3.3.0 registry.example.com/stvor-api:3.3.0
+docker push registry.example.com/stvor-api:3.3.0</code></pre><p>#### 4b. Kubernetes Deployment</p><pre><code>yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stvor-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: stvor-api
+  template:
+    metadata:
+      labels:
+        app: stvor-api
+    spec:
+      containers:
+      - name: stvor-api
+        image: registry.example.com/stvor-api:3.3.0
+        ports:
+        - containerPort: 3001
+        - containerPort: 3002
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: stvor-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: stvor-secrets
+              key: redis-url
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stvor-api
+spec:
+  selector:
+    app: stvor-api
+  ports:
+  - name: api
+    port: 3001
+    targetPort: 3001
+  - name: relay
+    port: 3002
+    targetPort: 3002
+  type: LoadBalancer</code></pre><p>Deploy:
+<pre><code>bash
+kubectl apply -f stvor-api.yml
+kubectl logs -f deployment/stvor-api</code></pre><h3>5. Load Balancer (Nginx)</h3><pre><code>nginx
+upstream stvor_api {
+  least_conn;  # Connection-based load balancing
+  server api1.internal:3001 weight=1 max_fails=3 fail_timeout=30s;
+  server api2.internal:3001 weight=1 max_fails=3 fail_timeout=30s;
+  server api3.internal:3001 weight=1 max_fails=3 fail_timeout=30s;
+}</p><p>upstream stvor_relay {
+  least_conn;
+  server relay1.internal:3002 weight=1 max_fails=3 fail_timeout=30s;
+  server relay2.internal:3002 weight=1 max_fails=3 fail_timeout=30s;
+}</p><h1>Redirect HTTP → HTTPS</h1>
+server {
+  listen 80;
+  server_name api.stvor.xyz relay.stvor.xyz;
+  return 301 https://$server_name$request_uri;
+}</p><h1>HTTPS API</h1>
+server {
+  listen 443 ssl http2;
+  server_name api.stvor.xyz;</p><p>  ssl_certificate /etc/letsencrypt/live/api.stvor.xyz/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/api.stvor.xyz/privkey.pem;
+  ssl_protocols TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+  ssl_prefer_server_ciphers on;</p><p>  # Security headers
+  add_header Strict-Transport-Security "max-age=31536000" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;</p><p>  # Rate limiting
+  limit_req_zone $binary_remote_addr zone=api:10m rate=100r/m;
+  limit_req zone=api burst=200 nodelay;</p><p>  location / {
+    proxy_pass http://stvor_api;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 60s;
+  }
+}</p><h1>HTTPS Relay</h1>
+server {
+  listen 443 ssl http2;
+  server_name relay.stvor.xyz;</p><p>  ssl_certificate /etc/letsencrypt/live/relay.stvor.xyz/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/relay.stvor.xyz/privkey.pem;</p><p>  location / {
+    proxy_pass http://stvor_relay;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_read_timeout 60s;
+  }
+}</code></pre><h3>6. SSL/TLS Certificates</h3><p>#### 6a. Let's Encrypt (Free)</p><pre><code>bash
+<h1>Install Certbot</h1>
+sudo apt-get install certbot python3-certbot-nginx</p><h1>Obtain certificate</h1>
+sudo certbot certonly --nginx -d api.stvor.xyz -d relay.stvor.xyz</p><h1>Auto-renewal (runs daily)</h1>
+sudo certbot renew --dry-run</code></pre><p>#### 6b. Custom Certificate (Paid)</p><pre><code>bash
+<h1>Generate CSR</h1>
+openssl req -new -newkey rsa:4096 -keyout relay.key -out relay.csr</p><h1>Submit to CA (Sectigo, DigiCert, etc.)</h1>
+<h1>Receive: relay.crt + intermediate.crt + root.crt</h1><h1>Create full chain</h1>
+cat relay.crt intermediate.crt root.crt &gt; full-chain.pem</p><h1>Update Nginx config</h1>
+ssl_certificate /path/to/full-chain.pem;
+ssl_certificate_key /path/to/relay.key;</code></pre><h3>7. Monitoring &amp; Logging</h3><p>#### 7a. Application Monitoring (Prometheus)</p><pre><code>yaml
+<h1>prometheus.yml</h1>
+global:
+  scrape_interval: 15s</p><p>scrape_configs:
+  - job_name: 'stvor-api'
+    static_configs:
+      - targets: ['localhost:3001']
+    metrics_path: '/metrics'</code></pre><p>#### 7b. Log Aggregation (ELK)</p><pre><code>docker
+<h1>docker-compose.yml</h1>
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
+    environment:
+      discovery.type: single-node
+    ports:
+      - "9200:9200"</p><p>  kibana:
+    image: docker.elastic.co/kibana/kibana:8.0.0
+    ports:
+      - "5601:5601"</p><p>  logstash:
+    image: docker.elastic.co/logstash/logstash:8.0.0
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - "5000:5000"</code></pre><p>#### 7c. Application Logs (Winston)</p><pre><code>ts
+// src/logger.ts
+import * as winston from 'winston';</p><p>const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console({ format: winston.format.simple() }),
+  ],
+});</p><p>export default logger;</code></pre><h3>8. Backup &amp; Restore</h3><p>#### 8a. PostgreSQL Backup</p><pre><code>bash
+<h1>Full backup</h1>
+pg_dump \
+  --host=db.prod.internal \
+  --user=stvor \
+  --password \
+  stvor &gt; backup_$(date +%Y%m%d).sql</p><h1>Compressed backup</h1>
+pg_dump \
+  --host=db.prod.internal \
+  --user=stvor \
+  --format=custom \
+  stvor &gt; backup_$(date +%Y%m%d).dump</p><h1>Upload to S3</h1>
+aws s3 cp backup_*.dump s3://stvor-backups/</code></pre><p><strong>Restore</strong>:
+<pre><code>bash
+<h1>From SQL</h1>
+psql stvor &lt; backup_20240101.sql</p><h1>From dump</h1>
+pg_restore -d stvor backup_20240101.dump</code></pre><p>#### 8b. Redis Backup</p><pre><code>bash
+<h1>Manual snapshot</h1>
+redis-cli BGSAVE
+<h1>Creates: /var/lib/redis/dump.rdb</h1><h1>Upload</h1>
+aws s3 cp /var/lib/redis/dump.rdb s3://stvor-backups/</code></pre><p><strong>Restore</strong>:
+<pre><code>bash
+<h1>Copy dump.rdb to Redis data directory</h1>
+cp dump.rdb /var/lib/redis/</p><h1>Restart Redis</h1>
+sudo systemctl restart redis-server</code></pre><h3>9. Security Hardening</h3><p>#### 9a. Firewall Rules</p><pre><code>bash
+<h1>Allow HTTPS only</h1>
+sudo ufw allow 443/tcp
+sudo ufw allow 22/tcp    # SSH (restrict to admin IPs)
+sudo ufw deny 3001       # Block direct API access
+sudo ufw deny 5433       # Block direct DB access</code></pre><p>#### 9b. Database Security</p><pre><code>sql
+-- Create restricted user (not admin)
+CREATE USER stvor_app WITH PASSWORD 'strong_password';
+GRANT CONNECT ON DATABASE stvor TO stvor_app;
+GRANT USAGE ON SCHEMA public TO stvor_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO stvor_app;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO stvor_app;</p><p>-- Revoke public access
+REVOKE ALL ON DATABASE stvor FROM public;
+REVOKE ALL ON SCHEMA public FROM public;</code></pre><p>#### 9c. Redis Security</p><pre><code>bash
+<h1>Disable dangerous commands</h1>
+redis-cli CONFIG SET slowlog-max-len 0
+redis-cli CONFIG REWRITE</p><h1>Enable ACL (Redis 6+)</h1>
+redis-cli ACL SETUSER stvor_app on &gt;strong_password ~<em> &amp;</em> +@all -@admin -flushdb -flushall
+redis-cli ACL SAVE</code></pre><h3>10. CI/CD Pipeline (GitHub Actions)</h3><pre><code>yaml
+<h1>.github/workflows/deploy.yml</h1>
+name: Deploy to Production</p><p>on:
+  push:
+    branches: [main]
+  workflow_dispatch:</p><p>jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm test</p><p>  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ secrets.REGISTRY }}/stvor-api:latest</p><p>  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -X POST ${{ secrets.DEPLOY_WEBHOOK }} \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_TOKEN }}"</code></pre><p>---</p><h2>Troubleshooting</h2><h3>PostgreSQL Connection Failed</h3><pre><code>Error: connect ECONNREFUSED 127.0.0.1:5433</code></pre><p><strong>Fix</strong>:
+<pre><code>bash
+<h1>Check if running</h1>
+docker ps | grep postgres</p><h1>Restart</h1>
+docker-compose down postgres
+docker-compose up postgres</p><h1>Verify connection</h1>
+psql postgresql://user:pass@localhost:5433/stvor</code></pre><h3>Redis Connection Failed</h3><pre><code>Error: Redis connection refused</code></pre><p><strong>Fix</strong>:
+<pre><code>bash
+<h1>Check if running</h1>
+docker ps | grep redis</p><h1>Test connection</h1>
+redis-cli ping</p><h1>If not running</h1>
+docker-compose up redis</code></pre><h3>Rate Limiting Errors</h3><pre><code>Error: ERR_RATE_LIMITED (100 requests per minute per IP)</code></pre><p><strong>Fix</strong>:
+<li>Increase limit in <code>.env</code>: <code>RATE_LIMIT=200</code></li>
+<li>Implement exponential backoff in client</li>
+<li>Use API key-based rate limiting (per-project limits)</li></p><h3>High Memory Usage</h3><pre><code>Docker container uses 2GB+</code></pre><p><strong>Fix</strong>:
+<pre><code>bash
+<h1>Check memory usage</h1>
+docker stats stvor-api</p><h1>Reduce in docker-compose</h1>
+docker-compose.yml:
+  services:
+    api:
+      mem_limit: 512m</code></pre><p>---</p><h2>Performance Tuning</h2><h3>PostgreSQL</h3><pre><code>sql
+-- Connection pooling (PgBouncer)
+-- Max 100 connections per app instance
+max_connections = 1000;
+shared_buffers = 256MB;
+effective_cache_size = 2GB;
+work_mem = 64MB;</p><p>-- Indexes
+CREATE INDEX idx_messages_recipient ON messages(to_user_id);
+CREATE INDEX idx_metrics_timestamp ON metrics(timestamp DESC);</code></pre><h3>Redis</h3><pre><code>conf
+<h1>Memory optimization</h1>
+maxmemory 2gb
+maxmemory-policy allkeys-lru</p><h1>Network optimization</h1>
+tcp-backlog 511
+timeout 0</code></pre><h3>API Server</h3><pre><code>ts
+// Enable compression
+import compress from '@fastify/compress';
+app.register(compress);</p><p>// Connection pooling
+pool.max = 50;</p><p>// Query batching
+await batchedInsert(metrics, 1000);</code></pre><p>---</p><h2>Monitoring Dashboard</h2><p>Access metrics at: <code>http://localhost:3001/metrics</code></p><p><strong>Key Metrics</strong>:
+<li><code>http_requests_total</code> - Total requests</li>
+<li><code>http_request_duration_seconds</code> - Response time</li>
+<li><code>db_pool_connections_used</code> - DB connections</li>
+<li><code>redis_connected</code> - Redis status</li>
+<li><code>encryption_operations_total</code> - Crypto operations</li></p><p>---</p><h2>Disaster Recovery</h2><h3>RTO/RPO Targets</h3><p>| Component | RTO | RPO |
+|-----------|-----|-----|
+| API Server | 5 min | 0 (stateless) |
+| PostgreSQL | 15 min | 1 min |
+| Redis | 5 min | 5 min |
+| Full Outage | 30 min | 15 min |</p><h3>Failover Procedure</h3><p>1. <strong>Detect failure</strong> (monitoring alert)
+2. <strong>Promote standby DB</strong> (if multi-AZ)
+3. <strong>Restart API servers</strong> (on backup infrastructure)
+4. <strong>Verify connectivity</strong> (health check passing)
+5. <strong>Monitor metrics</strong> (error rates normal)
+6. <strong>RCA</strong> (root cause analysis)</p><p>---</p><h2>License</h2><p>MIT
+</p>
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+</body>
+</html>

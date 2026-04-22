@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SECURITY - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .nav a:hover {
+      color: var(--accent);
+    }
+    .nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+    .nav a:hover::after {
+      width: 100%;
+    }
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 35px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: clamp(32px, 8vw, 48px);
+      line-height: 1.2;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: clamp(24px, 6vw, 32px);
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: clamp(18px, 4vw, 24px);
+      color: var(--fg-secondary);
+    }
+    h4 {
+      font-size: clamp(16px, 3vw, 20px);
+      color: var(--fg-secondary);
+    }
+    p {
+      margin: 15px 0;
+      color: var(--fg-secondary);
+      word-break: break-word;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    code {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+      word-break: break-word;
+    }
+    pre {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: clamp(12px, 3vw, 20px);
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(10px, 2vw, 13px);
+      line-height: 1.6;
+      -webkit-overflow-scrolling: touch;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #ffd700;
+      font-size: inherit;
+    }
+    ul, ol {
+      margin: 15px 0;
+    }
+    li {
+      margin: 8px 0;
+      margin-left: 25px;
+      color: var(--fg-secondary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      text-align: left;
+      padding: clamp(10px, 2vw, 15px);
+      border-bottom: 1px solid var(--border-light);
+      word-break: break-word;
+    }
+    th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    td {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    strong {
+      color: var(--fg-primary);
+      font-weight: 700;
+    }
+    em {
+      color: var(--accent);
+    }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--fg-secondary);
+      font-style: italic;
+    }
+    footer {
+      margin-top: 80px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+    footer a {
+      color: var(--accent);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+      .nav {
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+      .nav a {
+        font-size: 12px;
+      }
+      h1 { margin-bottom: 20px; }
+      h2 { margin-top: 30px; }
+      p { font-size: clamp(13px, 3vw, 14px); }
+      pre {
+        padding: 12px;
+        font-size: 11px;
+        margin: 15px -15px;
+        border-radius: 0;
+        overflow-x: auto;
+      }
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+      .nav {
+        gap: 12px;
+        margin-bottom: 20px;
+        font-size: 11px;
+      }
+      .nav a {
+        font-size: 11px;
+      }
+      h1 { font-size: 28px; margin-bottom: 15px; }
+      h2 { font-size: 20px; }
+      h3 { font-size: 16px; }
+      pre {
+        padding: 10px;
+        font-size: 10px;
+      }
+      footer {
+        margin-top: 40px;
+        padding-top: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme.html">Overview</a>
+      <a href="/architecture.html">Architecture</a>
+      <a href="/api.html">API</a>
+      <a href="/security.html">Security</a>
+      <a href="/deployment.html">Deployment</a>
+    </div>
+    <h1>STVOR Security</h1><p>Security architecture and threat model.</p><p>---</p><h2>Executive Summary</h2><p>STVOR is a <strong>zero-knowledge messaging platform</strong> using industry-standard cryptography (Signal Protocol: X3DH + Double Ratchet). The relay server <strong>cannot access message content</strong>, providing end-to-end encryption with perfect forward secrecy.</p><p><strong>Current Status</strong>: Production-ready • Not yet independently audited • Zero-day disclosure policy in place</p><p>---</p><h2>Threat Model</h2><h3>Assumptions</h3><p><strong>We assume</strong>:
+<ul><li>✓ Server hardware is not compromised</li></ul>
+<li>✓ Network layer is secure (HTTPS/TLS)</li>
+<li>✓ Clients have valid operating systems</li>
+<li>✓ Time is approximately synchronized (NTP)</li></p><p><strong>We do NOT assume</strong>:
+<li>✗ Server code is bug-free (defense in depth)</li>
+<li>✗ Client devices are secure (assume breaches)</li>
+<li>✗ Network operators are trustworthy (end-to-end encryption)</li></p><h3>Adversaries</h3><p>| Threat | Capability | Mitigation |
+|--------|-----------|-----------|
+| <strong>Network Attacker</strong> | Observe encrypted traffic | TLS 1.3, HSTS |
+| <strong>Relay Server</strong> | Access ciphertext | E2EE (X3DH + Double Ratchet) |
+| <strong>Compromised Device</strong> | Access keys on that device | Perfect Forward Secrecy (per-message keys) |
+| <strong>Replay Attacker</strong> | Inject old messages | Nonce + timestamp validation, Redis cache |
+| <strong>Active Attacker</strong> | Modify messages | AEAD authentication (GCM tag) + ECDSA signatures |
+| <strong>Quantum Computer</strong> | Break ECDH/ECDSA | Post-quantum migration planned (roadmap) |</p><p>---</p><h2>Cryptographic Primitives</h2><h3>Key Exchange (X3DH)</h3><p><strong>Algorithm</strong>: Extended Triple Diffie-Hellman</p><p><strong>Curve</strong>: NIST P-256 (secp256r1)</p><p><strong>Security Level</strong>: 128 bits (against classical computers)</p><pre><code>Alice's keys:
+  - Identity: IK_A (static)
+  - Prekey: PK_A (signed ephemeral)</p><p>Bob's keys:
+  - Identity: IK_B (static)
+  - Prekey: PK_B (signed ephemeral)</p><p>Shared secret = KDF(
+  salt='STVOR-X3DH',
+  ECDH(IK_A, IK_B) ||
+  ECDH(PK_A, IK_B) ||
+  ECDH(IK_A, PK_B) ||
+  ECDH(PK_A, PK_B)
+)</code></pre><p><strong>Security Properties</strong>:
+<li>✓ Perfect Forward Secrecy (if prekeys compromised)</li>
+<li>✓ Mutual authentication (only both sides derive same secret)</li>
+<li>✓ Resistance to key compromise (4 DH operations)</li></p><h3>Symmetric Encryption (AES-256-GCM)</h3><p><strong>Algorithm</strong>: Advanced Encryption Standard with Galois/Counter Mode</p><p><strong>Key Size</strong>: 256 bits</p><p><strong>Nonce</strong>: 96 bits (12 bytes), randomly generated per message</p><p><strong>Authenticated Data</strong>: Sender || Recipient IDs</p><pre><code>plaintext = JSON.stringify(data)
+iv = random(12 bytes)
+(ciphertext, tag) = AES_256_GCM.encrypt(plaintext, key, iv)</code></pre><p><strong>Security Properties</strong>:
+<li>✓ Confidentiality: AES-256 (NIST-approved)</li>
+<li>✓ Authenticity: GCM mode includes authentication tag</li>
+<li>✓ No PADDING ORACLE: Authenticated encryption prevents tampering</li>
+<li>✓ Timing-attack resistant: Constant-time operations</li></p><h3>Message Authentication (ECDSA)</h3><p><strong>Algorithm</strong>: Elliptic Curve Digital Signature Algorithm</p><p><strong>Curve</strong>: NIST P-256 (secp256r1)</p><p><strong>Hash</strong>: SHA-256</p><pre><code>payload = {to, ciphertext, iv, timestamp}
+signature = ECDSA_P256.sign(
+  message=SHA256(serialize(payload)),
+  privateKey=senderPrivateKey
+)</code></pre><p><strong>Security Properties</strong>:
+<li>✓ Authenticity: Signer is verified</li>
+<li>✓ Non-repudiation: Signer cannot deny</li>
+<li>✓ No key recovery: Secret key not recoverable from signature</li></p><h3>Key Derivation (HKDF-SHA-256)</h3><p><strong>Algorithm</strong>: HMAC-based Extract-and-Expand Key Derivation Function</p><p><strong>Hash Function</strong>: SHA-256</p><pre><code>PRK = HMAC_SHA256(salt, input_key_material)
+OKM = HKDF_Expand(PRK, info, length)</code></pre><p><strong>Usage</strong>:
+<li>X3DH → shared secret</li>
+<li>Double Ratchet → chain key advancement</li>
+<li>Per-message key derivation</li></p><p><strong>Security Properties</strong>:
+<li>✓ IND-CPA secure (indistinguishability)</li>
+<li>✓ Key separation (different info strings)</li>
+<li>✓ Randomness extraction (salts)</li></p><p>---</p><h2>Message Flow Security</h2><h3>Sending a Message</h3><pre><code>[SENDER] alice.send('bob', msg)</p><p>1. Fetch bob's public key from relay
+   Risk: Relay could send wrong key
+   Mitigation: TOFU - trust first identity</p><p>2. Perform X3DH key exchange
+   Risk: MITM attacker could replace keys
+   Mitigation: ECDSA signatures on keys</p><p>3. Derive shared secret (128 bits of entropy)
+   Risk: Weak KDF
+   Mitigation: HKDF-SHA-256 (NIST standard)</p><p>4. Initialize Double Ratchet
+   Root Key = shared secret
+   Risk: Key reuse across messages
+   Mitigation: Per-message ratcheting</p><p>5. Advance ratchet → message key
+   Risk: Key compromise
+   Mitigation: Keys deleted after use</p><p>6. Serialize data to JSON
+   Risk: Side-channel during serialization
+   Mitigation: No secrets in serialization</p><p>7. Encrypt with AES-256-GCM
+   Risk: IV reuse (nonce collision)
+   Mitigation: Random IV, checked globally</p><p>8. Sign with ECDSA
+   Risk: Deterministic ECDSA (RFC 6979)
+   Mitigation: RFC 6979 (deterministic ECDSA)</p><p>9. POST /send
+   Payload: {to, ciphertext, signature, timestamp, nonce}
+   Risk: Replay attacks
+   Mitigation: Nonce + timestamp in replay cache (Redis)</p><p>[RELAY] Validates request</p><p>10. Verify ECDSA signature
+    Risk: Signature forgery
+    Mitigation: ECDSA P-256-SHA-256</p><p>11. Check nonce not in cache
+    Risk: Message replay
+    Mitigation: Redis-backed nonce cache (5 min TTL)</p><p>12. Store in recipient's queue
+    Risk: Long-term storage
+    Mitigation: 10-minute TTL auto-cleanup</p><p>[RECIPIENT] bob polls /retrieve</p><p>13. GET /retrieve
+    Response: [encrypted messages]
+    Risk: Relay sends old messages
+    Mitigation: Nonce cache prevents replay</p><p>14. Verify ECDSA signature
+    Risk: Signature forgery
+    Mitigation: ECDSA P-256-SHA-256</p><p>15. Decrypt with AES-256-GCM
+    Risk: Ciphertext tampering
+    Mitigation: GCM authentication tag verification</p><p>16. Deserialize JSON
+    Risk: Prototype pollution (JSON)
+    Mitigation: No user code in deserialization</p><p>17. Fire onMessage callback
+    msg = {from, data, timestamp}</code></pre><h3>Forward Secrecy Guarantee</h3><pre><code>Compromise of messageKey[n] → Exposure of:
+  - plaintext[n] only
+  - NOT plaintext[n-1] (old key deleted)
+  - NOT plaintext[n+1] (derived independently)</p><p>Timeline:
+  T0: Send msg[0] with key[0] → key[0] deleted
+  T1: Send msg[1] with key[1] → key[1] deleted
+  T2: <strong>COMPROMISE</strong> - attacker gets rootKey
+  T3: Send msg[2] with key[2]</p><p>Attacker can:
+  ✓ Decrypt msg[2] (rootKey compromised)
+  ✓ Decrypt future messages</p><p>But:
+  ✗ Cannot decrypt msg[0], msg[1] (keys deleted)
+  
+Recovery:
+  T4: User reboots → generate new rootKey → msg[3] safe</code></pre><p>---</p><h2>Known Limitations</h2><h3>No Post-Quantum Cryptography (Yet)</h3><p><li>Current: ECDH P-256 (128-bit security)</li>
+<li>Risk: Quantum computers could break today's messages</li>
+<li>Roadmap: Kyber (key exchange) + Dilithium (signatures) in Q3 2026</li>
+<li>Mitigation: Store encrypted archives securely; use long-term secrets wisely</li></p><h3>No Group Chat (Yet)</h3><p><li>Current: 1-to-1 messaging only</li>
+<li>Risk: Requires key per recipient (n² key material)</li>
+<li>Roadmap: Signal Group Protocol (SGP) in Q2 2026</li></p><h3>No Message Deletion (Yet)</h3><p><li>Current: Messages stored on relay for 10 minutes</li>
+<li>Risk: Relay could persist messages longer (protocol violation)</li>
+<li>Mitigation: Trust relay's TTL policy; use Tor/VPN if paranoid</li>
+<li>Roadmap: End-to-end deletable messages in Q3 2026</li></p><h3>No Perfect Forward Secrecy for Relay</h3><p><li>Current: Relay stores ciphertext (encrypted blobs)</li>
+<li>Risk: If relay hacked, can steal all historical ciphertexts</li>
+<li>Mitigation: Ciphertexts unusable without private keys (E2EE)</li>
+<li>Roadmap: Perfect message deletion in Q3 2026</li></p><h3>No Offline Message Queue</h3><p><li>Current: Messages lost if recipient offline &gt; 10 minutes</li>
+<li>Risk: Message delivery failures</li>
+<li>Mitigation: Recipient must be online to retrieve</li>
+<li>Roadmap: Offline message delivery in Q4 2026</li></p><p>---</p><h2>Security Best Practices</h2><h3>For Application Developers</h3><p>1. <strong>Use HTTPS/TLS only</strong>
+   <pre><code>ts
+   // ✓ Good
+   const relay = 'https://relay.stvor.xyz';
+   
+   // ✗ Bad
+   const relay = 'http://relay.stvor.xyz';</code></pre><p>2. <strong>Validate API tokens in environment</strong>
+   <pre><code>ts
+   // ✓ Good
+   const token = process.env.STVOR_APP_TOKEN;
+   if (!token?.startsWith('stvor_')) throw 'Invalid token';
+   
+   // ✗ Bad
+   const token = 'stvor_live_xxx';  // Hardcoded!</code></pre><p>3. <strong>Handle errors gracefully</strong>
+   <pre><code>ts
+   // ✓ Good
+   try {
+     await client.send('bob', msg);
+   } catch (err) {
+     if (err.code === 'ERR_NETWORK') {
+       // Retry with backoff
+     }
+   }</code></pre><p>4. <strong>Rotate API keys periodically</strong>
+   - Generate new key: <code>POST /projects/{id}/rotate-key</code>
+   - Migrate clients to new key
+   - Revoke old key: <code>DELETE /projects/{id}/keys/{keyId}</code></p><p>5. <strong>Monitor for suspicious activity</strong>
+   - High rate of failed sends
+   - Sends to unknown recipients
+   - Sends from unusual geographies
+   - Sends at unusual hours</p><h3>For Relay Operators</h3><p>1. <strong>Enable TLS 1.3 only</strong>
+   <pre><code>nginx
+   ssl_protocols TLSv1.3;
+   ssl_ciphers AEAD;</code></pre><p>2. <strong>Use strong certificate (256-bit ECC)</strong>
+   <pre><code>bash
+   openssl ecparam -name secp256r1 -genkey -out relay.key</code></pre><p>3. <strong>Enable HSTS</strong>
+   <pre><code>nginx
+   add_header Strict-Transport-Security "max-age=31536000" always;</code></pre><p>4. <strong>Log access patterns (not messages)</strong>
+   <pre><code>✓ Log: IP, timestamp, route, status_code, user_id
+   ✗ Don't log: ciphertext, plaintext, message content</code></pre><p>5. <strong>Run regular backups</strong>
+   - Daily: Database snapshots
+   - Off-site: Encrypted backups
+   - Test: Restore backups quarterly</p><p>6. <strong>Update dependencies</strong>
+   <pre><code>bash
+   npm audit fix
+   npm audit  # Should show 0 vulnerabilities</code></pre><p>---</p><h2>Vulnerability Disclosure</h2><p><strong>Security Issues</strong>: Email security@stvor.xyz</p><p><strong>Response Timeline</strong>:
+<li>Day 0: Acknowledge receipt</li>
+<li>Day 1: Confirm impact</li>
+<li>Day 7: Fix or workaround</li>
+<li>Day 30: Public disclosure</li></p><p><strong>Supported Versions</strong>:
+<li>Latest: v3.x (full support)</li>
+<li>Previous: v2.x (6 months security updates)</li>
+<li>Older: v1.x (no support)</li></p><p>---</p><h2>Audit Status</h2><p><li>✗ <strong>Not independently audited</strong> (roadmap: Q3 2026)</li>
+<li>✓ Continuous review by security community</li>
+<li>✓ Open source (GitHub)</li>
+<li>✓ Bug bounty program (TBD)</li></p><p>---</p><h2>Compliance</h2><h3>GDPR</h3><p><li>✓ No PII stored on relay</li>
+<li>✓ Users control own keys</li>
+<li>✓ Can request data export (encrypted)</li>
+<li>✓ Right to deletion (keys/messages)</li></p><h3>HIPAA</h3><p><li>⚠️ Not official BAA (Business Associate Agreement)</li>
+<li>✓ Uses approved crypto (AES-256)</li>
+<li>✓ Can be used in compliant architecture</li>
+<li>⚠️ Requires legal review for specific use</li></p><h3>SOC 2</h3><p><li>⚠️ Not officially certified</li>
+<li>✓ Implements SOC 2 controls:</li>
+  - Access control (API keys)
+  - Encryption (TLS + E2EE)
+  - Audit logging
+  - Incident response
+  - Change management</p><p>---</p><h2>Testing &amp; Verification</h2><h3>Run Security Tests</h3><pre><code>bash
+<h1>Encryption tests</h1>
+npm run test:encryption</p><h1>Handshake tests</h1>
+npm run test:handshake</p><h1>Replay protection tests</h1>
+npm run test:replay</p><h1>E2EE tests</h1>
+npm run test:e2ee</p><h1>All tests</h1>
+npm test</code></pre><h3>Verify Cryptography</h3><pre><code>ts
+import * as Ratchet from '@stvor/sdk/ratchet';</p><p>// Verify X3DH produces same shared secret
+const alice = await Ratchet.X3DH.generateKeyPair();
+const bob = await Ratchet.X3DH.generateKeyPair();</p><p>const sharedAlice = await Ratchet.X3DH.derive(alice, bob.publicKey);
+const sharedBob = await Ratchet.X3DH.derive(bob, alice.publicKey);</p><p>console.assert(
+  sharedAlice.equals(sharedBob),
+  'X3DH failed'
+);</code></pre><p>---</p><h2>Future Security Roadmap</h2><h3>Q2 2026</h3>
+<li>[ ] Third-party security audit</li>
+<li>[ ] Bug bounty program launch</li>
+<li>[ ] Group messaging (SGP)</li></p><h3>Q3 2026</h3>
+<li>[ ] Post-quantum cryptography (Kyber + Dilithium)</li>
+<li>[ ] Perfect message deletion</li>
+<li>[ ] SOC 2 Type II certification</li></p><h3>Q4 2026</h3>
+<li>[ ] Offline message delivery</li>
+<li>[ ] End-to-end file transfer</li>
+<li>[ ] Hardware key support (Ledger/Trezor)</li></p><p>---</p><h2>References</h2><p><li><a href="https://signal.org/docs/">Signal Protocol</a></li>
+<li><a href="https://signal.org/docs/specifications/doubleratchet/">Double Ratchet Algorithm</a></li>
+<li><a href="https://signal.org/docs/specifications/x3dh/">X3DH: The Signal Protocol's Asynchronous Ratcheting Tree</a></li>
+<li><a href="https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf">NIST SP 800-38D (GCM)</a></li>
+<li><a href="https://tools.ietf.org/html/rfc6979">RFC 6979 (Deterministic ECDSA)</a></li>
+<li><a href="https://tools.ietf.org/html/rfc5869">HKDF (RFC 5869)</a></li></p><p>---</p><h2>FAQ</h2><p><strong>Q: Can STVOR employees read my messages?</strong></p><p>A: No. End-to-end encryption means only sender/recipient can decrypt. Employees cannot access private keys.</p><p><strong>Q: What if someone hacks STVOR?</strong></p><p>A: Relay compromised = encrypted blobs exposed (useless without keys). Client compromised = keys exposed (your problem). Server code compromised = e2ee still works (cryptography doesn't change).</p><p><strong>Q: Is it vulnerable to man-in-the-middle?</strong></p><p>A: HTTPS/TLS prevents MITM on channel. ECDSA signatures + TOFU prevent MITM on key exchange.</p><p><strong>Q: What about timing attacks?</strong></p><p>A: Cryptographic operations use constant-time implementations. Network latency dominates timing channel.</p><p><strong>Q: Is it vulnerable to side-channel attacks?</strong></p><p>A: Not to known attacks on target algorithms. Possible in theory on uncommon platforms.</p><p><strong>Q: What if keys are stolen?</strong></p><p>A: Forward secrecy protects past messages. Future messages need new keys (automatic via ratchet advancement).</p><p>---</p><h2>License</h2><p>MIT
+</p>
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+</body>
+</html>

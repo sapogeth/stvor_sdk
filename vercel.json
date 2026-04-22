@@ -1,9 +1,17 @@
 {
-  "buildCommand": null,
+  "buildCommand": "node build-docs.mjs",
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
-    { "source": "/dashboard.html", "destination": "/ui/dashboard.html" },
-    { "source": "/dashboard", "destination": "/ui/dashboard.html" }
+    { "source": "/", "destination": "/ui/index-new.html" },
+    { "source": "/dashboard", "destination": "/ui/dashboard-minimal.html" },
+    { "source": "/dashboard.html", "destination": "/ui/dashboard-minimal.html" },
+    { "source": "/getting-started", "destination": "/ui/getting-started.html" },
+    { "source": "/getting-started.html", "destination": "/ui/getting-started.html" },
+    { "source": "/readme", "destination": "/readme.html" },
+    { "source": "/architecture", "destination": "/architecture.html" },
+    { "source": "/api", "destination": "/api.html" },
+    { "source": "/security", "destination": "/security.html" },
+    { "source": "/deployment", "destination": "/deployment.html" }
   ]
 }

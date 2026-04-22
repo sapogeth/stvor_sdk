@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>README - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .nav a:hover {
+      color: var(--accent);
+    }
+    .nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+    .nav a:hover::after {
+      width: 100%;
+    }
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 35px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: clamp(32px, 8vw, 48px);
+      line-height: 1.2;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: clamp(24px, 6vw, 32px);
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: clamp(18px, 4vw, 24px);
+      color: var(--fg-secondary);
+    }
+    h4 {
+      font-size: clamp(16px, 3vw, 20px);
+      color: var(--fg-secondary);
+    }
+    p {
+      margin: 15px 0;
+      color: var(--fg-secondary);
+      word-break: break-word;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    code {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+      word-break: break-word;
+    }
+    pre {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: clamp(12px, 3vw, 20px);
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(10px, 2vw, 13px);
+      line-height: 1.6;
+      -webkit-overflow-scrolling: touch;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #ffd700;
+      font-size: inherit;
+    }
+    ul, ol {
+      margin: 15px 0;
+    }
+    li {
+      margin: 8px 0;
+      margin-left: 25px;
+      color: var(--fg-secondary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      text-align: left;
+      padding: clamp(10px, 2vw, 15px);
+      border-bottom: 1px solid var(--border-light);
+      word-break: break-word;
+    }
+    th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    td {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    strong {
+      color: var(--fg-primary);
+      font-weight: 700;
+    }
+    em {
+      color: var(--accent);
+    }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--fg-secondary);
+      font-style: italic;
+    }
+    footer {
+      margin-top: 80px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+    footer a {
+      color: var(--accent);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+      .nav {
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+      .nav a {
+        font-size: 12px;
+      }
+      h1 { margin-bottom: 20px; }
+      h2 { margin-top: 30px; }
+      p { font-size: clamp(13px, 3vw, 14px); }
+      pre {
+        padding: 12px;
+        font-size: 11px;
+        margin: 15px -15px;
+        border-radius: 0;
+        overflow-x: auto;
+      }
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+      .nav {
+        gap: 12px;
+        margin-bottom: 20px;
+        font-size: 11px;
+      }
+      .nav a {
+        font-size: 11px;
+      }
+      h1 { font-size: 28px; margin-bottom: 15px; }
+      h2 { font-size: 20px; }
+      h3 { font-size: 16px; }
+      pre {
+        padding: 10px;
+        font-size: 10px;
+      }
+      footer {
+        margin-top: 40px;
+        padding-top: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme.html">Overview</a>
+      <a href="/architecture.html">Architecture</a>
+      <a href="/api.html">API</a>
+      <a href="/security.html">Security</a>
+      <a href="/deployment.html">Deployment</a>
+    </div>
+    <h1>STVOR</h1><p>End-to-end encrypted messaging platform. Zero-knowledge relay server.</p><p><strong><a href="https://stvor.xyz">stvor.xyz</a></strong> • <strong><a href="https://github.com/sapogeth/stvor_sdk">GitHub</a></strong></p><p>---</p><h2>What is STVOR?</h2><p>STVOR is a drop-in encryption library that lets you add end-to-end encrypted messaging to any app. The relay server never sees message content—only encrypted ciphertext.</p><p><strong>Core guarantees:</strong>
+<ul><li><strong>Zero-knowledge</strong>: Server has no access to plaintext messages</li></ul>
+<li><strong>Forward secrecy</strong>: Compromised keys don't expose past messages</li>
+<li><strong>Post-compromise security</strong>: Automatic key rotation protects future messages</li>
+<li><strong>Drop-in</strong>: 3 lines of code to send encrypted messages</li></p><p><strong>Uses:</strong> Signal Protocol (X3DH + Double Ratchet), AES-256-GCM, ECDSA P-256, HKDF-SHA-256.</p><p>---</p><h2>Quick Start</h2><h3>Node.js</h3><pre><code>bash
+npm install @stvor/sdk</code></pre><pre><code>ts
+import { Stvor } from '@stvor/sdk';</p><p>const alice = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</p><p>alice.onMessage(msg =&gt; {
+  console.log(<code>${msg.from}: ${msg.data}</code>);
+});</p><p>await alice.send('bob', 'Hello encrypted!');</code></pre><h3>Browser</h3><pre><code>ts
+import { StvorWebSDK } from '@stvor/sdk/web';</p><p>const sdk = await StvorWebSDK.create({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</p><p>await sdk.send('bob', { text: 'Hello!' });</code></pre><h3>React Hook</h3><pre><code>tsx
+import { useStvor } from '@stvor/sdk/react';</p><p>export function Chat() {
+  const { connected, send, messages } = useStvor({
+    userId: 'alice',
+    appToken: 'stvor_live_xxx',
+  });</p><p>  return (
+    &lt;div&gt;
+      {messages.map(m =&gt; &lt;p key={m.id}&gt;{m.from}: {m.data}&lt;/p&gt;)}
+      &lt;button onClick={() =&gt; send('bob', 'Hi!')}&gt;Send&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre><p>---</p><h2>How It Works</h2><h3>The Protocol</h3><p>1. <strong>Identity</strong>: Each user generates a persistent ECDH P-256 key pair.
+2. <strong>Session</strong>: X3DH establishes a shared secret without central authority.
+3. <strong>Messages</strong>: Double Ratchet advances per-message keys → perfect forward secrecy.
+4. <strong>Relay</strong>: Server stores encrypted blob, never accesses plaintext.</p><pre><code>alice.send('bob', msg)
+  ↓ [encrypt with bob's key]
+  ↓ POST /send
+  → Relay stores {to: 'bob', ciphertext, ...}
+  ← bob.poll /retrieve
+  ← get encrypted blob
+  ↓ [decrypt with alice's key]
+  ↓ msg.onMessage() callback fires</code></pre><h3>Why This Matters</h3><p><li><strong>Messenger</strong>: End-to-end encrypted group chat without server access.</li>
+<li><strong>Banking</strong>: Secure client-server communication where only client sees data.</li>
+<li><strong>Healthcare</strong>: Patient data encrypted in transit and at rest on server.</li>
+<li><strong>Legal</strong>: Attorney-client communications protected by cryptography, not policy.</li></p><p>---</p><h2>Core Architecture</h2><h3>Three Components</h3><pre><code>┌─────────────────────────────┐
+│  Client (@stvor/sdk)        │
+│  Node.js / Browser          │
+└──────────┬──────────────────┘
+           │
+      (HTTPS/WebSocket)
+           │
+┌──────────▼──────────────────┐
+│  API + Relay Server         │
+│  Port 3001 + 3002           │
+└──────────┬──────────────────┘
+           │
+    ┌──────┴──────┐
+    │             │
+┌───▼─┐     ┌────▼────┐
+│ PG  │     │  Redis  │
+└─────┘     └─────────┘</code></pre><h3>Services</h3><p>| Service | Port | Purpose |
+|---------|------|---------|
+| <strong>API Server</strong> | 3001 | REST API: projects, metrics, health |
+| <strong>Relay Server</strong> | 3002 | Message routing (stores encrypted blobs) |
+| <strong>WebSocket</strong> | 8080 | Real-time message delivery (optional) |</p><h3>Data Flow</h3><pre><code>POST /register
+  → Creates user account</p><p>POST /send {to, ciphertext, signature}
+  → Relay verifies signature
+  → Stores in {to}'s message queue</p><p>GET /retrieve
+  → Returns pending encrypted messages
+  → Auto-cleans 10+ min old messages</p><p>POST /api/metrics/attest
+  → Cryptographically sign metrics
+  → Store in analytics database</code></pre><p>---</p><h2>Features</h2><h3>Security</h3><p><li>✓ <strong>E2EE</strong>: Messages encrypted end-to-end (server never sees plaintext)</li>
+<li>✓ <strong>Forward Secrecy</strong>: Past messages safe if key stolen</li>
+<li>✓ <strong>Post-Compromise Security</strong>: Future messages safe after key recovery</li>
+<li>✓ <strong>Perfect Forward Secrecy (PFS)</strong>: ECDH prevents key compromise ripple</li>
+<li>✓ <strong>Authenticated Encryption</strong>: AEAD (AES-256-GCM) prevents tampering</li>
+<li>✓ <strong>TOFU Verification</strong>: Trust-on-first-use identity binding</li>
+<li>✓ <strong>Replay Protection</strong>: Nonce + timestamp validation</li>
+<li>✓ <strong>Rate Limiting</strong>: 100 req/min per IP</li>
+<li>✓ <strong>Circuit Breaker</strong>: Prevents cascading failures</li></p><h3>Data Support</h3><p>Send any JavaScript type without serialization overhead:
+<li>Strings, numbers, booleans, null</li>
+<li>Objects, arrays, Maps, Sets</li>
+<li>Buffers, Uint8Array, ArrayBuffer</li>
+<li>Date, Error, custom objects</li></p><h3>Platforms</h3><p><li><strong>Node.js 20+</strong> (with <code>node:crypto</code>, zero npm deps)</li>
+<li><strong>Browsers</strong> (with Web Crypto API, zero deps)</li>
+<li><strong>React</strong> (hooks: <code>useStvor()</code>, <code>useStvorMessage()</code>)</li>
+<li><strong>Vue 3</strong> (composables: <code>useStvor()</code>, <code>useStvorMessage()</code>)</li>
+<li><strong>Framework-agnostic</strong> (vanilla JS, Angular, Svelte, etc.)</li></p><h3>Storage</h3><p><li><strong>PostgreSQL</strong>: Persistent metrics and analytics</li>
+<li><strong>Redis</strong>: Replay protection cache, message deduplication</li>
+<li><strong>JSON fallback</strong>: Works if DB unavailable</li>
+<li><strong>IndexedDB</strong>: Browser-side key persistence</li></p><p>---</p><h2>Project Structure</h2><pre><code>stvor-api/
+├── src/                      # Backend
+│   ├── server.ts             # Main entry, Fastify setup
+│   ├── relay/server.ts       # Message relay implementation
+│   ├── auth/                 # Authentication
+│   ├── routes/               # API endpoints
+│   ├── storage/              # DB/Redis/JSON adapters
+│   └── middleware/           # Auth, CORS, rate limiting
+│
+├── packages/sdk/             # @stvor/sdk library
+│   ├── index.ts              # Main export
+│   ├── facade/               # High-level API
+│   │   ├── app.ts            # StvorApp manager
+│   │   ├── crypto-session.ts # Encryption state
+│   │   └── relay-client.ts   # HTTP communication
+│   ├── ratchet/              # Double Ratchet implementation
+│   ├── examples/             # Production examples
+│   ├── react-hooks.ts        # React integration
+│   └── vue-composition.ts    # Vue 3 integration
+│
+├── ui/                       # Admin dashboards
+│   ├── dashboard.html        # Metrics &amp; peer monitoring
+│   ├── analytics.html        # Real-time analytics
+│   └── dashboard-config.html # Configuration UI
+│
+├── migrations/               # Database schema
+│   ├── 001_initial_schema.sql
+│   ├── 002_metrics_schema.sql
+│   ├── 003_analytics_schema.sql
+│   └── 004_analytics_handshakes.sql
+│
+└── docker-compose.yml        # Local dev setup</code></pre><p>---</p><h2>Installation &amp; Setup</h2><h3>Development (Docker)</h3><pre><code>bash
+docker-compose up
+<h1>API: http://localhost:3001</h1>
+<h1>Relay: http://localhost:3002</h1>
+<h1>Dashboard: http://localhost:3001/dashboard</code></pre></h1><h3>Manual Setup</h3><pre><code>bash
+<h1>Install dependencies</h1>
+npm install
+cd packages/sdk &amp;&amp; npm install</p><h1>Build</h1>
+npm run build</p><h1>Run</h1>
+npm start
+<h1>or with hot-reload:</h1>
+npm run dev</code></pre><h3>Environment</h3><pre><code>bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/stvor
+REDIS_URL=redis://localhost:6379
+NODE_ENV=production
+PORT=3001</code></pre><p>---</p><h2>API Reference</h2><h3>Client API</h3><p><strong>Connect:</strong>
+<pre><code>ts
+const client = await Stvor.connect({
+  userId: string,           // Unique user ID
+  appToken: string,         // Bearer token (starts with 'stvor_')
+  relayUrl: string,         // Relay server URL
+  timeout?: number,         // Default: 10_000 ms
+  pollIntervalMs?: number,  // Default: 1_000 ms
+});</code></pre><p><strong>Send:</strong>
+<pre><code>ts
+await client.send(recipientId, data, {
+  timeout?: number  // Default: 10_000 ms
+});</code></pre><p><strong>Receive:</strong>
+<pre><code>ts
+const unsubscribe = client.onMessage(msg =&gt; {
+  console.log(msg.from, msg.data, msg.timestamp);
+});</code></pre><p><strong>Disconnect:</strong>
+<pre><code>ts
+await client.disconnect();</code></pre><h3>REST API (Relay)</h3><p><strong>Register user:</strong>
+<pre><code>POST /register
+Authorization: Bearer {appToken}
+Content-Type: application/json</p><p>{
+  "userId": "alice",
+  "identityKey": "base64-encoded-public-key"
+}</code></pre><p><strong>Send message:</strong>
+<pre><code>POST /send
+Authorization: Bearer {appToken}
+Content-Type: application/json</p><p>{
+  "to": "bob",
+  "ciphertext": "base64-encoded-encrypted-data",
+  "signature": "base64-encoded-ecdsa-signature"
+}</code></pre><p><strong>Retrieve messages:</strong>
+<pre><code>GET /retrieve?userId=alice
+Authorization: Bearer {appToken}</code></pre><p><strong>Health check:</strong>
+<pre><code>GET /health</code></pre><p>---</p><h2>Deployment</h2><h3>Docker</h3><pre><code>bash
+docker build -t stvor-api .
+docker run -p 3001:3001 -p 3002:3002 \
+  -e DATABASE_URL=postgresql://... \
+  -e REDIS_URL=redis://... \
+  stvor-api</code></pre><h3>Vercel (API only)</h3><pre><code>bash
+vercel deploy
+<h1>Points to src/server.ts</code></pre></h1><h3>PM2</h3><pre><code>bash
+pm2 start ecosystem.config.js
+pm2 logs</code></pre><p>---</p><h2>Examples</h2><h3>Simple Chat</h3><pre><code>ts
+// alice.ts
+import { Stvor } from '@stvor/sdk';</p><p>const alice = await Stvor.connect({
+  userId: 'alice',
+  appToken: process.env.APP_TOKEN,
+  relayUrl: 'http://localhost:3002',
+});</p><p>alice.onMessage(msg =&gt; console.log(<code>${msg.from}: ${msg.data}</code>));</p><p>await alice.send('bob', 'Hello Bob!');</code></pre><h3>React Chat Component</h3><pre><code>tsx
+import { useStvor } from '@stvor/sdk/react';</p><p>export function ChatApp() {
+  const { connected, messages, send } = useStvor({
+    userId: 'alice',
+    appToken: 'stvor_live_xxx',
+  });</p><p>  const [text, setText] = useState('');</p><p>  return (
+    &lt;div style={styles.container}&gt;
+      {messages.map(m =&gt; (
+        &lt;div key={m.id} style={styles.message}&gt;
+          &lt;strong&gt;{m.from}:&lt;/strong&gt; {m.data}
+        &lt;/div&gt;
+      ))}
+      &lt;input
+        value={text}
+        onChange={e =&gt; setText(e.target.value)}
+        placeholder="Message..."
+        style={styles.input}
+      /&gt;
+      &lt;button onClick={() =&gt; send('bob', text)}&gt;Send&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre><h3>Vue 3 Chat</h3><pre><code>vue
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;div v-for="m in messages" :key="m.id"&gt;
+      &lt;strong&gt;{{ m.from }}:&lt;/strong&gt; {{ m.data }}
+    &lt;/div&gt;
+    &lt;input v-model="text" placeholder="Message..." /&gt;
+    &lt;button @click="send('bob', text)"&gt;Send&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</p><p>&lt;script setup&gt;
+import { useStvor } from '@stvor/sdk/vue';</p><p>const { messages, send } = useStvor({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+});</p><p>const text = ref('');
+&lt;/script&gt;</code></pre><p>---</p><h2>Security</h2><h3>Threat Model</h3><p>| Threat | Mitigation |
+|--------|-----------|
+| <strong>Relay sees messages</strong> | End-to-end encryption (X3DH + Double Ratchet) |
+| <strong>Man-in-middle attacker</strong> | ECDSA signatures + TOFU verification |
+| <strong>Replay attacks</strong> | Nonce + timestamp validation |
+| <strong>Key compromise</strong> | Forward secrecy (per-message ratcheting) |
+| <strong>Quantum computers</strong> | Post-quantum migration planned |</p><h3>Cryptographic Primitives</h3><p><li><strong>Key Exchange</strong>: ECDH P-256 (X3DH)</li>
+<li><strong>Encryption</strong>: AES-256-GCM (NIST standard)</li>
+<li><strong>Authentication</strong>: ECDSA P-256, HMAC-SHA-256</li>
+<li><strong>Key Derivation</strong>: HKDF-SHA-256</li>
+<li><strong>Random</strong>: Cryptographically secure (OS entropy)</li></p><h3>Audit Status</h3><p><li>⚠️ <strong>Not yet independently audited</strong> (roadmap Q3 2026)</li>
+<li>✓ Production-ready cryptography (NIST standards)</li>
+<li>✓ Continuously reviewed by security community</li>
+<li>✓ Responsible disclosure: security@stvor.xyz</li></p><p>---</p><h2>License</h2><p>MIT</p><p>---</p><h2>Contributing</h2><p>Open issues and pull requests on <a href="https://github.com/sapogeth/stvor_sdk">GitHub</a>.</p><p>For security issues, email security@stvor.xyz.</p><p>---</p><h2>Community</h2><p><li><strong>GitHub</strong>: https://github.com/sapogeth/stvor_sdk</li>
+<li><strong>Discord</strong>: <a href="https://discord.gg/stvor">Join</a></li>
+<li><strong>Twitter</strong>: <a href="https://twitter.com/stvor_dev">@stvor_dev</a></li>
+</p>
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+</body>
+</html>

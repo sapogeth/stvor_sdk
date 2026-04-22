@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .nav a:hover {
+      color: var(--accent);
+    }
+    .nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+    .nav a:hover::after {
+      width: 100%;
+    }
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 35px;
+      margin-bottom: 15px;
+    }
+    h1 {
+      font-size: clamp(32px, 8vw, 48px);
+      line-height: 1.2;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: clamp(24px, 6vw, 32px);
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: clamp(18px, 4vw, 24px);
+      color: var(--fg-secondary);
+    }
+    h4 {
+      font-size: clamp(16px, 3vw, 20px);
+      color: var(--fg-secondary);
+    }
+    p {
+      margin: 15px 0;
+      color: var(--fg-secondary);
+      word-break: break-word;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    code {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+      word-break: break-word;
+    }
+    pre {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: clamp(12px, 3vw, 20px);
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(10px, 2vw, 13px);
+      line-height: 1.6;
+      -webkit-overflow-scrolling: touch;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #ffd700;
+      font-size: inherit;
+    }
+    ul, ol {
+      margin: 15px 0;
+    }
+    li {
+      margin: 8px 0;
+      margin-left: 25px;
+      color: var(--fg-secondary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+      overflow-x: auto;
+      display: block;
+    }
+    th, td {
+      text-align: left;
+      padding: clamp(10px, 2vw, 15px);
+      border-bottom: 1px solid var(--border-light);
+      word-break: break-word;
+    }
+    th {
+      background: var(--bg-secondary);
+      font-weight: 700;
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    td {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+    strong {
+      color: var(--fg-primary);
+      font-weight: 700;
+    }
+    em {
+      color: var(--accent);
+    }
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+      margin: 20px 0;
+      color: var(--fg-secondary);
+      font-style: italic;
+    }
+    footer {
+      margin-top: 80px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+    footer a {
+      color: var(--accent);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+      .nav {
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+      .nav a {
+        font-size: 12px;
+      }
+      h1 { margin-bottom: 20px; }
+      h2 { margin-top: 30px; }
+      p { font-size: clamp(13px, 3vw, 14px); }
+      pre {
+        padding: 12px;
+        font-size: 11px;
+        margin: 15px -15px;
+        border-radius: 0;
+        overflow-x: auto;
+      }
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+      .nav {
+        gap: 12px;
+        margin-bottom: 20px;
+        font-size: 11px;
+      }
+      .nav a {
+        font-size: 11px;
+      }
+      h1 { font-size: 28px; margin-bottom: 15px; }
+      h2 { font-size: 20px; }
+      h3 { font-size: 16px; }
+      pre {
+        padding: 10px;
+        font-size: 10px;
+      }
+      footer {
+        margin-top: 40px;
+        padding-top: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme.html">Overview</a>
+      <a href="/architecture.html">Architecture</a>
+      <a href="/api.html">API</a>
+      <a href="/security.html">Security</a>
+      <a href="/deployment.html">Deployment</a>
+    </div>
+    <h1>@stvor/sdk API Reference</h1><p>Complete SDK documentation.</p><p>---</p><h2>Installation</h2><pre><code>bash
+npm install @stvor/sdk</code></pre><h3>Environment</h3><ul><li><strong>Node.js</strong>: 20+ (uses <code>node:crypto</code>)</li></ul>
+<li><strong>Browsers</strong>: Modern (uses Web Crypto API)</li>
+<li><strong>Dependencies</strong>: 0 (zero npm dependencies)</li></p><p>---</p><h2>Quick Start</h2><h3>Node.js</h3><pre><code>ts
+import { Stvor } from '@stvor/sdk';</p><p>const client = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</p><p>client.onMessage(msg =&gt; {
+  console.log(<code>${msg.from}: ${msg.data}</code>);
+});</p><p>await client.send('bob', 'Hello');
+await client.disconnect();</code></pre><h3>Browser (ES Modules)</h3><pre><code>ts
+import { StvorWebSDK } from '@stvor/sdk/web';</p><p>const sdk = await StvorWebSDK.create({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</p><p>sdk.onMessage((from, data) =&gt; console.log(from, data));
+await sdk.send('bob', { text: 'Hi!' });
+sdk.disconnect();</code></pre><h3>Browser (CommonJS / HTML)</h3><pre><code>html
+&lt;script src="https://cdn.jsdelivr.net/npm/@stvor/sdk/dist/web.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const sdk = await StvorWebSDK.create({...});
+  await sdk.send('bob', 'Hello');
+&lt;/script&gt;</code></pre><p>---</p><h2>API: <code>Stvor</code> (Node.js)</h2><h3><code>Stvor.connect(config)</code></h3><p>Create a new encrypted client connection.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+interface ConnectConfig {
+  userId: string;              // Unique user identifier
+  appToken: string;            // Bearer token (stvor_xxx)
+  relayUrl: string;            // Relay server URL
+  timeout?: number;            // Request timeout (ms), default: 10_000
+  pollIntervalMs?: number;     // Message poll interval (ms), default: 1_000
+}</code></pre><p><strong>Returns</strong>: <code>Promise&lt;Stvor&gt;</code></p><p><strong>Example</strong>:</p><pre><code>ts
+const alice = await Stvor.connect({
+  userId: 'alice',
+  appToken: process.env.APP_TOKEN,
+  relayUrl: 'http://localhost:3002',
+  timeout: 30_000,
+  pollIntervalMs: 500,  // Poll faster
+});</code></pre><p><strong>Throws</strong>:
+<li><code>StvorError</code> with code <code>ERR_INVALID_TOKEN</code> if appToken invalid</li>
+<li><code>StvorError</code> with code <code>ERR_NETWORK</code> if relay unreachable</li></p><p><strong>Side Effects</strong>:
+<li>Generates identity key pair (if first time)</li>
+<li>Persists keys locally (IndexedDB/disk)</li>
+<li>Registers user on relay</li>
+<li>Starts polling for messages</li></p><p>---</p><h3><code>client.send(recipientId, data, options?)</code></h3><p>Send encrypted message to another user.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+send(
+  recipientId: string,
+  data: any,                   // Any JS type
+  options?: {
+    timeout?: number;          // Request timeout (ms)
+  }
+): Promise&lt;void&gt;</code></pre><p><strong>Data Types</strong>:</p><p>Transparently supports any JavaScript type:</p><pre><code>ts
+// Primitives
+await client.send('bob', 'Hello');           // string
+await client.send('bob', 42);                // number
+await client.send('bob', true);              // boolean
+await client.send('bob', null);              // null
+await client.send('bob', undefined);         // undefined</p><p>// Complex types
+await client.send('bob', { name: 'Alice' });         // object
+await client.send('bob', [1, 2, 3]);                // array
+await client.send('bob', new Date());               // Date
+await client.send('bob', new Set([1, 2, 3]));       // Set
+await client.send('bob', new Map([['a', 1]]));      // Map
+await client.send('bob', Buffer.from('bin'));       // Buffer
+await client.send('bob', new Uint8Array([1, 2]));   // Uint8Array</p><p>// Even custom classes (with caveat)
+class Transaction {
+  constructor(public id: string, public amount: number) {}
+}
+await client.send('bob', new Transaction('tx1', 100));</code></pre><p><strong>Returns</strong>: <code>Promise&lt;void&gt;</code> (resolves when relay ACKs)</p><p><strong>Throws</strong>:
+<li><code>StvorError</code> with code <code>ERR_NOT_CONNECTED</code> if client disconnected</li>
+<li><code>StvorError</code> with code <code>ERR_RECIPIENT_NOT_FOUND</code> if recipient not registered</li>
+<li><code>StvorError</code> with code <code>ERR_TIMEOUT</code> if relay doesn't respond in time</li>
+<li><code>StvorError</code> with code <code>ERR_RATE_LIMITED</code> if rate limited (100 req/min per IP)</li></p><p><strong>Example</strong>:</p><pre><code>ts
+try {
+  await client.send('bob', { amount: 100, currency: 'USD' });
+  console.log('Message sent');
+} catch (err) {
+  if (err.code === 'ERR_RATE_LIMITED') {
+    console.log('Too many requests, wait before retry');
+  }
+}</code></pre><p>---</p><h3><code>client.onMessage(handler)</code></h3><p>Subscribe to incoming encrypted messages.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+interface IncomingMessage {
+  from: string;          // Sender userId
+  data: any;             // Decrypted data (original type preserved)
+  timestamp: Date;       // When message was sent
+  id: string;            // Message ID
+}</p><p>onMessage(
+  handler: (msg: IncomingMessage) =&gt; void | Promise&lt;void&gt;
+): () =&gt; void  // Unsubscribe function</code></pre><p><strong>Returns</strong>: Unsubscribe function (removes listener)</p><p><strong>Example</strong>:</p><pre><code>ts
+// Single listener
+const unsubscribe = client.onMessage(msg =&gt; {
+  console.log(<code>${msg.from}: ${msg.data}</code>);
+  console.log(<code>Sent at: ${msg.timestamp}</code>);
+});</p><p>// Multiple listeners (all fire)
+client.onMessage(msg =&gt; sendToUI(msg));
+client.onMessage(msg =&gt; logToDatabase(msg));</p><p>// Async handlers
+client.onMessage(async msg =&gt; {
+  await processMessage(msg);
+});</p><p>// Unsubscribe
+unsubscribe();</code></pre><p>---</p><h3><code>client.disconnect()</code></h3><p>Close the connection and stop polling.</p><p><strong>Parameters</strong>: None</p><p><strong>Returns</strong>: <code>Promise&lt;void&gt;</code></p><p><strong>Example</strong>:</p><pre><code>ts
+await client.disconnect();
+// No more messages will be received</code></pre><p>---</p><h3><code>client.connected</code></h3><p>Check if client is currently connected.</p><p><strong>Type</strong>: <code>boolean</code> (readonly)</p><p><strong>Example</strong>:</p><pre><code>ts
+if (client.connected) {
+  await client.send('bob', 'Hi');
+} else {
+  console.log('Not connected');
+}</code></pre><p>---</p><h3><code>client.userId</code></h3><p>Get the user's ID.</p><p><strong>Type</strong>: <code>string</code> (readonly)</p><p><strong>Example</strong>:</p><pre><code>ts
+console.log(<code>Logged in as: ${client.userId}</code>);</code></pre><p>---</p><h2>API: <code>StvorWebSDK</code> (Browser)</h2><p>Similar to Node.js API with small differences.</p><h3><code>StvorWebSDK.create(config)</code></h3><p>Browser equivalent of <code>Stvor.connect()</code>.</p><pre><code>ts
+const sdk = await StvorWebSDK.create({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</code></pre><h3><code>sdk.send(recipientId, data, options?)</code></h3><p>Identical to Node.js version.</p><h3><code>sdk.onMessage(handler)</code></h3><p>Identical to Node.js version.</p><h3><code>sdk.disconnect()</code></h3><p>Identical to Node.js version.</p><h3>Key Persistence</h3><p>Browser version automatically persists keys in <strong>IndexedDB</strong>:</p><pre><code>Database: 'stvor'
+Store: 'keys'
+Key: '{userId}'
+Value: {
+  identityKey: { publicKey, privateKey },
+  prekey: { publicKey, privateKey },
+}</code></pre><p><strong>Behavior</strong>:
+<li>Keys survive page refreshes</li>
+<li>Keys survive browser restarts</li>
+<li>Clearing IndexedDB = reset keys</li>
+<li>Different origin = separate key storage</li></p><p>---</p><h2>React Hooks</h2><h3><code>useStvor(config)</code></h3><p>React hook for encrypted messaging.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+interface UseStvorConfig {
+  userId: string;
+  appToken: string;
+  relayUrl?: string;  // Default: current origin
+}</code></pre><p><strong>Returns</strong>:</p><pre><code>ts
+interface UseStvorReturn {
+  connected: boolean;
+  messages: IncomingMessage[];
+  send: (recipientId: string, data: any) =&gt; Promise&lt;void&gt;;
+  error: Error | null;
+  disconnect: () =&gt; void;
+}</code></pre><p><strong>Example</strong>:</p><pre><code>tsx
+import { useStvor } from '@stvor/sdk/react';</p><p>export function ChatWindow() {
+  const { connected, messages, send, error } = useStvor({
+    userId: 'alice',
+    appToken: 'stvor_live_xxx',
+  });</p><p>  return (
+    &lt;div&gt;
+      {error &amp;&amp; &lt;div style={{color: 'red'}}&gt;Error: {error.message}&lt;/div&gt;}
+      &lt;div&gt;
+        {messages.map(m =&gt; (
+          &lt;div key={m.id}&gt;
+            &lt;strong&gt;{m.from}:&lt;/strong&gt; {String(m.data)}
+          &lt;/div&gt;
+        ))}
+      &lt;/div&gt;
+      &lt;button 
+        onClick={() =&gt; send('bob', 'Hello')}
+        disabled={!connected}
+      &gt;
+        Send
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre><h3><code>useStvorMessage(recipientId)</code></h3><p>Subscribe to messages from specific user.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+useStvorMessage(recipientId: string): IncomingMessage[]</code></pre><p><strong>Returns</strong>: Array of messages from that user</p><p><strong>Example</strong>:</p><pre><code>tsx
+export function ChatWith({ userId }: { userId: string }) {
+  const messages = useStvorMessage(userId);
+  
+  return (
+    &lt;div&gt;
+      {messages.map(m =&gt; &lt;p key={m.id}&gt;{m.data}&lt;/p&gt;)}
+    &lt;/div&gt;
+  );
+}</code></pre><p>---</p><h2>Vue 3 Composables</h2><h3><code>useStvor(config)</code></h3><p>Vue composition API equivalent.</p><p><strong>Parameters</strong>:</p><pre><code>ts
+interface UseStvorConfig {
+  userId: string;
+  appToken: string;
+  relayUrl?: string;
+}</code></pre><p><strong>Returns</strong>:</p><pre><code>ts
+{
+  connected: Ref&lt;boolean&gt;,
+  messages: Ref&lt;IncomingMessage[]&gt;,
+  send: (recipientId: string, data: any) =&gt; Promise&lt;void&gt;,
+  error: Ref&lt;Error | null&gt;,
+  disconnect: () =&gt; void,
+}</code></pre><p><strong>Example</strong>:</p><pre><code>vue
+&lt;template&gt;
+  &lt;div&gt;
+    &lt;div v-for="m in messages" :key="m.id"&gt;
+      &lt;strong&gt;{{ m.from }}:&lt;/strong&gt; {{ m.data }}
+    &lt;/div&gt;
+    &lt;button @click="send('bob', 'Hello')" :disabled="!connected"&gt;
+      Send
+    &lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</p><p>&lt;script setup&gt;
+import { useStvor } from '@stvor/sdk/vue';</p><p>const { connected, messages, send } = useStvor({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+});
+&lt;/script&gt;</code></pre><p>---</p><h2>Error Handling</h2><p>All errors are instances of <code>StvorError</code>.</p><pre><code>ts
+interface StvorError extends Error {
+  code: string;          // Error code
+  message: string;       // Human-readable message
+  statusCode?: number;   // HTTP status if applicable
+  cause?: Error;         // Original error
+}</code></pre><p><strong>Common Error Codes</strong>:</p><p>| Code | Meaning | Recovery |
+|------|---------|----------|
+| <code>ERR_INVALID_TOKEN</code> | Token invalid/expired | Get new token |
+| <code>ERR_NOT_CONNECTED</code> | Client disconnected | Call <code>.connect()</code> |
+| <code>ERR_RECIPIENT_NOT_FOUND</code> | Recipient not registered | Recipient must connect first |
+| <code>ERR_TIMEOUT</code> | Request timed out | Retry with longer timeout |
+| <code>ERR_RATE_LIMITED</code> | Too many requests (100/min) | Wait and retry |
+| <code>ERR_NETWORK</code> | Network unreachable | Check internet/relay URL |
+| <code>ERR_DECRYPT_FAILED</code> | Message decryption failed | Message corrupted? |
+| <code>ERR_SIGNATURE_INVALID</code> | Message signature invalid | Possible tampering |
+| <code>ERR_REPLAY_DETECTED</code> | Message is a replay | Duplicate, ignored |</p><p><strong>Example</strong>:</p><pre><code>ts
+try {
+  await client.send('bob', 'Hello');
+} catch (err) {
+  if (err instanceof StvorError) {
+    console.log(<code>Error: ${err.code} - ${err.message}</code>);
+    
+    switch (err.code) {
+      case 'ERR_RATE_LIMITED':
+        // Exponential backoff
+        await sleep(1000 * Math.pow(2, retryCount));
+        break;
+      case 'ERR_RECIPIENT_NOT_FOUND':
+        // Retry in 5 seconds
+        setTimeout(() =&gt; client.send('bob', 'Hello'), 5000);
+        break;
+      default:
+        console.error(err);
+    }
+  }
+}</code></pre><p>---</p><h2>Advanced Usage</h2><h3>Custom Relay URL</h3><pre><code>ts
+const client = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://custom-relay.example.com',  // Override
+});</code></pre><h3>Polling Rate</h3><pre><code>ts
+const client = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  pollIntervalMs: 500,  // Poll every 500ms (default 1000)
+});</code></pre><h3>Request Timeout</h3><pre><code>ts
+const client = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  timeout: 30_000,  // 30 second timeout
+});</code></pre><h3>Ratchet API (Low-level)</h3><p>For advanced cryptography use cases:</p><pre><code>ts
+import * as Ratchet from '@stvor/sdk/ratchet';</p><p>// Manual X3DH
+const aliceKeys = await Ratchet.X3DH.generateKeyPair();
+const bobKeys = await Ratchet.X3DH.generateKeyPair();
+const sharedSecret = await Ratchet.X3DH.derive(
+  aliceKeys,
+  bobKeys.publicKey
+);</p><p>// Manual Double Ratchet
+const session = new Ratchet.RatchetSession({
+  rootKey: sharedSecret,
+  sendChainKey: Buffer.alloc(32),
+  recvChainKey: Buffer.alloc(32),
+});</p><p>const { messageKey } = session.advanceSend();
+const encrypted = await Ratchet.encryptMessage(msg, messageKey);</code></pre><h3>CLI Tool</h3><pre><code>bash
+<h1>Install</h1>
+npm install -g @stvor/sdk</p><h1>Create project (dev server)</h1>
+stvor bootstrap</p><h1>Debug messaging</h1>
+stvor debug --relay http://localhost:3002 --user alice</p><h1>Export keys</h1>
+stvor export-keys &gt; keys.json</code></pre><p>---</p><h2>Examples</h2><h3>Simple Two-User Chat</h3><p>See <code>examples/web-chat-react.tsx</code></p><pre><code>tsx
+import { useStvor } from '@stvor/sdk/react';</p><p>export function TwoUserChat() {
+  const { messages, send } = useStvor({
+    userId: 'alice',
+    appToken: 'stvor_live_xxx',
+  });</p><p>  return (
+    &lt;div&gt;
+      {messages.map(m =&gt; (
+        &lt;div key={m.id}&gt;
+          {m.from}: {m.data}
+        &lt;/div&gt;
+      ))}
+      &lt;input 
+        onKeyPress={e =&gt; {
+          if (e.key === 'Enter') {
+            send('bob', e.currentTarget.value);
+            e.currentTarget.value = '';
+          }
+        }}
+        placeholder="Message..."
+      /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre><h3>Group Chat (Multi-recipient)</h3><pre><code>ts
+async function sendToGroup(client, group, message) {
+  await Promise.all(
+    group.map(userId =&gt; client.send(userId, message))
+  );
+}</p><p>// Usage
+const group = ['alice', 'bob', 'charlie'];
+await sendToGroup(client, group, 'Hello everyone!');</code></pre><h3>Message Batching</h3><pre><code>ts
+const messages = [];</p><p>function scheduleMessage(data) {
+  messages.push(data);
+  if (messages.length &gt;= 10) {
+    flushMessages();
+  }
+}</p><p>async function flushMessages() {
+  await client.send('bob', { batch: messages });
+  messages.length = 0;
+}</p><p>setInterval(flushMessages, 1000);  // Flush every 1 second</code></pre><h3>Error Handling with Retry</h3><pre><code>ts
+async function sendWithRetry(
+  client,
+  recipientId,
+  data,
+  maxRetries = 3
+) {
+  for (let i = 0; i &lt; maxRetries; i++) {
+    try {
+      await client.send(recipientId, data);
+      return;
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      
+      const delay = 1000 * Math.pow(2, i);  // Exponential backoff
+      await new Promise(resolve =&gt; setTimeout(resolve, delay));
+    }
+  }
+}</code></pre><h3>Persistence (Node.js)</h3><pre><code>ts
+import * as fs from 'fs';
+import { Stvor } from '@stvor/sdk';</p><p>interface StoredClient {
+  userId: string;
+  appToken: string;
+}</p><p>async function loadOrCreateClient(filePath: string) {
+  if (fs.existsSync(filePath)) {
+    const { userId, appToken } = JSON.parse(
+      fs.readFileSync(filePath, 'utf-8')
+    );
+    return Stvor.connect({ userId, appToken, relayUrl: 'http://localhost:3002' });
+  }</p><p>  const client = await Stvor.connect({
+    userId: <code>user_${Date.now()}</code>,
+    appToken: process.env.APP_TOKEN,
+    relayUrl: 'http://localhost:3002',
+  });</p><p>  fs.writeFileSync(filePath, JSON.stringify({
+    userId: client.userId,
+    appToken: process.env.APP_TOKEN,
+  }));</p><p>  return client;
+}</p><p>const client = await loadOrCreateClient('.stvor-client.json');</code></pre><p>---</p><h2>Performance Tips</h2><p>1. <strong>Polling Rate</strong>: Default 1000ms is good. Increase if you don't need real-time.
+2. <strong>Message Batching</strong>: Send related data in one message instead of many.
+3. <strong>Key Caching</strong>: First connect (X3DH) takes ~10ms. Reuse client for multiple sends.
+4. <strong>Compression</strong>: Large payloads? Compress before sending.</p><pre><code>ts
+import { compress, decompress } from 'brotli';</p><p>const large = JSON.stringify(hugeObject);
+const compressed = compress(large);
+await client.send('bob', { type: 'compressed', data: compressed });</code></pre><p>---</p><h2>FAQ</h2><p><strong>Q: Can I send binary data?</strong></p><p>A: Yes! Send <code>Buffer</code> or <code>Uint8Array</code>.</p><pre><code>ts
+await client.send('bob', Buffer.from('binary data'));</code></pre><p><strong>Q: Can messages be ordered?</strong></p><p>A: Generally yes, due to polling sequential nature. But out-of-order delivery is theoretically possible.</p><p><strong>Q: What's the message size limit?</strong></p><p>A: ~10MB (limited by relay server config). Practical limit ~1MB for mobile.</p><p><strong>Q: Can users have multiple sessions?</strong></p><p>A: Yes. Each <code>Stvor.connect()</code> creates independent session. Same user can connect from different devices.</p><p><strong>Q: Are message read receipts supported?</strong></p><p>A: Not yet. Send explicit acknowledgment: <code>await client.send(sender, { ack: true })</code>.</p><p><strong>Q: Can I access raw cryptographic keys?</strong></p><p>A: Advanced: use <code>sdk/ratchet</code> API for lower-level access.</p><p><strong>Q: What happens if I lose internet?</strong></p><p>A: Messages fail with <code>ERR_NETWORK</code>. Retry automatically or manually.</p><p><strong>Q: How long are messages stored on relay?</strong></p><p>A: 10 minutes TTL. After that, auto-deleted.</p><p>---</p><h2>License</h2><p>MIT
+</p>
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+</body>
+</html>
