@@ -445,20 +445,21 @@
       <code>// Install SDK
 npm install @stvor/sdk
 
-// Create encrypted chat
+// Connect user — keys, registration, polling in one call
 import { Stvor } from '@stvor/sdk';
 
-const chat = new Stvor({
-  projectId: 'your-project-id',
-  transport: 'https://api.stvor.app'
+const alice = await Stvor.connect({
+  userId:   'alice@example.com',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.io',
 });
 
 // Send encrypted message
-await chat.sendMessage(recipientId, 'Hello!');
+await alice.send('bob@example.com', 'Hello!');
 
 // Receive messages
-chat.on('message', (msg) => {
-  console.log('Decrypted:', msg.text);
+alice.onMessage((msg) => {
+  console.log(`${msg.from}: ${msg.data}`);
 });</code>
     </div>
   </section>
