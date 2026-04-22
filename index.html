@@ -3,6 +3,539 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="STVOR - End-to-end encrypted messaging">
+  <title>STVOR - Encrypted Messaging</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #000;
+      --fg: #fff;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --gray: #888;
+      --gray-light: #444;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      line-height: 1.8;
+      font-size: clamp(14px, 2vw, 16px);
+      letter-spacing: 0.5px;
+    }
+
+    /* Navigation */
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(10px, 2vw, 20px) clamp(20px, 5vw, 40px);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+
+    nav a {
+      color: var(--fg);
+      text-decoration: none;
+      font-size: clamp(12px, 1.5vw, 14px);
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover {
+      color: var(--accent);
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: clamp(15px, 3vw, 30px);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: clamp(40px, 10vw, 80px) clamp(20px, 5vw, 40px);
+      background: linear-gradient(135deg, #000 0%, #0a0a0a 100%);
+    }
+
+    .hero-content h1 {
+      font-size: clamp(36px, 10vw, 72px);
+      margin-bottom: clamp(20px, 3vw, 40px);
+      letter-spacing: -1px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .accent {
+      color: var(--accent);
+    }
+
+    .hero-content p {
+      font-size: clamp(14px, 2.5vw, 20px);
+      color: var(--gray);
+      margin-bottom: clamp(30px, 5vw, 60px);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: clamp(15px, 3vw, 30px);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: clamp(12px, 2vw, 16px) clamp(24px, 5vw, 48px);
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: clamp(12px, 1.5vw, 14px);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+      letter-spacing: 1px;
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn.primary:hover {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    /* Features Section */
+    .features {
+      padding: clamp(40px, 10vw, 80px) clamp(20px, 5vw, 40px);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(20px, 3vw, 40px);
+    }
+
+    .feature-box {
+      padding: clamp(20px, 3vw, 40px);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .feature-box:hover {
+      border-color: var(--accent);
+      background: rgba(0, 102, 255, 0.05);
+      transform: translateY(-5px);
+    }
+
+    .feature-box h3 {
+      font-size: clamp(18px, 2.5vw, 24px);
+      margin-bottom: clamp(15px, 2vw, 25px);
+      color: var(--accent);
+    }
+
+    .feature-box p {
+      color: var(--gray);
+      font-size: clamp(12px, 1.8vw, 14px);
+      line-height: 1.7;
+    }
+
+    /* Docs Grid */
+    .docs-section {
+      padding: clamp(40px, 10vw, 80px) clamp(20px, 5vw, 40px);
+      background: rgba(10, 10, 10, 0.5);
+      border-top: 1px solid var(--border);
+    }
+
+    .docs-section h2 {
+      font-size: clamp(28px, 6vw, 48px);
+      margin-bottom: clamp(30px, 5vw, 60px);
+      text-align: center;
+    }
+
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: clamp(20px, 3vw, 30px);
+    }
+
+    .doc-card {
+      padding: clamp(20px, 3vw, 30px);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .doc-card:hover {
+      border-color: var(--accent);
+      background: rgba(0, 102, 255, 0.08);
+      transform: translateY(-3px);
+    }
+
+    .doc-card h3 {
+      color: var(--accent);
+      font-size: clamp(16px, 2vw, 20px);
+      margin-bottom: 10px;
+    }
+
+    .doc-card p {
+      color: var(--gray);
+      font-size: clamp(12px, 1.6vw, 14px);
+    }
+
+    /* Code Block */
+    .code-section {
+      padding: clamp(40px, 10vw, 80px) clamp(20px, 5vw, 40px);
+      border-top: 1px solid var(--border);
+    }
+
+    .code-section h2 {
+      font-size: clamp(24px, 5vw, 40px);
+      margin-bottom: clamp(20px, 3vw, 40px);
+      text-align: center;
+    }
+
+    .code-block {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      padding: clamp(20px, 3vw, 30px);
+      overflow-x: auto;
+      border-radius: 2px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .code-block code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(12px, 1.5vw, 14px);
+      color: #ffd700;
+      line-height: 1.6;
+    }
+
+    /* Use Cases */
+    .use-cases {
+      padding: clamp(40px, 10vw, 80px) clamp(20px, 5vw, 40px);
+      background: rgba(10, 10, 10, 0.5);
+      border-top: 1px solid var(--border);
+    }
+
+    .use-cases h2 {
+      font-size: clamp(28px, 6vw, 48px);
+      margin-bottom: clamp(30px, 5vw, 60px);
+      text-align: center;
+    }
+
+    .use-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(15px, 3vw, 30px);
+    }
+
+    .use-case {
+      padding: clamp(20px, 3vw, 30px);
+      text-align: center;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 2px;
+    }
+
+    .use-case h4 {
+      color: var(--accent);
+      font-size: clamp(14px, 2vw, 18px);
+      margin-bottom: 10px;
+    }
+
+    .use-case p {
+      color: var(--gray);
+      font-size: clamp(11px, 1.4vw, 13px);
+    }
+
+    /* Footer */
+    footer {
+      padding: clamp(30px, 5vw, 50px) clamp(20px, 5vw, 40px);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--gray);
+      font-size: clamp(11px, 1.5vw, 13px);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    footer a:hover {
+      color: var(--fg);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+
+      .nav-links {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+
+      nav a {
+        display: inline-block;
+      }
+
+      .hero-content h1 {
+        line-height: 1.1;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        font-size: 12px;
+      }
+
+      nav {
+        padding: 15px;
+      }
+
+      .logo {
+        font-size: 16px;
+      }
+
+      .features,
+      .docs-section,
+      .code-section,
+      .use-cases {
+        padding: 30px 15px;
+      }
+
+      .hero {
+        padding: 30px 15px;
+      }
+
+      .code-block {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">STVOR</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#docs">Docs</a>
+      <a href="#code">Code</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>End-to-End <span class="accent">Encrypted</span> Messaging</h1>
+      <p>Military-grade encryption using Signal Protocol. Zero-knowledge architecture. Your data belongs to you.</p>
+      <div class="cta-buttons">
+        <a href="#code" class="btn primary">Get Started</a>
+        <a href="#docs" class="btn">Read Docs</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="feature-box">
+      <h3>🔐 End-to-End Encryption</h3>
+      <p>Signal Protocol (X3DH + Double Ratchet). Every message encrypted with unique keys. Only sender and recipient can read.</p>
+    </div>
+    <div class="feature-box">
+      <h3>🚀 High Performance</h3>
+      <p>Optimized cryptographic operations. Sub-millisecond message processing. Scales to millions of conversations.</p>
+    </div>
+    <div class="feature-box">
+      <h3>🔑 Zero-Knowledge</h3>
+      <p>Server cannot decrypt messages. Perfect forward secrecy. Even if keys are compromised, past messages remain secure.</p>
+    </div>
+    <div class="feature-box">
+      <h3>📱 Cross-Platform</h3>
+      <p>Node.js, Browser, React, Vue. Same encryption on all platforms. Works offline with sync capabilities.</p>
+    </div>
+    <div class="feature-box">
+      <h3>🛡️ Battle-Tested</h3>
+      <p>Based on Signal Protocol. Used by billions. Audited cryptographic primitives (AES-256, ECDSA P-256).</p>
+    </div>
+    <div class="feature-box">
+      <h3>📊 Built-in Analytics</h3>
+      <p>Metrics, performance tracking, error monitoring. Privacy-preserving analytics without decrypting data.</p>
+    </div>
+  </section>
+
+  <!-- Code Example -->
+  <section class="code-section" id="code">
+    <h2>Quick Start</h2>
+    <div class="code-block">
+      <code>// Install SDK
+npm install @stvor/sdk
+
+// Create encrypted chat
+import { Stvor } from '@stvor/sdk';
+
+const chat = new Stvor({
+  projectId: 'your-project-id',
+  transport: 'https://api.stvor.app'
+});
+
+// Send encrypted message
+await chat.sendMessage(recipientId, 'Hello!');
+
+// Receive messages
+chat.on('message', (msg) => {
+  console.log('Decrypted:', msg.text);
+});</code>
+    </div>
+  </section>
+
+  <!-- Documentation -->
+  <section class="docs-section" id="docs">
+    <h2>Documentation</h2>
+    <div class="docs-grid">
+      <a href="/readme.html" class="doc-card">
+        <h3>📖 README</h3>
+        <p>Quick start guide, overview, and features. Get up and running in minutes.</p>
+      </a>
+      <a href="/api.html" class="doc-card">
+        <h3>⚙️ API Reference</h3>
+        <p>Complete SDK API documentation with all methods, events, and error codes.</p>
+      </a>
+      <a href="/architecture.html" class="doc-card">
+        <h3>🏗️ Architecture</h3>
+        <p>Deep dive into system design, components, and cryptographic flows.</p>
+      </a>
+      <a href="/security.html" class="doc-card">
+        <h3>🔒 Security</h3>
+        <p>Threat model, cryptographic analysis, and security best practices.</p>
+      </a>
+      <a href="/deployment.html" class="doc-card">
+        <h3>🚀 Deployment</h3>
+        <p>Production setup guide for PostgreSQL, Redis, Kubernetes, and monitoring.</p>
+      </a>
+      <a href="/dashboard" class="doc-card">
+        <h3>📊 Dashboard</h3>
+        <p>Admin dashboard for metrics, monitoring, and API key management.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Use Cases -->
+  <section class="use-cases">
+    <h2>Use Cases</h2>
+    <div class="use-cases-grid">
+      <div class="use-case">
+        <h4>💼 Enterprise</h4>
+        <p>Secure internal communications with compliance and audit trails.</p>
+      </div>
+      <div class="use-case">
+        <h4>🏥 Healthcare</h4>
+        <p>HIPAA-compliant patient messaging and telemedicine communications.</p>
+      </div>
+      <div class="use-case">
+        <h4>⚖️ Legal</h4>
+        <p>Attorney-client privileged communications with encrypted storage.</p>
+      </div>
+      <div class="use-case">
+        <h4>🎓 Education</h4>
+        <p>Student-teacher communications with privacy and data protection.</p>
+      </div>
+      <div class="use-case">
+        <h4>🏦 Finance</h4>
+        <p>Secure financial communications with SOC 2 compliance.</p>
+      </div>
+      <div class="use-case">
+        <h4>👥 Social</h4>
+        <p>P2P messaging platform with end-to-end encryption by default.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>STVOR © 2024. <a href="https://github.com/sapogeth/stvor_sdk">GitHub</a> • <a href="#docs">Documentation</a> • <a href="mailto:hello@stvor.app">Contact</a></p>
+  </footer>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STVOR SDK — Documentation</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
