@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
-    { "source": "/", "destination": "/ui/index-new.html" },
+    { "source": "/", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/ui/dashboard-minimal.html" },
     { "source": "/dashboard.html", "destination": "/ui/dashboard-minimal.html" },
     { "source": "/getting-started", "destination": "/ui/getting-started.html" },
