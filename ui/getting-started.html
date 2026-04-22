@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="STVOR - Start using end-to-end encrypted messaging">
+  <title>Getting Started - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .nav a:hover {
+      color: var(--accent);
+    }
+
+    h1 {
+      font-size: clamp(32px, 8vw, 48px);
+      font-weight: 700;
+      margin-bottom: 20px;
+      margin-top: 0;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    h2 {
+      font-size: clamp(24px, 6vw, 32px);
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      margin-top: 40px;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: clamp(18px, 4vw, 24px);
+      color: var(--fg-secondary);
+      margin-top: 25px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 15px 0;
+      color: var(--fg-secondary);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    a:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+
+    code {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+    }
+
+    pre {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: clamp(12px, 3vw, 20px);
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(10px, 2vw, 13px);
+      line-height: 1.6;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #ffd700;
+    }
+
+    .step {
+      margin: 40px 0;
+      padding: 25px;
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+    }
+
+    .step-number {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-radius: 50%;
+      text-align: center;
+      line-height: 32px;
+      font-weight: 700;
+      margin-right: 12px;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      margin-top: 0;
+      display: inline-block;
+    }
+
+    ul, ol {
+      margin: 15px 0;
+    }
+
+    li {
+      margin: 8px 0;
+      margin-left: 25px;
+      color: var(--fg-secondary);
+    }
+
+    .code-box {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: clamp(15px, 3vw, 20px);
+      margin: 20px 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .code-box code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      color: #ffd700;
+    }
+
+    .feature-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .feature-item {
+      padding: 20px;
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+    }
+
+    .feature-item h4 {
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: clamp(14px, 3vw, 16px);
+    }
+
+    .feature-item p {
+      font-size: clamp(12px, 2vw, 14px);
+      margin: 0;
+    }
+
+    footer {
+      margin-top: 80px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+
+    footer a {
+      color: var(--accent);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      .nav {
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+
+      .step {
+        padding: 20px;
+        margin: 30px 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+
+      .nav {
+        gap: 12px;
+        font-size: 11px;
+      }
+
+      .step-number {
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        font-size: 12px;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 15px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      pre {
+        margin: 15px -12px;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme">Overview</a>
+      <a href="/architecture">Architecture</a>
+      <a href="/api">API</a>
+      <a href="/security">Security</a>
+      <a href="/deployment">Deployment</a>
+    </div>
+
+    <h1>Getting Started with <span>STVOR</span></h1>
+    <p style="font-size: clamp(13px, 3vw, 15px); margin-bottom: 40px;">
+      Install the SDK, connect users, and send encrypted messages in 3 simple steps.
+    </p>
+
+    <div class="step">
+      <div>
+        <span class="step-number">1</span>
+        <h3>Install the SDK</h3>
+      </div>
+      <p>Add STVOR to your project with npm or yarn.</p>
+      <div class="code-box">
+        <code>npm install @stvor/sdk</code>
+      </div>
+      <p style="margin-top: 15px; font-size: 12px; color: #666;">
+        <strong>Zero dependencies</strong> — STVOR uses only native Web Crypto API
+      </p>
+    </div>
+
+    <div class="step">
+      <div>
+        <span class="step-number">2</span>
+        <h3>Connect a User</h3>
+      </div>
+      <p>Initialize the client with your API credentials.</p>
+      <div class="code-box">
+        <code>import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId: 'alice@example.com',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});</code>
+      </div>
+    </div>
+
+    <div class="step">
+      <div>
+        <span class="step-number">3</span>
+        <h3>Send Encrypted Messages</h3>
+      </div>
+      <p>Send messages to any peer — they're end-to-end encrypted automatically.</p>
+      <div class="code-box">
+        <code>// Listen for incoming messages
+alice.onMessage(msg => {
+  console.log(`From ${msg.sender}: ${msg.data}`);
+});
+
+// Send an encrypted message
+await alice.send('bob@example.com', 'Hello encrypted!');</code>
+      </div>
+    </div>
+
+    <h2>Framework Integration</h2>
+    <div class="feature-box">
+      <div class="feature-item">
+        <h4>React Hooks</h4>
+        <p>Use <code>useStvor()</code> and <code>useMessages()</code> in your components.</p>
+      </div>
+      <div class="feature-item">
+        <h4>Vue 3</h4>
+        <p>Composables: <code>useStvor()</code>, <code>useEncryption()</code>.</p>
+      </div>
+      <div class="feature-item">
+        <h4>TypeScript</h4>
+        <p>Full type support with JSDoc and generic types.</p>
+      </div>
+      <div class="feature-item">
+        <h4>Node.js</h4>
+        <p>Works in CommonJS and ESM projects.</p>
+      </div>
+    </div>
+
+    <h2>Common Use Cases</h2>
+    <ul>
+      <li><strong>Chat Applications:</strong> Build encrypted messaging with zero server access to content</li>
+      <li><strong>Financial Transactions:</strong> Secure peer-to-peer payments and fund transfers</li>
+      <li><strong>Healthcare:</strong> HIPAA-compliant patient communication and data exchange</li>
+      <li><strong>Legal Services:</strong> Attorney-client confidential communications</li>
+      <li><strong>IoT & Control Systems:</strong> Secure device-to-device messaging</li>
+    </ul>
+
+    <h2>Security Guarantees</h2>
+    <p>STVOR provides:</p>
+    <ul>
+      <li><strong>End-to-End Encryption:</strong> Only sender and recipient can read messages</li>
+      <li><strong>Forward Secrecy:</strong> Past messages are safe even if keys are compromised</li>
+      <li><strong>Post-Compromise Security:</strong> Future messages are secure after key compromise</li>
+      <li><strong>Authenticated Encryption:</strong> Messages are cryptographically authenticated</li>
+      <li><strong>Zero Knowledge:</strong> Server never sees message content</li>
+    </ul>
+
+    <h2>What's Next?</h2>
+    <p>
+      Read the <a href="/api">API Reference</a> for complete documentation, explore <a href="/architecture">system architecture</a>, or check <a href="/security">security details</a>.
+    </p>
+
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+</body>
+</html>

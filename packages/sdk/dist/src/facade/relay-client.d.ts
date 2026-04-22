@@ -11,6 +11,7 @@ export declare class RelayClient {
     private connected;
     private handshakeComplete;
     private backoff;
+    private maxBackoff;
     private queue;
     private handlers;
     private reconnecting;

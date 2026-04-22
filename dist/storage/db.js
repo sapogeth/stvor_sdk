@@ -1,35 +1,67 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 dotenv.config();
 // PostgreSQL connection pool
 const pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_NAME || 'stvor',
-    password: process.env.DB_PASSWORD || 'stvor123',
+    password: process.env.DB_PASSWORD || '',
     port: parseInt(process.env.DB_PORT || '5432'),
+    max: 20, // Max 20 connections
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
 });
 let isDbAvailable = false;
-// Initialize database connection
-export async function initDb() {
-    try {
-        const client = await pool.connect();
-        console.log('✅ Database connected');
-        isDbAvailable = true;
-        client.release();
+// Initialize database connection with retry logic
+export async function initDb(maxRetries = 3) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const client = await pool.connect();
+            console.log('✅ Database connected successfully');
+            // Test the connection with a simple query
+            await client.query('SELECT NOW()');
+            isDbAvailable = true;
+            client.release();
+            return;
+        }
+        catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+            if (attempt < maxRetries) {
+                console.warn(`❌ Database connection attempt ${attempt} failed, retrying in ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+        }
     }
-    catch (error) {
-        console.error('❌ Database connection failed:', error);
-        isDbAvailable = false;
-        throw error;
-    }
+    isDbAvailable = false;
+    console.error(`❌ Database connection failed after ${maxRetries} attempts:`, lastError?.message);
+    throw lastError || new Error('Database connection failed');
 }
 export function isDatabaseAvailable() {
     return isDbAvailable;
 }
-// Query helper
+export function getPoolStats() {
+    return {
+        totalConnections: pool.totalCount,
+        idleConnections: pool.idleCount,
+        waitingRequests: pool.waitingCount
+    };
+}
+// Query helper with error handling
 export async function query(text, params) {
-    return pool.query(text, params);
+    if (!isDbAvailable) {
+        throw new Error('Database is not available. Using JSON storage fallback.');
+    }
+    try {
+        return await pool.query(text, params);
+    }
+    catch (error) {
+        console.error('[DB] Query error:', error instanceof Error ? error.message : error);
+        throw error;
+    }
 }
 // Token operations
 export async function getToken(token) {
@@ -39,7 +71,7 @@ export async function getToken(token) {
     return rows[0] || null;
 }
 export async function createToken(projectId, plan = 'free') {
-    const token = `stvor_live_${Math.random().toString(36).slice(2, 14)}`;
+    const token = `stvor_live_${crypto.randomBytes(12).toString('base64url')}`;
     const limits = {
         free: 1000,
         starter: 10000,
@@ -71,6 +103,197 @@ export async function getUsage(token) {
      FROM app_tokens
      WHERE token = $1`, [token]);
     return rows[0] || null;
+}
+// Analytics functions
+// Record aggregated daily stats (stores latest cumulative values)
+export async function recordDailyStats(stats) {
+    // Validate values to prevent abuse
+    const MAX_HANDSHAKES = 1000000;
+    const MAX_MESSAGES = 10000000;
+    if (stats.handshakes > MAX_HANDSHAKES ||
+        stats.messagesEncrypted > MAX_MESSAGES ||
+        stats.messagesDecrypted > MAX_MESSAGES ||
+        stats.errors > MAX_MESSAGES) {
+        console.warn('[Analytics] Rejected absurd analytics values:', {
+            handshakes: stats.handshakes,
+            messagesEncrypted: stats.messagesEncrypted,
+            messagesDecrypted: stats.messagesDecrypted,
+            errors: stats.errors
+        });
+        return;
+    }
+    if (!isDbAvailable) {
+        console.log('[Analytics] DB unavailable, skipping daily stats');
+        return;
+    }
+    const date = new Date(stats.timestamp).toISOString().split('T')[0];
+    // Use MAX for cumulative values - protects against concurrent SDK instances
+    // If Instance A sends 100 and Instance B sends 50, we store MAX = 100
+    await pool.query(`INSERT INTO analytics_daily_stats 
+      (project_id, date, messages_encrypted, messages_decrypted, handshakes, errors, unique_sessions, sdk_versions)
+    VALUES ($1, $2, $3, $4, $5, $6, $5, $7)
+    ON CONFLICT (project_id, date) DO UPDATE SET
+      messages_encrypted = GREATEST(analytics_daily_stats.messages_encrypted, EXCLUDED.messages_encrypted),
+      messages_decrypted = GREATEST(analytics_daily_stats.messages_decrypted, EXCLUDED.messages_decrypted),
+      handshakes = GREATEST(analytics_daily_stats.handshakes, EXCLUDED.handshakes),
+      errors = GREATEST(analytics_daily_stats.errors, EXCLUDED.errors),
+      unique_sessions = GREATEST(analytics_daily_stats.unique_sessions, EXCLUDED.unique_sessions),
+      sdk_versions = COALESCE(analytics_daily_stats.sdk_versions, '{}'::jsonb) || EXCLUDED.sdk_versions`, [
+        parseInt(stats.projectId),
+        date,
+        stats.messagesEncrypted,
+        stats.messagesDecrypted,
+        stats.handshakes,
+        stats.errors,
+        JSON.stringify({ [stats.sdkVersion]: stats.handshakes })
+    ]);
+}
+export async function recordAnalyticsEvent(event) {
+    if (!isDbAvailable) {
+        console.log('[Analytics] DB unavailable, skipping event:', event.event);
+        return;
+    }
+    await pool.query(`SELECT record_analytics_event($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [
+        event.projectId,
+        event.event,
+        event.userId,
+        event.sessionId,
+        event.messageSize,
+        event.userAgent,
+        event.sdkVersion,
+        event.ip,
+        event.timestamp
+    ]);
+}
+export async function getTotalAnalytics() {
+    if (!isDbAvailable) {
+        return {
+            totalMessages: 0,
+            totalProjects: 0,
+            totalUsers: 0,
+            totalBytes: 0
+        };
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      COUNT(*) FILTER (WHERE event IN ('message_encrypted', 'message_decrypted')) as total_messages,
+      COUNT(DISTINCT project_id) as total_projects,
+      COUNT(DISTINCT user_id) as total_users,
+      SUM(message_size) as total_bytes
+    FROM analytics_events
+  `);
+    return rows[0] || { total_messages: 0, total_projects: 0, total_users: 0, total_bytes: 0 };
+}
+export async function getRecentAnalytics(days = 30) {
+    if (!isDbAvailable) {
+        return [];
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      DATE_TRUNC('day', created_at) as date,
+      COUNT(*) FILTER (WHERE event = 'message_encrypted') as encrypted,
+      COUNT(*) FILTER (WHERE event = 'message_decrypted') as decrypted,
+      COUNT(DISTINCT user_id) as active_users,
+      COUNT(DISTINCT session_id) as sessions
+    FROM analytics_events 
+    WHERE created_at >= NOW() - INTERVAL '${days} days'
+    GROUP BY DATE_TRUNC('day', created_at)
+    ORDER BY date DESC
+  `);
+    return rows;
+}
+export async function getTopProjectsByActivity(limit = 10) {
+    if (!isDbAvailable) {
+        return [];
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      p.name,
+      p.id,
+      COUNT(ae.id) as total_events,
+      COUNT(*) FILTER (WHERE ae.event = 'message_encrypted') as messages_encrypted,
+      COUNT(DISTINCT ae.user_id) as unique_users
+    FROM projects p
+    LEFT JOIN analytics_events ae ON p.id = ae.project_id
+    GROUP BY p.id, p.name
+    ORDER BY total_events DESC
+    LIMIT $1
+  `, [limit]);
+    return rows;
+}
+export async function getGeographicStats() {
+    if (!isDbAvailable) {
+        return [];
+    }
+    // Simplified geographic stats based on IP (you'd need IP geolocation service)
+    const { rows } = await pool.query(`
+    SELECT 
+      'Unknown' as country,
+      COUNT(*) as message_count
+    FROM analytics_events
+    WHERE event IN ('message_encrypted', 'message_decrypted')
+    GROUP BY ip_address
+    ORDER BY message_count DESC
+    LIMIT 10
+  `);
+    return rows;
+}
+export async function getSdkVersionStats() {
+    if (!isDbAvailable) {
+        return [];
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      sdk_version,
+      COUNT(*) as usage_count,
+      COUNT(DISTINCT project_id) as projects_count
+    FROM analytics_events
+    WHERE sdk_version IS NOT NULL AND sdk_version != 'unknown'
+    GROUP BY sdk_version
+    ORDER BY usage_count DESC
+  `);
+    return rows;
+}
+export async function getProjectAnalytics(projectId) {
+    if (!isDbAvailable) {
+        return null;
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      COUNT(*) FILTER (WHERE event = 'message_encrypted') as messages_encrypted,
+      COUNT(*) FILTER (WHERE event = 'message_decrypted') as messages_decrypted,
+      COUNT(DISTINCT user_id) as unique_users,
+      COUNT(DISTINCT session_id) as unique_sessions,
+      SUM(message_size) as total_bytes,
+      MIN(created_at) as first_activity,
+      MAX(created_at) as last_activity
+    FROM analytics_events
+    WHERE project_id = $1
+  `, [projectId]);
+    return rows[0];
+}
+export async function getRealtimeStats() {
+    if (!isDbAvailable) {
+        return { active_now: 0, messages_last_hour: 0 };
+    }
+    const { rows } = await pool.query(`
+    SELECT 
+      COUNT(DISTINCT session_id) FILTER (WHERE created_at >= NOW() - INTERVAL '5 minutes') as active_now,
+      COUNT(*) FILTER (WHERE event IN ('message_encrypted', 'message_decrypted') AND created_at >= NOW() - INTERVAL '1 hour') as messages_last_hour
+    FROM analytics_events
+  `);
+    return rows[0] || { active_now: 0, messages_last_hour: 0 };
+}
+export async function verifyProjectAccess(projectId, token) {
+    if (!isDbAvailable) {
+        return true; // Allow access in development mode
+    }
+    const { rows } = await pool.query(`
+    SELECT 1 FROM app_tokens at
+    JOIN projects p ON p.id = at.project_id
+    WHERE p.id = $1 AND at.token = $2
+  `, [projectId, token]);
+    return rows.length > 0;
 }
 export async function getLimits(token) {
     if (!isDbAvailable) {
@@ -192,18 +415,6 @@ export async function getMetricsAuditLog(projectId, limit = 100) {
     catch (error) {
         console.error('[DB] getMetricsAuditLog error:', error);
         return [];
-    }
-}
-export async function verifyProjectAccess(projectId, token) {
-    try {
-        // Check if token is valid and has access to projectId
-        const { rows } = await pool.query(`SELECT t.project_id FROM app_tokens t
-       WHERE t.token = $1 AND t.project_id::text = $2 LIMIT 1`, [token, projectId]);
-        return rows.length > 0;
-    }
-    catch (error) {
-        console.error('[DB] verifyProjectAccess error:', error);
-        return false;
     }
 }
 export async function verifyAdminAccess(projectId, token) {

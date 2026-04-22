@@ -102,7 +102,9 @@ export default async function e2eRoutes(app) {
                     nonce: iv.toString('base64'),
                 });
             }
-            catch { }
+            catch (err) {
+                console.error('[E2E] Bot reply error:', err);
+            }
         }
         return { ok: true };
     });

@@ -30,6 +30,7 @@ export declare class RelayClient {
     getPublicKeys(userId: string): Promise<SerializedPublicKeys | null>;
     send(message: OutgoingMessage): Promise<void>;
     fetchMessages(userId: string): Promise<IncomingMessage[]>;
+    deleteMessage(messageId: string): Promise<void>;
     disconnect(): void;
 }
 export {};

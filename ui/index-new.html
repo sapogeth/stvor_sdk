@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="STVOR - End-to-end encrypted messaging platform">
+  <title>STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: clamp(20px, 5vw, 40px);
+    }
+
+    .hero-content {
+      max-width: 800px;
+    }
+
+    h1 {
+      font-size: clamp(36px, 10vw, 72px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-size: clamp(16px, 4vw, 20px);
+      color: var(--fg-secondary);
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    .tagline-sub {
+      font-size: clamp(13px, 3vw, 15px);
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: clamp(10px, 3vw, 20px);
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: clamp(10px, 2vw, 14px) clamp(24px, 4vw, 40px);
+      border-radius: 3px;
+      font-size: clamp(13px, 2vw, 15px);
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: 1px solid;
+      letter-spacing: 0.5px;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .button-primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-color: var(--accent);
+    }
+
+    .button-primary:hover {
+      opacity: 0.8;
+      transform: translateY(-2px);
+    }
+
+    .button-secondary {
+      background: transparent;
+      color: var(--fg-primary);
+      border-color: var(--border-light);
+    }
+
+    .button-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(20px, 4vw, 40px);
+      margin-bottom: 60px;
+    }
+
+    .feature {
+      text-align: center;
+    }
+
+    .feature-icon {
+      font-size: clamp(28px, 6vw, 40px);
+      margin-bottom: 15px;
+    }
+
+    .feature h3 {
+      font-size: clamp(14px, 3vw, 16px);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .feature p {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    .section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: clamp(40px, 8vw, 80px) clamp(15px, 5vw, 40px);
+      border-top: 1px solid var(--border-light);
+    }
+
+    .section h2 {
+      font-size: clamp(28px, 7vw, 40px);
+      margin-bottom: clamp(30px, 5vw, 50px);
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(15px, 3vw, 25px);
+    }
+
+    .doc-card {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      padding: clamp(20px, 4vw, 30px);
+      border-radius: 3px;
+      text-decoration: none;
+      color: var(--fg-primary);
+      transition: all 0.3s;
+    }
+
+    .doc-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      background: var(--bg-secondary);
+    }
+
+    .doc-card h3 {
+      font-size: clamp(14px, 3vw, 16px);
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .doc-card p {
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    .code-example {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+      padding: clamp(15px, 3vw, 25px);
+      margin: clamp(20px, 5vw, 40px) 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .code-example code {
+      color: #ffd700;
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 13px);
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: clamp(20px, 4vw, 40px);
+    }
+
+    .feature-list h3 {
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-weight: 700;
+      font-size: clamp(16px, 3vw, 18px);
+    }
+
+    .feature-list ul {
+      list-style: none;
+      color: var(--fg-secondary);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    .feature-list li {
+      margin: 8px 0;
+    }
+
+    .use-cases {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(20px, 4vw, 30px);
+      color: var(--fg-secondary);
+    }
+
+    .use-case h3 {
+      color: var(--fg-primary);
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: clamp(14px, 3vw, 16px);
+    }
+
+    .use-case p {
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    footer {
+      text-align: center;
+      padding: clamp(30px, 5vw, 50px) clamp(15px, 5vw, 40px);
+      border-top: 1px solid var(--border-light);
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    footer a:hover {
+      opacity: 0.8;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        min-height: auto;
+        padding: 40px 20px;
+      }
+
+      h1 {
+        margin-bottom: 15px;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+        text-align: center;
+      }
+
+      .section {
+        padding: 40px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding: 30px 15px;
+      }
+
+      .tagline {
+        margin-bottom: 10px;
+      }
+
+      .features {
+        gap: 20px;
+      }
+
+      .section {
+        padding: 30px 15px;
+      }
+
+      .code-example {
+        margin: 15px -15px;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-content">
+      <h1><span>STVOR</span></h1>
+      <p class="tagline">
+        End-to-end encrypted messaging platform
+      </p>
+      <p class="tagline-sub">
+        Drop-in encryption library. Zero-knowledge relay. No cryptography knowledge required.
+      </p>
+
+      <div class="cta-buttons">
+        <a href="/getting-started" class="button button-primary">Get Started</a>
+        <a href="/dashboard" class="button button-secondary">Dashboard</a>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🔒</div>
+          <h3>Zero-Knowledge</h3>
+          <p>Relay never accesses message content</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📈</div>
+          <h3>Forward Secrecy</h3>
+          <p>Past messages safe if key stolen</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Drop-In</h3>
+          <p>3 lines of code to encrypt</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Quick Start</h2>
+    <div class="code-example">
+      <code>import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId: 'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});
+
+alice.onMessage(msg => console.log(msg.data));
+await alice.send('bob', 'Hello encrypted!');</code>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Documentation</h2>
+    <div class="docs-grid">
+      <a href="/readme" class="doc-card">
+        <h3>Overview</h3>
+        <p>What is STVOR and why you should use it</p>
+      </a>
+      <a href="/getting-started" class="doc-card">
+        <h3>Getting Started</h3>
+        <p>Installation and basic usage in 3 steps</p>
+      </a>
+      <a href="/api" class="doc-card">
+        <h3>API Reference</h3>
+        <p>Complete SDK documentation with examples</p>
+      </a>
+      <a href="/architecture" class="doc-card">
+        <h3>Architecture</h3>
+        <p>System design, components, and data flow</p>
+      </a>
+      <a href="/security" class="doc-card">
+        <h3>Security</h3>
+        <p>Cryptography, threat model, and audits</p>
+      </a>
+      <a href="/deployment" class="doc-card">
+        <h3>Deployment</h3>
+        <p>Production setup, Docker, Kubernetes</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>How It Works</h2>
+    <p style="text-align: center; color: var(--fg-secondary); margin-bottom: 30px; font-size: clamp(13px, 3vw, 15px);">
+      Uses Signal Protocol (X3DH + Double Ratchet) with AES-256-GCM encryption
+    </p>
+    <div class="code-example">
+      <code>1. Each user generates identity key pair (ECDH P-256)
+2. Session established via X3DH (shared secret, no server)
+3. Every message advances Double Ratchet (per-message keys)
+4. Relay server stores encrypted blob only
+5. Recipient decrypts with their private key
+
+Result: Forward secrecy + post-compromise security</code>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Features</h2>
+    <div class="feature-list">
+      <div>
+        <h3>🔐 Security</h3>
+        <ul>
+          <li>✓ End-to-end encryption (E2EE)</li>
+          <li>✓ Forward secrecy</li>
+          <li>✓ Post-compromise security</li>
+          <li>✓ Perfect forward secrecy (PFS)</li>
+          <li>✓ Authenticated encryption (GCM)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>⚙️ Developer Experience</h3>
+        <ul>
+          <li>✓ Zero npm dependencies</li>
+          <li>✓ React hooks</li>
+          <li>✓ Vue 3 composables</li>
+          <li>✓ Full TypeScript support</li>
+          <li>✓ Transparent serialization</li>
+        </ul>
+      </div>
+      <div>
+        <h3>🌐 Platforms</h3>
+        <ul>
+          <li>✓ Node.js 20+</li>
+          <li>✓ All modern browsers</li>
+          <li>✓ React, Vue, Angular</li>
+          <li>✓ Framework-agnostic</li>
+          <li>✓ Binary support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Use Cases</h2>
+    <div class="use-cases">
+      <div class="use-case">
+        <h3>💬 Messaging</h3>
+        <p>Encrypted chat without server access to content</p>
+      </div>
+      <div class="use-case">
+        <h3>🏦 Finance</h3>
+        <p>Secure transactions visible only to involved parties</p>
+      </div>
+      <div class="use-case">
+        <h3>🏥 Healthcare</h3>
+        <p>Patient data encrypted in transit and at rest</p>
+      </div>
+      <div class="use-case">
+        <h3>⚖️ Legal</h3>
+        <p>Attorney-client communications cryptographically protected</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p style="margin-bottom: 15px;">STVOR © 2024</p>
+    <p>
+      <a href="https://stvor.xyz">stvor.xyz</a> •
+      <a href="https://github.com/sapogeth/stvor_sdk">GitHub</a> •
+      <a href="mailto:security@stvor.xyz">security@stvor.xyz</a>
+    </p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "stvor-e2ee-chat-demo",
+  "version": "1.0.0",
+  "description": "True E2EE chat with Socket.io - browser encrypts, server is blind",
+  "type": "module",
+  "main": "socketio-server-blind.ts",
+  "scripts": {
+    "start": "node --loader ts-node/esm socketio-server-blind.ts",
+    "dev": "tsx socketio-server-blind.ts"
+  },
+  "keywords": ["e2ee", "encryption", "socket.io", "stvor"],
+  "author": "STVOR",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "@stvor/sdk": "latest"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  }
+}

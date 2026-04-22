@@ -116,8 +116,8 @@ export class StvorSDKError extends Error {
 
 /**
  * Pure function: compute new session state WITHOUT mutating input
- * Returns new state object on success, throws on error
- * 
+ * Returns { newSession, plaintext } on success, throws on error
+ *
  * CRITICAL: This function has NO SIDE EFFECTS
  * It only computes, doesn't update globals or storage
  */
@@ -125,7 +125,7 @@ function tryDecryptMessage(
   ciphertext: Uint8Array,
   header: EncryptedMessage['header'],
   session: SessionState
-): SessionState {
+): { newSession: SessionState; plaintext: Uint8Array } {
   // Attempt to use skipped key first
   const skippedKeyEntry = findAndValidateSkippedKey(session, header);
   if (skippedKeyEntry) {
@@ -136,54 +136,44 @@ function tryDecryptMessage(
       header.nonce,
       skippedKeyEntry.key
     );
-    
-    // New state: remove used skipped key, increment receive counter
+
     const newSession = structuredClone(session);
     const skippedKeyId = generateSkippedKeyId(header);
     newSession.skippedMessageKeys.delete(skippedKeyId);
     newSession.receiveCounter = header.receiveCounter + 1;
-    return newSession;
+    return { newSession, plaintext };
   }
 
   // Standard ratchet decryption
   const sharedSecret = sodium.crypto_kx_client_session_keys(
     session.peerIdentityKey,
-    session.sendingChainKey,  // Recipient's SPK
+    session.sendingChainKey,
     header.publicKey
   );
 
-  // Compute new root key
   const newRootKey = deriveRootKeyFromDH(
     session.rootKey,
     sharedSecret.sharedTx,
     'receive'
   );
 
-  // Derive new chain key
-  const newReceivingChainKey = deriveChainKey(
-    newRootKey,
-    'receiving'
-  );
-
-  // Derive message key
+  const newReceivingChainKey = deriveChainKey(newRootKey, 'receiving');
   const messageKey = deriveMessageKey(newReceivingChainKey);
 
-  // Decrypt with AAD verification
   const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
     null,
     ciphertext,
-    constructAAD(header),  // ← NEW: authenticate header
+    constructAAD(header),
     header.nonce,
     messageKey
   );
 
-  // Create new state (not mutating input)
   const newSession = structuredClone(session);
   newSession.rootKey = newRootKey;
   newSession.receivingChainKey = newReceivingChainKey;
   newSession.receiveCounter = header.receiveCounter + 1;
-  
-  return newSession;
+
+  return { newSession, plaintext };
 }
 
 /**
@@ -477,8 +467,11 @@ export async function decryptMessageWithValidation(
 
   // Compute new state (pure, no mutations)
   let newSession: SessionState;
+  let decryptedBytes: Uint8Array;
   try {
-    newSession = tryDecryptMessage(ciphertext, header, session);
+    const result = tryDecryptMessage(ciphertext, header, session);
+    newSession = result.newSession;
+    decryptedBytes = result.plaintext;
   } catch (error: any) {
     if (error.code === 'EBADMSG') {
       throw new StvorSDKError('AUTH_FAILED', 'AAD authentication failed');
@@ -487,11 +480,10 @@ export async function decryptMessageWithValidation(
   }
 
   // PHASE 2: Commit (all validations passed)
-  // Update session state atomically
   Object.assign(session, newSession);
 
   return {
-    plaintext: newSession.toString(),  // Placeholder
+    plaintext: sodium.to_string(decryptedBytes),
     updatedSession: session,
   };
 }

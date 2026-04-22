@@ -17,13 +17,17 @@ import { SealedPayload } from './types';
 export type { DecryptedMessage, SealedPayload, ErrorCode };
 export { StvorError, Errors };
 import { RelayClient } from './relay-client';
-import { Counter, Gauge, register } from 'prom-client';
 import { MetricsAttestationEngine } from './metrics-attestation';
-declare const messagesDeliveredTotal: Counter<string>;
-declare const quotaExceededTotal: Counter<string>;
-declare const rateLimitedTotal: Counter<string>;
-declare const activeTokens: Gauge<string>;
-export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal, activeTokens, register };
+declare const messagesDeliveredTotal: {
+    inc: () => number;
+};
+declare const quotaExceededTotal: {
+    inc: () => number;
+};
+declare const rateLimitedTotal: {
+    inc: () => number;
+};
+export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal };
 export declare class StvorApp {
     private relay;
     private config;
@@ -59,8 +63,6 @@ export declare class StvorFacadeClient {
     private initialized;
     private cryptoSession;
     private messageHandlers;
-    private messageQueue;
-    private isReceiving;
     constructor(userId: UserId, relay: RelayClient, metricsAttestation: MetricsAttestationEngine);
     internalInitialize(): Promise<void>;
     private initialize;

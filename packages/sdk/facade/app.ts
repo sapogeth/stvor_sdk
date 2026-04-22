@@ -18,36 +18,17 @@ import { SealedPayload } from './types';
 export type { DecryptedMessage, SealedPayload, ErrorCode };
 export { StvorError, Errors };
 import { RelayClient } from './relay-client';
-import { Counter, Gauge, register } from 'prom-client';
 import { CryptoSessionManager } from './crypto-session';
 import { verifyFingerprint } from './tofu-manager';
 import { validateMessageWithNonce } from './replay-manager';
-import { MetricsAttestationEngine, MetricsAttestation } from './metrics-attestation';
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
+import { MetricsAttestationEngine } from './metrics-attestation';
 
-// Define Prometheus metrics
-const messagesDeliveredTotal = new Counter({
-  name: 'messages_delivered_total',
-  help: 'Total number of messages successfully delivered',
-});
-
-const quotaExceededTotal = new Counter({
-  name: 'quota_exceeded_total',
-  help: 'Total number of quota exceeded events',
-});
-
-const rateLimitedTotal = new Counter({
-  name: 'rate_limited_total',
-  help: 'Total number of rate-limited events',
-});
-
-const activeTokens = new Gauge({
-  name: 'active_tokens',
-  help: 'Number of currently active tokens',
-});
-
-// Export metrics for use in the application
-export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal, activeTokens, register };
+// Simple in-memory counters (no external dependencies)
+const _counters = { delivered: 0, quotaExceeded: 0, rateLimited: 0 };
+const messagesDeliveredTotal = { inc: () => _counters.delivered++ };
+const quotaExceededTotal     = { inc: () => _counters.quotaExceeded++ };
+const rateLimitedTotal       = { inc: () => _counters.rateLimited++ };
+export { messagesDeliveredTotal, quotaExceededTotal, rateLimitedTotal };
 
 export class StvorApp {
   private relay: RelayClient;
@@ -62,7 +43,7 @@ export class StvorApp {
     this.relay = new RelayClient(config.relayUrl, config.appToken, config.timeout);
     this.metricsAttestation = new MetricsAttestationEngine(config.appToken);
     this.appToken = config.appToken;
-    this.backendUrl = (config as any).backendUrl || 'http://localhost:3000';
+    this.backendUrl = (config as any).backendUrl || '';
   }
 
   isReady(): boolean {
@@ -81,9 +62,9 @@ export class StvorApp {
    * Backend verifies and stores only valid attestations
    */
   async sendMetricsAttestation(): Promise<void> {
-    const attestation = this.metricsAttestation.createAttestation();
-
+    // Non-critical: silently ignore all errors
     try {
+      const attestation = this.metricsAttestation.createAttestation();
       const response = await fetch(`${this.backendUrl}/api/metrics/attest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,16 +73,9 @@ export class StvorApp {
           attestation,
         }),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('[STVOR] Metrics attestation rejected:', error.reason);
-        return;
-      }
-
-      console.debug('[STVOR] Metrics attestation verified and stored');
-    } catch (error) {
-      console.error('[STVOR] Failed to send metrics attestation:', error);
+      void response; // ignore response
+    } catch {
+      // Non-critical — swallow silently
     }
   }
 
@@ -159,8 +133,6 @@ export class StvorFacadeClient {
   private initialized: boolean = false;
   private cryptoSession: CryptoSessionManager;
   private messageHandlers: Map<string, (msg: DecryptedMessage) => void> = new Map();
-  private messageQueue: any[] = [];
-  private isReceiving: boolean = false;
 
   constructor(userId: UserId, relay: RelayClient, metricsAttestation: MetricsAttestationEngine) {
     this.userId = userId;
@@ -401,28 +373,31 @@ export class StvorFacadeClient {
     const poll = async () => {
       try {
         const messages = await this.relay.fetchMessages(this.userId);
-        
-        if (messages.length > 0) {
-          const msg = await this.decryptMessage(messages[0]);
-          
-          for (const handler of this.messageHandlers.values()) {
-            try {
-              handler(msg);
-            } catch (err) {
-              console.error('[StvorApp] Handler error:', err);
+
+        for (const raw of messages) {
+          try {
+            const msg = await this.decryptMessage(raw);
+            for (const handler of this.messageHandlers.values()) {
+              try {
+                handler(msg);
+              } catch (err) {
+                console.error('[StvorApp] Handler error:', err);
+              }
             }
+          } catch (err) {
+            console.error('[StvorApp] Failed to decrypt message from', raw.from, ':', err);
           }
         }
       } catch (err) {
         console.error('[StvorApp] Poll error:', err);
       }
-      
+
       if (this.initialized) {
         setTimeout(poll, 1000);
       }
     };
-    
-    poll();
+
+    poll().catch(err => console.error('[StvorApp] Polling failed:', err));
   }
 
   /**

@@ -8,6 +8,7 @@ export class RelayClient {
         this.connected = false;
         this.handshakeComplete = false;
         this.backoff = 1000;
+        this.maxBackoff = 30000;
         this.queue = [];
         this.handlers = [];
         this.reconnecting = false;
@@ -124,7 +125,7 @@ export class RelayClient {
         setTimeout(() => {
             this.reconnecting = false;
             this.connect();
-            this.backoff = Math.min(this.backoff * 2, 30000);
+            this.backoff = Math.min(this.backoff * 2, this.maxBackoff);
         }, this.backoff);
     }
     doSend(obj) {

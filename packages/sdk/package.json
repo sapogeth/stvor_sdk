@@ -1,6 +1,6 @@
 {
   "name": "@stvor/sdk",
-  "version": "3.0.0",
+  "version": "3.3.0",
   "description": "Stvor DX Facade - Simple E2EE SDK for client-side encryption",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -28,12 +28,22 @@
       }
     },
     "./mock-relay": {
-      "import": "./dist/mock-relay-server.js",
-      "require": "./dist/mock-relay-server.cjs"
+      "types": "./dist/mock-relay.d.ts",
+      "import": "./dist/mock-relay.js",
+      "require": "./dist/mock-relay.cjs"
+    },
+    "./web": {
+      "types": "./dist/src/web-sdk.d.ts",
+      "import": "./dist/src/web-sdk.js",
+      "default": "./dist/src/web-sdk.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "bin/cli.js"
   ],
   "keywords": [
     "e2ee",
@@ -60,18 +70,47 @@
   "homepage": "https://stvor.xyz",
   "scripts": {
     "build": "tsc --pretty false --noEmitOnError false || true && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
-    "prepublishOnly": "npm run build",
-    "test": "node --import tsx test-e2ee.ts",
-    "mock-relay": "node dist/mock-relay-server.js"
+    "prepublishOnly": "npm run build && npm test",
+    "test": "node --import tsx/esm ratchet/__tests__/comprehensive-crypto.test.ts && node --import tsx/esm facade/__tests__/timing-protection.test.ts && node --import tsx/esm facade/__tests__/integration.test.ts",
+    "test:legacy": "node --import tsx test-e2ee.ts",
+    "test:e2e": "node --import tsx test-handshake.js && node --import tsx test-happy-path.js && node --import tsx test-security.ts",
+    "mock-relay": "node dist/mock-relay-server.js",
+    "cli": "node ./bin/cli.js",
+    "cli:status": "node ./bin/cli.js status",
+    "cli:analytics": "node ./bin/cli.js analytics",
+    "cli:peers": "node ./bin/cli.js peers",
+    "dashboard": "open ./ui/dashboard.html || xdg-open ./ui/dashboard.html",
+    "example:basic": "node --import tsx/esm examples/production-examples.ts 1",
+    "example:batch": "node --import tsx/esm examples/production-examples.ts 2",
+    "example:monitoring": "node --import tsx/esm examples/production-examples.ts 3",
+    "bench": "node --import tsx/esm facade/__tests__/performance.bench.ts",
+    "test:react": "node --import tsx/esm facade/__tests__/react-hooks.test.ts",
+    "test:vue": "node --import tsx/esm facade/__tests__/vue-composables.test.ts"
   },
   "bin": {
-    "stvor-mock-relay": "./dist/mock-relay-server.js"
+    "stvor-cli": "./bin/cli.js"
   },
-  "dependencies": {
-    "ws": "^8.13.0",
-    "prom-client": "^14.0.0"
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
+  "dependencies": {},
   "peerDependencies": {
-    "ioredis": ">=5.3.0"
+    "ioredis": ">=5.3.0",
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "vue": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
   }
 }

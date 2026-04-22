@@ -8,6 +8,18 @@ export type EncryptedMessage = {
   tag: string; // base64
 };
 
+/**
+ * Constant-time comparison to prevent timing attacks
+ */
+function constantTimeCompare(a: Buffer, b: Buffer): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  return result === 0;
+}
+
 export class CryptoSession {
   privateKey: crypto.KeyObject;
   publicKey: crypto.KeyObject;
@@ -50,14 +62,29 @@ export class CryptoSession {
   }
 
   decrypt(msg: EncryptedMessage, remotePubBase64: string): Uint8Array {
+    if (msg.version !== 1) {
+      throw new Error(`Unsupported message version: ${msg.version}`);
+    }
+    
     const key = this.deriveShared(remotePubBase64);
     const nonce = Buffer.from(msg.nonce, 'base64');
     const ct = Buffer.from(msg.ciphertext, 'base64');
     const tag = Buffer.from(msg.tag, 'base64');
+    
+    // Verify tag length (16 bytes for AES-GCM)
+    if (tag.length !== 16) {
+      throw new Error('Invalid authentication tag length');
+    }
+    
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, nonce);
     decipher.setAuthTag(tag);
-    const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
-    return new Uint8Array(pt);
+    
+    try {
+      const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
+      return new Uint8Array(pt);
+    } catch (e) {
+      throw new Error('Decryption failed: authentication tag verification failed');
+    }
   }
 }
 

@@ -32,6 +32,7 @@ export class RelayClient {
   private connected: boolean = false;
   private handshakeComplete: boolean = false;
   private backoff = 1000;
+  private maxBackoff = 30000;
   private queue: JSONable[] = [];
   private handlers: RelayHandler[] = [];
   private reconnecting = false;
@@ -177,7 +178,7 @@ export class RelayClient {
     setTimeout(() => {
       this.reconnecting = false;
       this.connect();
-      this.backoff = Math.min(this.backoff * 2, 30000);
+      this.backoff = Math.min(this.backoff * 2, this.maxBackoff);
     }, this.backoff);
   }
 

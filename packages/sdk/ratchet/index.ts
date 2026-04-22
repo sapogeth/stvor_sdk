@@ -52,8 +52,11 @@ export interface SessionState {
   isPostCompromise: boolean;
 
   /* ---- deferred DH-ratchet init (consumed on first send/receive) ---- */
-  peerSPK: Buffer | null;       // peer's signed pre-key, for initiator role
+  peerSPK: Buffer | null;       // peer's signed pre-key, for initiator role (consumed after first send)
   mySPKPair: KeyPair | null;    // my signed pre-key pair, for responder role
+  preInitRootKey: Buffer | null; // rootKey snapshot before first send (for simultaneous-send)
+  sentBeforeRecv: boolean;       // true if we sent at least one message before receiving any
+  peerSPKPublic: Buffer | null;  // permanent copy of peer's SPK public key (for simultaneous detection)
 
   /* ---- legacy aliases (backward compat) ---- */
   identityKey: Uint8Array;
@@ -185,30 +188,62 @@ export function ecVerify(data: Buffer, sig: Buffer, pub: Buffer): boolean {
 }
 
 /* ================================================================
- * X3DH — Symmetric Variant
+ * X3DH — Symmetric Variant with proper DH ordering
  *
- * Both sides independently derive the SAME shared secret from
- * their own (IK, SPK) and the peer's (IK, SPK).
- * Canonical ordering by comparing IK public keys.
+ * Implements the full Signal Protocol X3DH key agreement:
+ *   DH1 = IK_A × IK_B          # Identity authentication
+ *   DH2 = IK_A × SPK_B         # Initiator identity × Responder SPK
+ *   DH3 = SPK_A × IK_B         # Initiator SPK × Responder identity
+ *   DH4 = SPK_A × OPK_B        # Initiator SPK × Responder OTP (optional)
+ *
+ * Both sides independently derive the SAME shared secret.
+ * Canonical ordering ensures deterministic computation.
  * ================================================================ */
 
 export function x3dhSymmetric(
-  myIK: KeyPair, mySPK: KeyPair,
-  peerIK: Buffer, peerSPK: Buffer,
+  myIK: KeyPair,
+  mySPK: KeyPair,
+  peerIK: Buffer,
+  peerSPK: Buffer,
+  peerOPK?: Buffer, // Optional one-time prekey
 ): Buffer {
+  // Determine canonical ordering: sort identity keys to ensure both sides compute same result
   const iAmLower = Buffer.compare(myIK.publicKey, peerIK) < 0;
+  
+  // Create canonical ordering of IKs for consistent salt
+  const lowerIK = iAmLower ? myIK.publicKey : peerIK;
+  const upperIK = iAmLower ? peerIK : myIK.publicKey;
 
-  const d1 = iAmLower
+  // DH1: Identity key agreement (CRITICAL for authentication binding)
+  const dh1 = ecdhSecret(myIK.privateKey, peerIK);
+
+  // DH2: Initiator identity × Responder SPK
+  const dh2 = iAmLower
     ? ecdhSecret(myIK.privateKey, peerSPK)
     : ecdhSecret(mySPK.privateKey, peerIK);
 
-  const d2 = iAmLower
+  // DH3: Initiator SPK × Responder identity  
+  const dh3 = iAmLower
     ? ecdhSecret(mySPK.privateKey, peerIK)
     : ecdhSecret(myIK.privateKey, peerSPK);
 
-  const d3 = ecdhSecret(mySPK.privateKey, peerSPK);
+  // DH4: Initiator SPK × Responder OTP (if available)
+  const dh4Buffers: Buffer[] = [dh1, dh2, dh3];
+  if (peerOPK && peerOPK.length === PUB_LEN) {
+    dh4Buffers.push(ecdhSecret(mySPK.privateKey, peerOPK));
+  }
 
-  return hkdf(Buffer.concat([d1, d2, d3]), Buffer.alloc(32), 'X3DH', 32);
+  // Combine all DH outputs with proper domain separation
+  const ikm = Buffer.concat(dh4Buffers);
+  
+  // Use canonical ordering for salt so both sides compute the same value
+  const salt = Buffer.concat([
+    Buffer.from('X3DH-SALT'),
+    lowerIK,
+    upperIK,
+  ]);
+
+  return hkdf(ikm, salt, 'X3DH-SK', 32);
 }
 
 /* ================================================================
@@ -252,6 +287,9 @@ export function establishSession(
       publicKey: Buffer.from(mySPK.publicKey),
       privateKey: Buffer.from(mySPK.privateKey),
     },
+    preInitRootKey: Buffer.from(sk), // saved for simultaneous-send recovery
+    sentBeforeRecv: false,
+    peerSPKPublic: Buffer.from(peerSPK), // permanent copy for simultaneous-send detection
 
     /* legacy compat */
     identityKey: myIK.publicKey,
@@ -285,7 +323,9 @@ export function encryptMessage(
     session.sendingChainKey = r.chainKey;
     session.theirRatchetPublicKey = Buffer.from(session.peerSPK);
     session.peerSPK = null;   // consumed
-    session.mySPKPair = null;
+    session.sentBeforeRecv = true; // flag: we sent before receiving anything
+    // NOTE: mySPKPair is kept alive so that decryptMessage can use it
+    // in the simultaneous-send case (when both sides are initiators).
   }
 
   /* ---- Symmetric ratchet ---- */
@@ -355,13 +395,86 @@ export function decryptMessage(
   const msgNum = header.readUInt32BE(PUB_LEN + 4);
   const nonce = header.subarray(PUB_LEN + 8, HEADER_LEN);
 
-  /* ---- Deferred init: responder role on first receive ---- */
+  /* ---- Deferred init: pure responder (never sent first) ---- */
   if (!session.theirRatchetPublicKey && session.mySPKPair) {
-    // Use our SPK as ratchet key for the first DH step
-    // so DH(mySPK, theirRatchetKey) matches initiator's DH(theirRatchetKey, mySPK)
+    // We haven't sent yet — use our SPK as the ratchet key so that
+    // DH(mySPK, theirRatchetKey) matches initiator's DH(theirRatchetKey, peerSPK).
     session.myRatchetKeyPair = session.mySPKPair;
-    session.mySPKPair = null;  // consumed
+    session.mySPKPair = null;
     session.peerSPK = null;
+    session.preInitRootKey = null;
+  }
+
+  /* ---- First-receive-as-initiator ----
+   * We sent first (sentBeforeRecv=true) and are receiving for the first time.
+   *
+   * Two sub-cases requiring different DH base keys:
+   *   A) Simultaneous: peer also acted as initiator → DH(mySPK, theirPub) on preInitRootKey
+   *   B) Sequential: peer received first → DH(myRatchetKey, theirPub) on current rootKey
+   *
+   * We try A (simultaneous) first; fall back to B (sequential) on auth failure.
+   */
+  if (
+    session.sentBeforeRecv &&
+    session.mySPKPair &&
+    session.preInitRootKey &&
+    session.theirRatchetPublicKey &&
+    Buffer.compare(session.theirRatchetPublicKey, theirPub) !== 0
+  ) {
+    // -- Try path A: simultaneous -------------------------------------------
+    // Snapshot the fields that differ between the two paths
+    const snap = {
+      rootKey: Buffer.from(session.rootKey),
+      myRatchetKeyPair: session.myRatchetKeyPair,
+      theirRatchetPublicKey: session.theirRatchetPublicKey,
+      sendCount: session.sendCount,
+      recvCount: session.recvCount,
+      prevSendCount: session.prevSendCount,
+      sendingChainKey: Buffer.from(session.sendingChainKey),
+      receivingChainKey: Buffer.from(session.receivingChainKey),
+    };
+
+    session.myRatchetKeyPair = session.mySPKPair;
+    session.rootKey = session.preInitRootKey;
+    session.mySPKPair = null;
+    session.preInitRootKey = null;
+    session.sentBeforeRecv = false;
+
+    skipKeys(session, prevChain);
+    dhRatchetStep(session, theirPub);
+    skipKeys(session, msgNum);
+    const ckA = kdfCK(session.receivingChainKey);
+    session.receivingChainKey = ckA.chainKey;
+    session.recvCount++;
+    session.receivingChainMessageNumber = session.recvCount;
+    try {
+      return aeadDec(ckA.messageKey, ciphertext, nonce, header);
+    } catch {
+      // Path A failed — restore snapshot and try path B: sequential
+    }
+
+    // -- Path B: sequential -------------------------------------------------
+    // Restore snapshot
+    session.rootKey = snap.rootKey;
+    session.myRatchetKeyPair = snap.myRatchetKeyPair;
+    session.theirRatchetPublicKey = snap.theirRatchetPublicKey;
+    session.sendCount = snap.sendCount;
+    session.recvCount = snap.recvCount;
+    session.prevSendCount = snap.prevSendCount;
+    session.sendingChainKey = snap.sendingChainKey;
+    session.receivingChainKey = snap.receivingChainKey;
+    session.mySPKPair = null;
+    session.preInitRootKey = null;
+    session.sentBeforeRecv = false;
+
+    skipKeys(session, prevChain);
+    dhRatchetStep(session, theirPub);
+    skipKeys(session, msgNum);
+    const ckB = kdfCK(session.receivingChainKey);
+    session.receivingChainKey = ckB.chainKey;
+    session.recvCount++;
+    session.receivingChainMessageNumber = session.recvCount;
+    return aeadDec(ckB.messageKey, ciphertext, nonce, header);
   }
 
   // 1. Try skipped key
@@ -382,6 +495,7 @@ export function decryptMessage(
       skipKeys(session, prevChain);
     }
     dhRatchetStep(session, theirPub);
+    session.preInitRootKey = null; // no longer needed after first normal ratchet
   }
 
   // 3. Skip to this message number
@@ -433,6 +547,9 @@ export function serializeSession(s: SessionState): Buffer {
     mspk: s.mySPKPair
       ? { pub: Array.from(s.mySPKPair.publicKey), priv: Array.from(s.mySPKPair.privateKey) }
       : null,
+    pirk: s.preInitRootKey ? Array.from(s.preInitRootKey) : null,
+    sbr: s.sentBeforeRecv ? 1 : 0,
+    pspkpub: s.peerSPKPublic ? Array.from(s.peerSPKPublic) : null,
   }));
 }
 
@@ -463,6 +580,9 @@ export function deserializeSession(data: Buffer): SessionState {
     mySPKPair: o.mspk
       ? { publicKey: Buffer.from(o.mspk.pub), privateKey: Buffer.from(o.mspk.priv) }
       : null,
+    preInitRootKey: o.pirk ? Buffer.from(o.pirk) : null,
+    sentBeforeRecv: o.sbr === 1,
+    peerSPKPublic: o.pspkpub ? Buffer.from(o.pspkpub) : null,
     identityKey: myIK,
     signedPreKey: myIK,
     oneTimePreKey: new Uint8Array(0),

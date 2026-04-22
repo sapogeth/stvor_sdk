@@ -4,11 +4,12 @@ import type {
   MessageContent,
   DecryptedMessage,
   SealedPayload,
+  EncryptedMessage,
 } from './types.js';
 
 import { Errors, StvorError } from './errors.js';
 import { RelayClient } from './relay-client.js';
-import { CryptoSession, EncryptedMessage } from './crypto.js';
+import { CryptoSession } from './crypto.js';
 
 type MessageHandler = (from: UserId, msg: string | Uint8Array) => void;
 type UserAvailableHandler = (userId: UserId) => void;
@@ -173,6 +174,31 @@ export class StvorFacadeClient {
   ): Promise<void> {
     const { timeout = this.defaultTimeout, waitForRecipient = true } = options ?? {};
 
+    // Validate inputs
+    if (!recipientId || typeof recipientId !== 'string' || recipientId.trim().length === 0) {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Recipient ID must be a non-empty string',
+        'Provide a valid user ID for the recipient'
+      );
+    }
+
+    if (recipientId === this.userId) {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Cannot send message to yourself',
+        'Provide a different recipient ID'
+      );
+    }
+
+    if (!content || (typeof content === 'string' && content.length === 0) || (content instanceof Uint8Array && content.length === 0)) {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Message content cannot be empty',
+        'Provide message content to send'
+      );
+    }
+
     // Try to resolve recipient key
     let recipientPub = this.knownPubKeys.get(recipientId);
     
@@ -203,10 +229,18 @@ export class StvorFacadeClient {
       }
     }
 
-    const plain = typeof content === 'string' ? new TextEncoder().encode(content) : content;
-    const payload = this.crypto.encrypt(plain as Uint8Array, recipientPub);
-    const msg = { type: 'message', to: recipientId, from: this.userId, payload };
-    this.relay.send(msg);
+    try {
+      const plain = typeof content === 'string' ? new TextEncoder().encode(content) : content;
+      const payload = this.crypto.encrypt(plain as Uint8Array, recipientPub);
+      const msg = { type: 'message', to: recipientId, from: this.userId, payload };
+      this.relay.send(msg);
+    } catch (e: any) {
+      throw new StvorError(
+        Errors.ENCRYPTION_FAILED,
+        `Failed to encrypt message: ${e?.message || 'unknown error'}`,
+        'Ensure recipient public key is valid and your key is not corrupted'
+      );
+    }
   }
 
   /**
@@ -240,6 +274,148 @@ export class StvorFacadeClient {
       const i = this.userAvailableHandlers.indexOf(handler);
       if (i >= 0) this.userAvailableHandlers.splice(i, 1);
     };
+  }
+
+  /**
+   * Encrypt a message for custom transport
+   * Use this when you want to deliver encrypted messages yourself (Socket.io, HTTP, custom protocol)
+   * 
+   * @example
+   * ```typescript
+   * // Encrypt manually, send via Socket.io
+   * const encrypted = await client.encryptMessage('alice', 'Hello!');
+   * socket.emit('message', encrypted);
+   * 
+   * // Recipient receives and decrypts
+   * socket.on('message', async (encrypted) => {
+   *   const decrypted = await bobClient.decryptMessage(encrypted);
+   *   console.log('Got:', decrypted); // 'Hello!'
+   * });
+   * ```
+   */
+  async encryptMessage(
+    recipientId: UserId,
+    content: MessageContent
+  ): Promise<EncryptedMessage> {
+    // Validate inputs
+    if (!recipientId || typeof recipientId !== 'string' || recipientId.trim().length === 0) {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Recipient ID must be a non-empty string'
+      );
+    }
+
+    if (recipientId === this.userId) {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Cannot encrypt message to yourself'
+      );
+    }
+
+    // Get recipient's public key
+    let recipientPub = this.knownPubKeys.get(recipientId);
+    if (!recipientPub) {
+      throw new StvorError(
+        Errors.RECIPIENT_NOT_FOUND,
+        `Recipient "${recipientId}" public key not available. Call waitForUser() first.`
+      );
+    }
+
+    try {
+      const plain = typeof content === 'string' ? new TextEncoder().encode(content) : content;
+      const encrypted = this.crypto.encrypt(plain, recipientPub);
+      return encrypted;
+    } catch (e: any) {
+      throw new StvorError(
+        Errors.ENCRYPTION_FAILED,
+        `Failed to encrypt message: ${e?.message || 'unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Decrypt a message from custom transport
+   * Use this to decrypt messages received outside the relay (Socket.io, HTTP, custom protocol)
+   * 
+   * @example
+   * ```typescript
+   * const decrypted = await client.decryptMessage(encryptedMessage);
+   * console.log(decrypted); // 'Hello!'
+   * ```
+   */
+  async decryptMessage(encrypted: EncryptedMessage): Promise<MessageContent> {
+    if (!encrypted || typeof encrypted !== 'object') {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Invalid encrypted message format'
+      );
+    }
+
+    try {
+      const plain = this.crypto.decrypt(encrypted, encrypted.senderPub);
+      // Try to decode as UTF-8 text, fallback to bytes
+      try {
+        return new TextDecoder().decode(plain);
+      } catch {
+        return plain;
+      }
+    } catch (e: any) {
+      throw new StvorError(
+        Errors.MESSAGE_INTEGRITY_FAILED,
+        `Failed to decrypt message: ${e?.message || 'authentication tag verification failed'}`
+      );
+    }
+  }
+
+  /**
+   * Get your public key for sharing with others
+   * Use this when establishing peer-to-peer communication
+   * 
+   * @example
+   * ```typescript
+   * const myPubKey = client.getPublicKey();
+   * // Share with peers via QR code, API, or other means
+   * sendToPeer({ userId: 'alice', publicKey: myPubKey });
+   * ```
+   */
+  getPublicKey(): string {
+    return this.crypto.exportPublic();
+  }
+
+  /**
+   * Manually add a known peer's public key
+   * Use this for peer-to-peer or custom key exchange scenarios
+   * 
+   * @example
+   * ```typescript
+   * // Peer shares their key via QR code or API
+   * client.addPeerKey('alice', 'base64encodedkey...');
+   * 
+   * // Now you can encrypt messages to alice without relay
+   * const encrypted = await client.encryptMessage('alice', 'Hello!');
+   * ```
+   */
+  addPeerKey(userId: UserId, publicKeyBase64: string): void {
+    if (!userId || typeof userId !== 'string') {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'User ID must be a non-empty string'
+      );
+    }
+
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== 'string') {
+      throw new StvorError(
+        Errors.INVALID_INPUT,
+        'Public key must be a base64 string'
+      );
+    }
+
+    this.knownPubKeys.set(userId, publicKeyBase64);
+    
+    // Trigger user available handlers
+    for (const h of this.userAvailableHandlers) {
+      try { h(userId); } catch {}
+    }
   }
 }
 
@@ -285,10 +461,24 @@ export class StvorApp {
 
   async disconnect(userId?: UserId): Promise<void> {
     if (userId) {
-      this.clients.delete(userId);
+      const client = this.clients.get(userId);
+      if (client) {
+        // Unsubscribe from all handlers
+        this.clients.delete(userId);
+      }
       return;
     }
     this.clients.clear();
+  }
+
+  /**
+   * Get connection statistics
+   */
+  getStats() {
+    return {
+      connectedClients: this.clients.size,
+      clientIds: Array.from(this.clients.keys()),
+    };
   }
 }
 

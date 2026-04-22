@@ -1,4 +1,4 @@
-import type { StvorAppConfig, UserId, MessageContent } from './types.js';
+import type { StvorAppConfig, UserId, MessageContent, EncryptedMessage } from './types.js';
 import { RelayClient } from './relay-client.js';
 type MessageHandler = (from: UserId, msg: string | Uint8Array) => void;
 type UserAvailableHandler = (userId: UserId) => void;
@@ -80,6 +80,61 @@ export declare class StvorFacadeClient {
      * ```
      */
     onUserAvailable(handler: UserAvailableHandler): () => void;
+    /**
+     * Encrypt a message for custom transport
+     * Use this when you want to deliver encrypted messages yourself (Socket.io, HTTP, custom protocol)
+     *
+     * @example
+     * ```typescript
+     * // Encrypt manually, send via Socket.io
+     * const encrypted = await client.encryptMessage('alice', 'Hello!');
+     * socket.emit('message', encrypted);
+     *
+     * // Recipient receives and decrypts
+     * socket.on('message', async (encrypted) => {
+     *   const decrypted = await bobClient.decryptMessage(encrypted);
+     *   console.log('Got:', decrypted); // 'Hello!'
+     * });
+     * ```
+     */
+    encryptMessage(recipientId: UserId, content: MessageContent): Promise<EncryptedMessage>;
+    /**
+     * Decrypt a message from custom transport
+     * Use this to decrypt messages received outside the relay (Socket.io, HTTP, custom protocol)
+     *
+     * @example
+     * ```typescript
+     * const decrypted = await client.decryptMessage(encryptedMessage);
+     * console.log(decrypted); // 'Hello!'
+     * ```
+     */
+    decryptMessage(encrypted: EncryptedMessage): Promise<MessageContent>;
+    /**
+     * Get your public key for sharing with others
+     * Use this when establishing peer-to-peer communication
+     *
+     * @example
+     * ```typescript
+     * const myPubKey = client.getPublicKey();
+     * // Share with peers via QR code, API, or other means
+     * sendToPeer({ userId: 'alice', publicKey: myPubKey });
+     * ```
+     */
+    getPublicKey(): string;
+    /**
+     * Manually add a known peer's public key
+     * Use this for peer-to-peer or custom key exchange scenarios
+     *
+     * @example
+     * ```typescript
+     * // Peer shares their key via QR code or API
+     * client.addPeerKey('alice', 'base64encodedkey...');
+     *
+     * // Now you can encrypt messages to alice without relay
+     * const encrypted = await client.encryptMessage('alice', 'Hello!');
+     * ```
+     */
+    addPeerKey(userId: UserId, publicKeyBase64: string): void;
 }
 export declare class StvorApp {
     private readonly config;
@@ -95,6 +150,13 @@ export declare class StvorApp {
      */
     isConnected(userId: UserId): boolean;
     disconnect(userId?: UserId): Promise<void>;
+    /**
+     * Get connection statistics
+     */
+    getStats(): {
+        connectedClients: number;
+        clientIds: string[];
+    };
 }
 export declare function init(config: StvorAppConfig): Promise<StvorApp>;
 export declare const createApp: typeof init;

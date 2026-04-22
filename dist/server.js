@@ -12,9 +12,30 @@ import healthRoutes from './routes/health.js';
 import projectsRoutes from './routes/projects.js';
 import e2eRoutes from './routes/e2e.js';
 import metricsRoutes from './routes/metrics-verification.js';
+import analyticsRoutes from './routes/analytics.js';
 import db, { initDb } from './storage/db.js';
 import { RelayServer } from './relay/server.js';
+import { RedisReplayCache } from './storage/redis-replay-cache.js';
 dotenv.config();
+// Initialize Redis for replay protection (production)
+let redisReplayCache = null;
+async function initRedisReplayProtection() {
+    const redisUrl = process.env.REDIS_URL || process.env.REDIS_REPLAY_URL;
+    if (redisUrl) {
+        try {
+            redisReplayCache = new RedisReplayCache({
+                url: redisUrl,
+                keyPrefix: process.env.REDIS_REPLAY_PREFIX || 'stvor:replay:',
+                ttlSeconds: parseInt(process.env.REDIS_REPLAY_TTL || '300', 10)
+            });
+            await redisReplayCache.connect();
+            console.log('✅ Redis replay protection connected');
+        }
+        catch (error) {
+            console.warn('⚠️ Redis not available, using in-memory replay protection');
+        }
+    }
+}
 // Initialize persistent storage FIRST
 initStorage();
 relayIdentity.init();
@@ -22,6 +43,8 @@ const app = Fastify({ logger: true });
 // Register auth middleware globally FIRST
 registerAuthMiddleware(app);
 const start = async () => {
+    // Initialize Redis replay protection (production)
+    await initRedisReplayProtection();
     // Try to connect to database (optional - fallback to JSON storage if unavailable)
     try {
         await initDb();
@@ -81,6 +104,7 @@ const start = async () => {
     app.register(projectsRoutes);
     app.register(e2eRoutes);
     app.register(metricsRoutes, { prefix: '/api/metrics' });
+    app.register(analyticsRoutes, { prefix: '/analytics' });
     // /usage endpoint - get current quota usage
     app.get('/usage', async (request, reply) => {
         const appToken = request.headers['authorization']?.replace('Bearer ', '');

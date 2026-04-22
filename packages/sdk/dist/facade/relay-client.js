@@ -127,6 +127,24 @@ export class RelayClient {
             clearTimeout(timeoutId);
         }
     }
+    async deleteMessage(messageId) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        try {
+            const res = await fetch(`${this.relayUrl}/message/${messageId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+                signal: controller.signal,
+            });
+            if (!res.ok && res.status !== 404) {
+                // 404 is ok - message already deleted
+                throw Errors.relayUnavailable();
+            }
+        }
+        finally {
+            clearTimeout(timeoutId);
+        }
+    }
     disconnect() {
         this.connected = false;
     }

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STVOR E2EE Chat - Browser Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .chat-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .header h2 {
+      margin-bottom: 8px;
+    }
+
+    .status {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .status.online {
+      color: #4ade80;
+    }
+
+    .status.offline {
+      color: #f87171;
+    }
+
+    .key-display {
+      background: #f3f4f6;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-size: 11px;
+      font-family: monospace;
+      word-break: break-all;
+      max-height: 60px;
+      overflow-y: auto;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: 8px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.sent {
+      justify-content: flex-end;
+    }
+
+    .message.received {
+      justify-content: flex-start;
+    }
+
+    .message-bubble {
+      background: #e5e7eb;
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+      position: relative;
+    }
+
+    .message.sent .message-bubble {
+      background: #667eea;
+      color: white;
+    }
+
+    .message-time {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 4px;
+    }
+
+    .input-area {
+      padding: 20px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: #5568d3;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .info-box {
+      background: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #1e40af;
+    }
+
+    .warning-box {
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #991b1b;
+    }
+
+    .users-list {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+
+    .user-item {
+      padding: 6px;
+      margin: 4px 0;
+      background: white;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .online-indicator {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+    }
+
+    .online-indicator.offline {
+      background: #d1d5db;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .message-bubble {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ALICE'S CHAT -->
+    <div class="chat-panel">
+      <div class="header">
+        <h2>👩 Alice</h2>
+        <div class="status offline" id="alice-status">⏳ Connecting...</div>
+        <div class="key-display" id="alice-key">Loading key...</div>
+      </div>
+
+      <div class="messages" id="alice-messages"></div>
+
+      <div style="padding: 15px; background: #f9fafb; font-size: 12px">
+        <div class="info-box">
+          🔐 Messages encrypted by Alice's browser, server can't read them
+        </div>
+        <div class="users-list" id="alice-users">Loading users...</div>
+        <select id="alice-recipient" style="width: 100%; padding: 8px; margin: 10px 0; border-radius: 4px">
+          <option value="">Select recipient...</option>
+        </select>
+      </div>
+
+      <div class="input-area">
+        <input id="alice-input" type="text" placeholder="Type a secret message..." />
+        <button id="alice-send" onclick="sendMessageAlice()">Send</button>
+      </div>
+    </div>
+
+    <!-- BOB'S CHAT -->
+    <div class="chat-panel">
+      <div class="header">
+        <h2>👨 Bob</h2>
+        <div class="status offline" id="bob-status">⏳ Connecting...</div>
+        <div class="key-display" id="bob-key">Loading key...</div>
+      </div>
+
+      <div class="messages" id="bob-messages"></div>
+
+      <div style="padding: 15px; background: #f9fafb; font-size: 12px">
+        <div class="info-box">
+          🔐 Messages encrypted by Bob's browser, server can't read them
+        </div>
+        <div class="users-list" id="bob-users">Loading users...</div>
+        <select id="bob-recipient" style="width: 100%; padding: 8px; margin: 10px 0; border-radius: 4px">
+          <option value="">Select recipient...</option>
+        </select>
+      </div>
+
+      <div class="input-area">
+        <input id="bob-input" type="text" placeholder="Type a secret message..." />
+        <button id="bob-send" onclick="sendMessageBob()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://www.jsdelivr.net/npm/@stvor/sdk@latest/dist/index.js"></script>
+
+  <script>
+    // Global state
+    const clients = {
+      alice: { socket: null, stvorClient: null, messages: [], recipient: null },
+      bob: { socket: null, stvorClient: null, messages: [], recipient: null },
+    };
+
+    // Initialize both clients
+    async function initializeClients() {
+      try {
+        // Initialize Alice
+        const aliceApp = await window.Stvor.init({
+          appToken: 'stvor_dev_alice',
+          relayUrl: 'wss://localhost:0', // Not used
+        });
+        clients.alice.stvorClient = await aliceApp.connect('alice');
+        console.log('✅ Alice initialized');
+
+        // Initialize Bob
+        const bobApp = await window.Stvor.init({
+          appToken: 'stvor_dev_bob',
+          relayUrl: 'wss://localhost:0', // Not used
+        });
+        clients.bob.stvorClient = await bobApp.connect('bob');
+        console.log('✅ Bob initialized');
+
+        // Display their public keys
+        displayKeys();
+
+        // Connect sockets
+        connectSocket('alice');
+        connectSocket('bob');
+      } catch (error) {
+        console.error('Initialization error:', error);
+        alert('Failed to initialize SDK: ' + error.message);
+      }
+    }
+
+    function displayKeys() {
+      const aliceKey = clients.alice.stvorClient.getPublicKey();
+      const bobKey = clients.bob.stvorClient.getPublicKey();
+
+      document.getElementById('alice-key').textContent = `Key: ${aliceKey.substring(0, 20)}...`;
+      document.getElementById('bob-key').textContent = `Key: ${bobKey.substring(0, 20)}...`;
+
+      // Add each other's keys
+      clients.alice.stvorClient.addPeerKey('bob', bobKey);
+      clients.bob.stvorClient.addPeerKey('alice', aliceKey);
+    }
+
+    function connectSocket(user) {
+      const socket = io('http://localhost:3000');
+
+      socket.on('connect', () => {
+        console.log(`✅ ${user} connected to server`);
+        const pubKey = clients[user].stvorClient.getPublicKey();
+        socket.emit('register', { userId: user, publicKey: pubKey });
+
+        document.getElementById(`${user}-status`).textContent = '🟢 Online';
+        document.getElementById(`${user}-status`).classList.remove('offline');
+        document.getElementById(`${user}-status`).classList.add('online');
+      });
+
+      socket.on('disconnect', () => {
+        console.log(`❌ ${user} disconnected`);
+        document.getElementById(`${user}-status`).textContent = '🔴 Offline';
+        document.getElementById(`${user}-status`).classList.add('offline');
+        document.getElementById(`${user}-status`).classList.remove('online');
+      });
+
+      socket.on('online_users', (data) => {
+        updateUsersList(user, data.users);
+      });
+
+      socket.on('user_online', (data) => {
+        console.log(`👤 ${data.userId} came online`);
+        addUserToList(user, data);
+      });
+
+      socket.on('user_offline', (data) => {
+        console.log(`👋 ${data.userId} went offline`);
+        removeUserFromList(user, data.userId);
+      });
+
+      socket.on('message', async (data) => {
+        console.log(`📨 ${user} received encrypted message from ${data.from}`);
+        try {
+          const decrypted = await clients[user].stvorClient.decryptMessage(data.encrypted);
+          addMessageToChat(user, data.from, decrypted);
+
+          // Send ACK
+          socket.emit('message_ack', { messageId: data.id, from: user });
+        } catch (error) {
+          console.error(`Failed to decrypt message in ${user}:`, error);
+          addMessageToChat(user, data.from, '🔓 [Failed to decrypt message]', true);
+        }
+      });
+
+      socket.on('message_sent', (data) => {
+        console.log(`✉️ ${user}'s message sent to ${data.to}`);
+      });
+
+      socket.on('message_acked', (data) => {
+        console.log(`✅ ${user}'s message ${data.messageId} was acknowledged`);
+      });
+
+      clients[user].socket = socket;
+    }
+
+    function updateUsersList(user, users) {
+      const list = document.getElementById(`${user}-users`);
+      const select = document.getElementById(`${user}-recipient`);
+
+      list.innerHTML = '';
+      select.innerHTML = '<option value="">Select recipient...</option>';
+
+      users.forEach((u) => {
+        if (u.userId !== user) {
+          // Add to list
+          const item = document.createElement('div');
+          item.className = 'user-item';
+          item.innerHTML = `
+            <div class="online-indicator"></div>
+            <span>${u.userId}</span>
+          `;
+          list.appendChild(item);
+
+          // Add to select
+          const option = document.createElement('option');
+          option.value = u.userId;
+          option.textContent = u.userId;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    function addUserToList(user, userData) {
+      const list = document.getElementById(`${user}-users`);
+      const select = document.getElementById(`${user}-recipient`);
+
+      if (userData.userId === user) return;
+
+      // Add to list
+      const item = document.createElement('div');
+      item.className = 'user-item';
+      item.innerHTML = `
+        <div class="online-indicator"></div>
+        <span>${userData.userId}</span>
+      `;
+      list.appendChild(item);
+
+      // Add to select
+      const option = document.createElement('option');
+      option.value = userData.userId;
+      option.textContent = userData.userId;
+      select.appendChild(option);
+    }
+
+    function removeUserFromList(user, userId) {
+      const list = document.getElementById(`${user}-users`);
+      const select = document.getElementById(`${user}-recipient`);
+
+      // Remove from list
+      const items = list.querySelectorAll('.user-item');
+      items.forEach((item) => {
+        if (item.textContent.includes(userId)) {
+          item.remove();
+        }
+      });
+
+      // Remove from select
+      Array.from(select.options).forEach((option) => {
+        if (option.value === userId) {
+          option.remove();
+        }
+      });
+    }
+
+    async function sendMessageAlice() {
+      await sendMessage('alice');
+    }
+
+    async function sendMessageBob() {
+      await sendMessage('bob');
+    }
+
+    async function sendMessage(user) {
+      const input = document.getElementById(`${user}-input`);
+      const select = document.getElementById(`${user}-recipient`);
+      const recipient = select.value;
+      const text = input.value.trim();
+
+      if (!text || !recipient) {
+        alert(`Choose recipient and type a message`);
+        return;
+      }
+
+      try {
+        // 🔐 ENCRYPT on CLIENT (in browser)
+        const encrypted = await clients[user].stvorClient.encryptMessage(recipient, text);
+
+        // 📤 Send encrypted to server
+        clients[user].socket.emit('message', {
+          to: recipient,
+          from: user,
+          encrypted, // Only ciphertext goes to server!
+        });
+
+        // ✅ Add to UI
+        addMessageToChat(user, user, text);
+        input.value = '';
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        alert('Failed to send message: ' + error.message);
+      }
+    }
+
+    function addMessageToChat(user, from, content, isError = false) {
+      const messagesDiv = document.getElementById(`${user}-messages`);
+      const isOwn = from === user;
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isOwn ? 'sent' : 'received'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      bubble.textContent = content;
+      if (isError) {
+        bubble.style.color = 'red';
+        bubble.style.fontStyle = 'italic';
+      }
+
+      const time = document.createElement('div');
+      time.className = 'message-time';
+      time.textContent = new Date().toLocaleTimeString();
+
+      messageDiv.appendChild(bubble);
+      messageDiv.appendChild(time);
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Start on load
+    window.addEventListener('load', initializeClients);
+  </script>
+</body>
+</html>

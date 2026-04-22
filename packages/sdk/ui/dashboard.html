@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STVOR SDK - Analytics Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 28px;
+            color: #667eea;
+        }
+
+        .status-badge {
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-healthy {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-degraded {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-failed {
+            background: #ef4444;
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-box {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-box .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-bar-label {
+            width: 100px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .chart-bar-fill {
+            flex: 1;
+            height: 30px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 5px;
+            margin: 0 15px;
+            position: relative;
+        }
+
+        .chart-bar-value {
+            width: 60px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .peers-list {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .peers-list h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .peer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .peer-info {
+            flex: 1;
+        }
+
+        .peer-id {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .peer-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .peer-state {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .state-closed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .state-open {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .state-half-open {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .error-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .error-section h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .error-item {
+            padding: 15px;
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .error-message {
+            font-weight: bold;
+            color: #991b1b;
+            margin-bottom: 5px;
+        }
+
+        .error-count {
+            color: #7f1d1d;
+            font-size: 12px;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .export-options button {
+            flex: 1;
+            background: #667eea;
+            font-size: 13px;
+            padding: 8px 12px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #0c4a6e;
+            border-left: 4px solid #0284c7;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        @media (max-width: 1024px) {
+            .chart-container {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>STVOR SDK Analytics</h1>
+                <p style="color: #999; font-size: 14px; margin-top: 5px;">Real-time monitoring dashboard</p>
+            </div>
+            <div class="status-badge status-healthy">
+                <span id="status">● HEALTHY</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button onclick="refreshData()"><span class="spinner" id="spinner" style="display:none;"></span>Refresh</button>
+            <button onclick="toggleAutoRefresh()">Auto Refresh: <span id="autoRefreshState">OFF</span></button>
+            <button onclick="exportMetrics('json')">Export JSON</button>
+            <button onclick="exportMetrics('csv')">Export CSV</button>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="value" id="totalEvents">-</div>
+                        <div class="label">Total Events</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="successRate">-</div>
+                        <div class="label">Success Rate</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="avgLatency">-</div>
+                        <div class="label">Avg Latency (ms)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="value" id="throughput">-</div>
+                        <div class="label">Throughput (evt/s)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Rate Limiter</h3>
+                <div class="metric">
+                    <span class="metric-label">Global Tokens</span>
+                    <span class="metric-value" id="globalTokens">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Global Limit</span>
+                    <span class="metric-value" id="globalLimit">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Peer Connections</span>
+                    <span class="metric-value" id="peerCount">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Active Peers</span>
+                    <span class="metric-value" id="activePeers">-</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Circuit Breaker</h3>
+                <div class="metric">
+                    <span class="metric-label">Healthy Peers</span>
+                    <span class="metric-value" id="healthyPeers">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Degraded Peers</span>
+                    <span class="metric-value" id="degradedPeers">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Failed Peers</span>
+                    <span class="metric-value" id="failedPeers">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Recovery Active</span>
+                    <span class="metric-value" id="recoveryActive">0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Message Queue</h3>
+                <div class="metric">
+                    <span class="metric-label">Queued Messages</span>
+                    <span class="metric-value" id="queuedMessages">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Pending Retries</span>
+                    <span class="metric-value" id="pendingRetries">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Queue Utilization</span>
+                    <span class="metric-value" id="queueUtilization">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Next Retry In (ms)</span>
+                    <span class="metric-value" id="nextRetryIn">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart">
+                <h3>Performance Distribution</h3>
+                <div class="chart-bar">
+                    <div class="chart-bar-label">Min:</div>
+                    <div class="chart-bar-fill" style="width: 20%;"></div>
+                    <div class="chart-bar-value" id="minLatency">-ms</div>
+                </div>
+                <div class="chart-bar">
+                    <div class="chart-bar-label">Avg:</div>
+                    <div class="chart-bar-fill" style="width: 50%;"></div>
+                    <div class="chart-bar-value" id="avgLatencyChart">-ms</div>
+                </div>
+                <div class="chart-bar">
+                    <div class="chart-bar-label">P95:</div>
+                    <div class="chart-bar-fill" style="width: 75%;"></div>
+                    <div class="chart-bar-value" id="p95Latency">-ms</div>
+                </div>
+                <div class="chart-bar">
+                    <div class="chart-bar-label">P99:</div>
+                    <div class="chart-bar-fill" style="width: 90%;"></div>
+                    <div class="chart-bar-value" id="p99Latency">-ms</div>
+                </div>
+                <div class="chart-bar">
+                    <div class="chart-bar-label">Max:</div>
+                    <div class="chart-bar-fill" style="width: 100%;"></div>
+                    <div class="chart-bar-value" id="maxLatency">-ms</div>
+                </div>
+            </div>
+
+            <div class="chart">
+                <h3>Error Distribution</h3>
+                <div id="errorChart"></div>
+            </div>
+        </div>
+
+        <div class="peers-list">
+            <h3>Peer Status</h3>
+            <div id="peersList"></div>
+        </div>
+
+        <div class="error-section">
+            <h3>Recent Errors</h3>
+            <div id="errorsList"></div>
+        </div>
+
+        <div class="refresh-info">
+            <p>Last updated: <span id="lastUpdate">-</span></p>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let mockData = null;
+
+        // Mock data generator (replace with real API calls)
+        function generateMockData() {
+            return {
+                summary: {
+                    totalEvents: Math.floor(Math.random() * 10000) + 1000,
+                    successRate: Math.floor(Math.random() * 30) + 70,
+                    avgLatency: Math.floor(Math.random() * 100) + 20,
+                    throughput: Math.floor(Math.random() * 100) + 50,
+                },
+                rateLimiter: {
+                    globalTokens: Math.floor(Math.random() * 5000),
+                    globalLimit: 10000,
+                    peerCount: Math.floor(Math.random() * 20) + 5,
+                    activePeers: Math.floor(Math.random() * 10) + 2,
+                },
+                circuitBreaker: {
+                    healthyPeers: Math.floor(Math.random() * 15) + 5,
+                    degradedPeers: Math.floor(Math.random() * 3),
+                    failedPeers: Math.floor(Math.random() * 2),
+                    recoveryActive: Math.floor(Math.random() * 1),
+                },
+                messageQueue: {
+                    queuedMessages: Math.floor(Math.random() * 100),
+                    pendingRetries: Math.floor(Math.random() * 50),
+                    queueUtilization: Math.floor(Math.random() * 40),
+                    nextRetryIn: Math.floor(Math.random() * 5000),
+                },
+                performance: {
+                    min: 5,
+                    avg: 45,
+                    p95: 120,
+                    p99: 250,
+                    max: 500,
+                },
+                peers: [
+                    { id: 'alice@example.com', state: 'CLOSED', events: 450, successRate: 99.5, latency: 42 },
+                    { id: 'bob@example.com', state: 'CLOSED', events: 380, successRate: 98.2, latency: 38 },
+                    { id: 'charlie@example.com', state: 'HALF_OPEN', events: 120, successRate: 95.0, latency: 55 },
+                ],
+                recentErrors: [
+                    { error: 'Connection timeout', count: 5, percentage: 2 },
+                    { error: 'Rate limit exceeded', count: 3, percentage: 1.5 },
+                    { error: 'Invalid session', count: 2, percentage: 1 },
+                ],
+            };
+        }
+
+        function updateDashboard() {
+            mockData = generateMockData();
+
+            // Update summary
+            document.getElementById('totalEvents').textContent = mockData.summary.totalEvents.toLocaleString();
+            document.getElementById('successRate').textContent = mockData.summary.successRate + '%';
+            document.getElementById('avgLatency').textContent = mockData.summary.avgLatency;
+            document.getElementById('throughput').textContent = mockData.summary.throughput;
+
+            // Update rate limiter
+            document.getElementById('globalTokens').textContent = mockData.rateLimiter.globalTokens.toLocaleString();
+            document.getElementById('globalLimit').textContent = mockData.rateLimiter.globalLimit.toLocaleString();
+            document.getElementById('peerCount').textContent = mockData.rateLimiter.peerCount;
+            document.getElementById('activePeers').textContent = mockData.rateLimiter.activePeers;
+
+            // Update circuit breaker
+            document.getElementById('healthyPeers').textContent = mockData.circuitBreaker.healthyPeers;
+            document.getElementById('degradedPeers').textContent = mockData.circuitBreaker.degradedPeers;
+            document.getElementById('failedPeers').textContent = mockData.circuitBreaker.failedPeers;
+            document.getElementById('recoveryActive').textContent = mockData.circuitBreaker.recoveryActive;
+
+            // Update message queue
+            document.getElementById('queuedMessages').textContent = mockData.messageQueue.queuedMessages;
+            document.getElementById('pendingRetries').textContent = mockData.messageQueue.pendingRetries;
+            document.getElementById('queueUtilization').textContent = mockData.messageQueue.queueUtilization + '%';
+            document.getElementById('nextRetryIn').textContent = mockData.messageQueue.nextRetryIn;
+
+            // Update performance
+            document.getElementById('minLatency').textContent = mockData.performance.min + 'ms';
+            document.getElementById('avgLatencyChart').textContent = mockData.performance.avg + 'ms';
+            document.getElementById('p95Latency').textContent = mockData.performance.p95 + 'ms';
+            document.getElementById('p99Latency').textContent = mockData.performance.p99 + 'ms';
+            document.getElementById('maxLatency').textContent = mockData.performance.max + 'ms';
+
+            // Update peers list
+            const peersList = document.getElementById('peersList');
+            peersList.innerHTML = mockData.peers.map(peer => `
+                <div class="peer-item">
+                    <div class="peer-info">
+                        <div class="peer-id">${peer.id}</div>
+                        <div class="peer-stats">
+                            <span>Events: ${peer.events}</span>
+                            <span>Success: ${peer.successRate}%</span>
+                            <span>Latency: ${peer.latency}ms</span>
+                        </div>
+                    </div>
+                    <div class="peer-state state-${peer.state.toLowerCase()}">${peer.state}</div>
+                </div>
+            `).join('');
+
+            // Update errors
+            const errorsList = document.getElementById('errorsList');
+            if (mockData.recentErrors.length > 0) {
+                errorsList.innerHTML = mockData.recentErrors.map(err => `
+                    <div class="error-item">
+                        <div class="error-message">${err.error}</div>
+                        <div class="error-count">${err.count} occurrences (${err.percentage}%)</div>
+                    </div>
+                `).join('');
+            } else {
+                errorsList.innerHTML = '<p style="color: #999;">No errors recorded</p>';
+            }
+
+            // Update status
+            const failedCount = mockData.circuitBreaker.failedPeers;
+            const statusBadge = document.getElementById('status');
+            if (failedCount > 0) {
+                statusBadge.textContent = '● DEGRADED';
+                statusBadge.parentElement.className = 'status-badge status-degraded';
+            } else {
+                statusBadge.textContent = '● HEALTHY';
+                statusBadge.parentElement.className = 'status-badge status-healthy';
+            }
+
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        function refreshData() {
+            const spinner = document.getElementById('spinner');
+            spinner.style.display = 'inline-block';
+            setTimeout(() => {
+                updateDashboard();
+                spinner.style.display = 'none';
+            }, 300);
+        }
+
+        function toggleAutoRefresh() {
+            const stateSpan = document.getElementById('autoRefreshState');
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                stateSpan.textContent = 'OFF';
+            } else {
+                autoRefreshInterval = setInterval(refreshData, 5000);
+                stateSpan.textContent = 'ON (5s)';
+            }
+        }
+
+        function exportMetrics(format) {
+            if (!mockData) return;
+
+            let content = '';
+            let filename = '';
+
+            if (format === 'json') {
+                content = JSON.stringify(mockData, null, 2);
+                filename = 'metrics-' + new Date().toISOString() + '.json';
+            } else if (format === 'csv') {
+                content = 'Metric,Value\n';
+                content += 'Total Events,' + mockData.summary.totalEvents + '\n';
+                content += 'Success Rate,' + mockData.summary.successRate + '%\n';
+                content += 'Avg Latency,' + mockData.summary.avgLatency + 'ms\n';
+                filename = 'metrics-' + new Date().toISOString() + '.csv';
+            }
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        updateDashboard();
+    </script>
+</body>
+</html>

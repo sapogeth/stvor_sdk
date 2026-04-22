@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="STVOR Dashboard - Monitor encryption metrics">
+  <title>Dashboard - STVOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #000;
+      --bg-secondary: #0a0a0a;
+      --fg-primary: #fff;
+      --fg-secondary: #b0b0b0;
+      --accent: #0066ff;
+      --border: #1a1a1a;
+      --border-light: #333;
+      --success: #00cc00;
+      --warning: #ffaa00;
+      --error: #ff3333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Courier Prime', 'SF Mono', Monaco, monospace;
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      line-height: 1.8;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 50px;
+      padding-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header h1 {
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .header h1 span {
+      color: var(--accent);
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 40px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav a {
+      color: var(--fg-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .nav a:hover {
+      color: var(--accent);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: clamp(15px, 3vw, 25px);
+      margin-bottom: 40px;
+    }
+
+    .metric-card {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      padding: clamp(20px, 4vw, 30px);
+      border-radius: 3px;
+      transition: all 0.3s;
+    }
+
+    .metric-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-secondary);
+    }
+
+    .metric-label {
+      font-size: clamp(11px, 2vw, 12px);
+      color: #666;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      font-size: clamp(24px, 6vw, 40px);
+      font-weight: 700;
+      color: var(--fg-primary);
+      margin-bottom: 8px;
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    .metric-change {
+      font-size: clamp(11px, 2vw, 13px);
+      color: var(--success);
+    }
+
+    .metric-change.negative {
+      color: var(--error);
+    }
+
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section h2 {
+      font-size: clamp(20px, 5vw, 28px);
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border-light);
+      border-radius: 3px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: clamp(12px, 2vw, 16px);
+      border-bottom: 1px solid var(--border-light);
+      font-size: clamp(12px, 2vw, 14px);
+    }
+
+    th {
+      background: var(--bg-secondary);
+      color: #666;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+
+    td {
+      color: var(--fg-secondary);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-badge.online {
+      background: var(--success);
+      color: var(--bg-primary);
+    }
+
+    .status-badge.offline {
+      background: #666;
+      color: var(--fg-primary);
+    }
+
+    .api-section {
+      background: var(--border);
+      border: 1px solid var(--border-light);
+      padding: clamp(20px, 4vw, 30px);
+      border-radius: 3px;
+      margin-bottom: 30px;
+    }
+
+    .api-section h3 {
+      font-size: clamp(16px, 3vw, 18px);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .api-field {
+      margin-bottom: 15px;
+    }
+
+    .api-field label {
+      display: block;
+      font-size: clamp(12px, 2vw, 13px);
+      color: #666;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-field code {
+      display: block;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      padding: clamp(10px, 2vw, 12px);
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(11px, 2vw, 12px);
+      color: #ffd700;
+      word-break: break-all;
+      border-radius: 2px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: clamp(10px, 2vw, 12px) clamp(20px, 3vw, 30px);
+      background: var(--accent);
+      color: var(--bg-primary);
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: clamp(12px, 2vw, 14px);
+      transition: all 0.2s;
+      cursor: pointer;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .button:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    footer {
+      margin-top: 60px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border-light);
+      text-align: center;
+      color: #666;
+      font-size: clamp(11px, 2vw, 12px);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      .api-section {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px 12px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-value {
+        font-size: 28px;
+      }
+
+      .table-wrapper {
+        margin: 0 -12px;
+        border-radius: 0;
+      }
+
+      th, td {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><span>STVOR</span> Dashboard</h1>
+      <div class="status">
+        <div class="status-dot"></div>
+        <span>System Online</span>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="/">Home</a>
+      <a href="/readme">Overview</a>
+      <a href="/getting-started">Getting Started</a>
+      <a href="/api">API</a>
+      <a href="/security">Security</a>
+    </div>
+
+    <h2 style="font-size: clamp(24px, 6vw, 32px); border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 30px;">Metrics</h2>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Active Users</div>
+        <div class="metric-value" id="active-users">0</div>
+        <div class="metric-change">+0% this hour</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Messages Sent</div>
+        <div class="metric-value" id="messages-sent">0</div>
+        <div class="metric-change">+0% this hour</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Data Encrypted</div>
+        <div class="metric-value" id="data-encrypted">0 B</div>
+        <div class="metric-change">+0% this hour</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Avg Response Time</div>
+        <div class="metric-value" id="response-time">0 ms</div>
+        <div class="metric-change" style="color: var(--success);">Optimal</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Error Rate</div>
+        <div class="metric-value" id="error-rate">0.0%</div>
+        <div class="metric-change">Excellent</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">API Keys Active</div>
+        <div class="metric-value" id="api-keys">1</div>
+        <div class="metric-change">Production</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Connected Peers</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Status</th>
+              <th>Connected Since</th>
+              <th>Messages</th>
+              <th>Last Seen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>alice@example.com</td>
+              <td><span class="status-badge online">ONLINE</span></td>
+              <td>2 hours ago</td>
+              <td>42</td>
+              <td>1 minute ago</td>
+            </tr>
+            <tr>
+              <td>bob@example.com</td>
+              <td><span class="status-badge online">ONLINE</span></td>
+              <td>45 minutes ago</td>
+              <td>18</td>
+              <td>2 minutes ago</td>
+            </tr>
+            <tr>
+              <td>charlie@example.com</td>
+              <td><span class="status-badge offline">OFFLINE</span></td>
+              <td>3 hours ago</td>
+              <td>7</td>
+              <td>1 hour ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>API Configuration</h2>
+      <div class="api-section">
+        <h3>Project Credentials</h3>
+        <div class="api-field">
+          <label>Project ID</label>
+          <code id="project-id">proj_1234567890abcdef</code>
+        </div>
+        <div class="api-field">
+          <label>API Key (Live)</label>
+          <code id="api-key">stvor_live_xxxxxxxxxxxxxxxxxxxx</code>
+        </div>
+        <div style="margin-top: 20px;">
+          <button class="button secondary" onclick="copyToClipboard('api-key')">Copy API Key</button>
+          <button class="button secondary" style="margin-left: 10px;" onclick="regenerateKey()">Regenerate</button>
+        </div>
+      </div>
+
+      <div class="api-section">
+        <h3>Relay Server</h3>
+        <div class="api-field">
+          <label>Relay URL</label>
+          <code>https://relay.stvor.xyz</code>
+        </div>
+        <div class="api-field">
+          <label>Bootstrap Endpoint</label>
+          <code>POST /bootstrap</code>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>STVOR © 2024 • <a href="https://stvor.xyz">stvor.xyz</a></p>
+    </footer>
+  </div>
+
+  <script>
+    // Simulate metric updates
+    function updateMetrics() {
+      document.getElementById('active-users').textContent = Math.floor(Math.random() * 100) + 10;
+      document.getElementById('messages-sent').textContent = Math.floor(Math.random() * 10000) + 1000;
+      document.getElementById('data-encrypted').textContent = (Math.random() * 100 + 10).toFixed(1) + ' MB';
+      document.getElementById('response-time').textContent = Math.floor(Math.random() * 50) + 5 + ' ms';
+      document.getElementById('error-rate').textContent = (Math.random() * 0.5).toFixed(2) + '%';
+    }
+
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+      });
+    }
+
+    function regenerateKey() {
+      const newKey = 'sk_live_' + Array.from(crypto.getRandomValues(new Uint8Array(24)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+      document.getElementById('api-key').textContent = newKey;
+      alert('API key regenerated!');
+    }
+
+    // Update metrics on page load
+    updateMetrics();
+
+    // Update every 30 seconds
+    setInterval(updateMetrics, 30000);
+  </script>
+</body>
+</html>

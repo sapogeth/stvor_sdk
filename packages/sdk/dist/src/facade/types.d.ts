@@ -48,3 +48,26 @@ export interface SealedPayload {
     /** Nonce used for encryption */
     nonce: Uint8Array;
 }
+/**
+ * Encrypted message format - suitable for custom transports
+ * Use this when you want to encrypt a message and deliver it yourself
+ *
+ * @example
+ * ```typescript
+ * // Encrypt manually, send via Socket.io or custom transport
+ * const encrypted = await client.encryptMessage('alice', 'Hello!');
+ * socket.emit('message', { to: 'alice', encrypted });
+ * ```
+ */
+export interface EncryptedMessage {
+    /** Protocol version (always 1) */
+    version: number;
+    /** Sender's public key (base64) */
+    senderPub: string;
+    /** Nonce (base64) */
+    nonce: string;
+    /** Ciphertext (base64) */
+    ciphertext: string;
+    /** Authentication tag (base64) */
+    tag: string;
+}

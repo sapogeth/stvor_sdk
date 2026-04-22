@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
@@ -11,31 +11,67 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'stvor',
   password: process.env.DB_PASSWORD || '',
   port: parseInt(process.env.DB_PORT || '5432'),
+  max: 20, // Max 20 connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 let isDbAvailable = false;
 
-// Initialize database connection
-export async function initDb(): Promise<void> {
-  try {
-    const client = await pool.connect();
-    console.log('✅ Database connected');
-    isDbAvailable = true;
-    client.release();
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    isDbAvailable = false;
-    throw error;
+// Initialize database connection with retry logic
+export async function initDb(maxRetries: number = 3): Promise<void> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const client = await pool.connect();
+      console.log('✅ Database connected successfully');
+      
+      // Test the connection with a simple query
+      await client.query('SELECT NOW()');
+      isDbAvailable = true;
+      client.release();
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+      
+      if (attempt < maxRetries) {
+        console.warn(`❌ Database connection attempt ${attempt} failed, retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
   }
+  
+  isDbAvailable = false;
+  console.error(`❌ Database connection failed after ${maxRetries} attempts:`, lastError?.message);
+  throw lastError || new Error('Database connection failed');
 }
 
 export function isDatabaseAvailable(): boolean {
   return isDbAvailable;
 }
 
-// Query helper
+export function getPoolStats() {
+  return {
+    totalConnections: pool.totalCount,
+    idleConnections: pool.idleCount,
+    waitingRequests: pool.waitingCount
+  };
+}
+
+// Query helper with error handling
 export async function query(text: string, params?: any[]) {
-  return pool.query(text, params);
+  if (!isDbAvailable) {
+    throw new Error('Database is not available. Using JSON storage fallback.');
+  }
+  
+  try {
+    return await pool.query(text, params);
+  } catch (error) {
+    console.error('[DB] Query error:', error instanceof Error ? error.message : error);
+    throw error;
+  }
 }
 
 // Token operations
@@ -220,17 +256,17 @@ export async function getRecentAnalytics(days: number = 30) {
   }
 
   const { rows } = await pool.query(`
-    SELECT 
+    SELECT
       DATE_TRUNC('day', created_at) as date,
       COUNT(*) FILTER (WHERE event = 'message_encrypted') as encrypted,
       COUNT(*) FILTER (WHERE event = 'message_decrypted') as decrypted,
       COUNT(DISTINCT user_id) as active_users,
       COUNT(DISTINCT session_id) as sessions
-    FROM analytics_events 
-    WHERE created_at >= NOW() - INTERVAL '${days} days'
+    FROM analytics_events
+    WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
     GROUP BY DATE_TRUNC('day', created_at)
     ORDER BY date DESC
-  `);
+  `, [Math.max(1, Math.min(365, Math.floor(Number(days))))]);
 
   return rows;
 }

@@ -13,10 +13,25 @@ const MESSAGE_TTL_MS = 10 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 // Max размер сообщения: 32KB
 const MAX_MESSAGE_SIZE = 32 * 1024;
+// Max messages per user (prevent memory exhaustion)
+const MAX_PENDING_MESSAGES = 1000;
+// Max users per project
+const MAX_USERS_PER_PROJECT = 10000;
 
 function getAuthToken(req: any): string | null {
   const auth = req.headers['authorization'];
   return auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+}
+
+function validateUserId(userId: any): boolean {
+  return typeof userId === 'string' && userId.length > 0 && userId.length <= 256;
+}
+
+function validateMessage(msg: any): boolean {
+  return msg && typeof msg === 'object' && 
+         typeof msg.from === 'string' && msg.from.length > 0 &&
+         typeof msg.ciphertext === 'string' &&
+         typeof msg.header === 'object';
 }
 
 export class RelayServer {
@@ -33,10 +48,8 @@ export class RelayServer {
       })
     });
 
-    // Cleanup старых сообщений каждые 5 минут
     cleanupHandle = setInterval(() => this.cleanupOldMessages(), CLEANUP_INTERVAL_MS);
 
-    // Graceful shutdown: SIGTERM и SIGINT
     const gracefulShutdown = () => {
       console.log('[Relay] Received shutdown signal, stopping...');
       if (cleanupHandle) {
@@ -46,8 +59,8 @@ export class RelayServer {
       registry.clear();
       process.exit(0);
     };
-    process.on('SIGTERM', gracefulShutdown);
-    process.on('SIGINT', gracefulShutdown);
+    process.once('SIGTERM', gracefulShutdown);
+    process.once('SIGINT', gracefulShutdown);
 
     // Register basic health endpoint BEFORE cors
     app.get('/health', (req, reply) => {
@@ -63,16 +76,34 @@ export class RelayServer {
         if (!projectId) return reply.status(401).send({ error: 'Invalid token' });
 
         const { user_id, publicKeys } = req.body as any;
-        if (!user_id || !publicKeys) return reply.status(400).send({ error: 'Missing fields' });
+        
+        // Validate user_id
+        if (!validateUserId(user_id)) {
+          return reply.status(400).send({ error: 'Invalid user_id: must be non-empty string (max 256 chars)' });
+        }
 
-        if (!registry.has(projectId)) registry.set(projectId, new Map());
-        registry.get(projectId)!.set(user_id, { 
+        // Validate publicKeys
+        if (!publicKeys || typeof publicKeys !== 'object') {
+          return reply.status(400).send({ error: 'Invalid publicKeys: must be an object' });
+        }
+
+        // Check project registry size
+        if (!registry.has(projectId)) {
+          registry.set(projectId, new Map());
+        }
+        
+        const project = registry.get(projectId)!;
+        if (project.size >= MAX_USERS_PER_PROJECT && !project.has(user_id)) {
+          return reply.status(429).send({ error: 'Project user limit exceeded' });
+        }
+
+        project.set(user_id, { 
           publicKeys, 
           messages: [],
           lastActivity: Date.now()
         });
 
-        console.log(`[Relay] Registered: ${user_id}`);
+        console.log(`[Relay] Registered: ${user_id} (project: ${projectId})`);
         return { status: 'registered' };
       });
 
@@ -99,19 +130,57 @@ export class RelayServer {
         if (!projectId) return reply.status(401).send({ error: 'Invalid token' });
 
         const { to, from, ciphertext, header } = req.body as any;
-        if (!to || !from || !ciphertext || !header) return reply.status(400).send({ error: 'Missing fields' });
+        
+        // Validate all fields
+        if (!validateUserId(to)) {
+          return reply.status(400).send({ error: 'Invalid recipient user_id' });
+        }
+        if (!validateUserId(from)) {
+          return reply.status(400).send({ error: 'Invalid sender user_id' });
+        }
+        if (typeof ciphertext !== 'string' || ciphertext.length === 0) {
+          return reply.status(400).send({ error: 'Invalid ciphertext' });
+        }
+        if (typeof header !== 'object') {
+          return reply.status(400).send({ error: 'Invalid header' });
+        }
+
+        // Prevent self-messages
+        if (to === from) {
+          return reply.status(400).send({ error: 'Cannot send message to yourself' });
+        }
 
         // Проверка размера сообщения
         if (ciphertext.length > MAX_MESSAGE_SIZE) {
-          return reply.status(400).send({ error: 'Message too large' });
+          return reply.status(400).send({ 
+            error: 'Message too large',
+            maxSize: MAX_MESSAGE_SIZE,
+            receivedSize: ciphertext.length
+          });
         }
 
         const project = registry.get(projectId);
         const recipient = project?.get(to);
-        if (!recipient) return reply.status(404).send({ error: 'Recipient not found' });
+        if (!recipient) {
+          return reply.status(404).send({ error: 'Recipient not found' });
+        }
 
-        recipient.messages.push({ from, ciphertext, header, timestamp: new Date().toISOString() });
-        recipient.lastActivity = Date.now();  // Обновляем активность получателя
+        // Check pending message queue size
+        if (recipient.messages.length >= MAX_PENDING_MESSAGES) {
+          return reply.status(429).send({ 
+            error: 'Recipient message queue full',
+            maxMessages: MAX_PENDING_MESSAGES
+          });
+        }
+
+        recipient.messages.push({ 
+          from, 
+          ciphertext, 
+          header, 
+          timestamp: new Date().toISOString(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        });
+        recipient.lastActivity = Date.now();
 
         // 🔥 АНАЛИТИКА: Записываем событие отправки сообщения
         try {
@@ -130,8 +199,8 @@ export class RelayServer {
           console.warn('[Analytics] Failed to record message event:', error);
         }
 
-        console.log(`[Relay] Message: ${from} → ${to}`);
-        return { status: 'delivered' };
+        console.log(`[Relay] Message: ${from} → ${to} (project: ${projectId})`);
+        return { status: 'delivered', messageId: recipient.messages[recipient.messages.length - 1].id };
       });
 
       app.get<{ Params: { userId: string } }>('/messages/:userId', (req, reply) => {
@@ -141,16 +210,80 @@ export class RelayServer {
         const projectId = getProjectIdByApiKey(token);
         if (!projectId) return reply.status(401).send({ error: 'Invalid token' });
 
-        const project = registry.get(projectId);
         const userId = req.params.userId;
-        const user = project?.get(userId);
-        if (!user) return reply.status(404).send({ error: 'User not found' });
+        if (!validateUserId(userId)) {
+          return reply.status(400).send({ error: 'Invalid user_id' });
+        }
+
+        const project = registry.get(projectId);
+        if (!project) {
+          return reply.status(404).send({ error: 'Project not found' });
+        }
+
+        const user = project.get(userId);
+        if (!user) {
+          return reply.status(404).send({ error: 'User not found' });
+        }
 
         const messages = user.messages;
         user.messages = [];
-        user.lastActivity = Date.now();  // Обновляем активность
+        user.lastActivity = Date.now();
 
-        return { messages };
+        console.log(`[Relay] Retrieved ${messages.length} messages for ${userId} (project: ${projectId})`);
+        return { messages, count: messages.length };
+      });
+
+      app.delete<{ Params: { messageId: string } }>('/message/:messageId', (req, reply) => {
+        const token = getAuthToken(req);
+        if (!token) return reply.status(401).send({ error: 'Missing token' });
+
+        const projectId = getProjectIdByApiKey(token);
+        if (!projectId) return reply.status(401).send({ error: 'Invalid token' });
+
+        const { messageId } = req.params;
+        const project = registry.get(projectId);
+        if (!project) return reply.status(404).send({ error: 'Project not found' });
+
+        for (const userData of project.values()) {
+          const idx = userData.messages.findIndex((m: any) => m.id === messageId);
+          if (idx !== -1) {
+            userData.messages.splice(idx, 1);
+            return { status: 'deleted' };
+          }
+        }
+
+        return reply.status(404).send({ error: 'Message not found' });
+      });
+
+      app.get('/stats', (req, reply) => {
+        const token = getAuthToken(req);
+        if (!token) return reply.status(401).send({ error: 'Missing token' });
+
+        const projectId = getProjectIdByApiKey(token);
+        if (!projectId) return reply.status(401).send({ error: 'Invalid token' });
+
+        let totalProjects = 0;
+        let totalUsers = 0;
+        let totalMessages = 0;
+
+        for (const project of registry.values()) {
+          totalProjects++;
+          for (const userData of project.values()) {
+            totalUsers++;
+            totalMessages += userData.messages.length;
+          }
+        }
+
+        return {
+          status: 'ok',
+          registry: { projects: totalProjects, users: totalUsers, pendingMessages: totalMessages },
+          limits: {
+            maxUsersPerProject: MAX_USERS_PER_PROJECT,
+            maxMessagesPerUser: MAX_PENDING_MESSAGES,
+            maxMessageSize: MAX_MESSAGE_SIZE,
+            messageTtlMs: MESSAGE_TTL_MS,
+          },
+        };
       });
 
       app.listen({ port, host: '0.0.0.0' }, (err) => {
@@ -172,27 +305,34 @@ export class RelayServer {
     try {
       const now = Date.now();
       let cleaned = 0;
+      let usersRemoved = 0;
+      let projectsRemoved = 0;
 
       for (const [projectId, users] of Array.from(registry.entries())) {
         for (const [userId, userData] of Array.from(users.entries())) {
           const beforeCount = userData.messages.length;
-          userData.messages = userData.messages.filter(
-            msg => now - new Date(msg.timestamp).getTime() < MESSAGE_TTL_MS
-          );
+          userData.messages = userData.messages.filter((msg: any) => {
+            const t = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
+            return !isNaN(t) && t > 0 && now - t < MESSAGE_TTL_MS;
+          });
           cleaned += beforeCount - userData.messages.length;
 
+          // Remove inactive users (30 minutes inactivity)
           if (now - userData.lastActivity > 30 * 60 * 1000) {
             users.delete(userId);
+            usersRemoved++;
           }
         }
 
+        // Remove empty projects
         if (users.size === 0) {
           registry.delete(projectId);
+          projectsRemoved++;
         }
       }
 
-      if (cleaned > 0) {
-        console.log(`[Relay] Cleanup: removed ${cleaned} old messages`);
+      if (cleaned > 0 || usersRemoved > 0 || projectsRemoved > 0) {
+        console.log(`[Relay] Cleanup: removed ${cleaned} messages, ${usersRemoved} inactive users, ${projectsRemoved} empty projects`);
       }
     } catch (error) {
       console.error('[Relay] Cleanup error:', error);
@@ -201,8 +341,12 @@ export class RelayServer {
 }
 
 export async function startRelay() {
-  const port = process.env.RELAY_PORT || 3002;
-  new RelayServer(Number(port));
+  const rawPort = process.env.RELAY_PORT || '3002';
+  const port = parseInt(rawPort, 10);
+  if (isNaN(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid RELAY_PORT: "${rawPort}"`);
+  }
+  new RelayServer(port);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -34,6 +34,9 @@ export interface SessionState {
     isPostCompromise: boolean;
     peerSPK: Buffer | null;
     mySPKPair: KeyPair | null;
+    preInitRootKey: Buffer | null;
+    sentBeforeRecv: boolean;
+    peerSPKPublic: Buffer | null;
     identityKey: Uint8Array;
     signedPreKey: Uint8Array;
     oneTimePreKey: Uint8Array;
@@ -47,7 +50,7 @@ export declare function generateKeyPair(): KeyPair;
 export declare function ecSign(data: Buffer, kp: KeyPair): Buffer;
 /** ECDSA-P256-SHA256 verify */
 export declare function ecVerify(data: Buffer, sig: Buffer, pub: Buffer): boolean;
-export declare function x3dhSymmetric(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer): Buffer;
+export declare function x3dhSymmetric(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer, peerOPK?: Buffer): Buffer;
 export declare function establishSession(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer): SessionState;
 export declare function encryptMessage(session: SessionState, plaintext: Buffer): {
     ciphertext: Buffer;
