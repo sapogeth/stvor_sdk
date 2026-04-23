@@ -16,7 +16,7 @@ import { Stvor } from '@stvor/sdk';
 const alice = await Stvor.connect({
   userId:   'alice@example.com',
   appToken: 'stvor_live_...',
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 
 // Send encrypted messages — E2EE happens automatically
@@ -275,7 +275,7 @@ Connects a user, generates their identity keys, and registers them with the rela
 const alice = await Stvor.connect({
   userId:   'alice@example.com',
   appToken: process.env.STVOR_APP_TOKEN,
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 
 // Get user ID
@@ -433,7 +433,7 @@ import { Stvor } from '@stvor/sdk';
 const alice = await Stvor.connect({
   userId:   'alice@example.com',
   appToken: process.env.STVOR_APP_TOKEN,
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 ```
 
@@ -469,7 +469,7 @@ import { StvorWebSDK } from '@stvor/sdk/web';
 const alice = await StvorWebSDK.create({
   userId:   'alice@example.com',
   appToken: process.env.STVOR_APP_TOKEN,
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 
 await alice.send('bob@example.com', { text: 'Hello from browser!' });
@@ -635,7 +635,7 @@ No infrastructure needed. Keys reset on restart.
 const alice = await Stvor.connect({
   userId:   'alice',
   appToken: process.env.STVOR_APP_TOKEN,
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 ```
 

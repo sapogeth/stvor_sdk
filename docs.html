@@ -675,7 +675,7 @@ PORT=9000 npx @stvor/sdk mock-relay</code></pre>
             <pre><code>const alice = await Stvor.connect({
   userId:         'alice@example.com',
   appToken:       process.env.STVOR_APP_TOKEN,
-  relayUrl:       'https://relay.stvor.io',
+  relayUrl:       'https://sdk-relay-production.up.railway.app',
   timeout:        15_000,
   pollIntervalMs: 500,
 });</code></pre>
@@ -802,7 +802,7 @@ if (online) {
 const alice = await StvorWebSDK.create({
   userId:   'alice@example.com',
   appToken: 'stvor_live_xxx',
-  relayUrl: 'https://relay.stvor.io',
+  relayUrl: 'https://sdk-relay-production.up.railway.app',
 });
 
 await alice.send('bob@example.com', { text: 'Hello!' });

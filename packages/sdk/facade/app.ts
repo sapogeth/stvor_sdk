@@ -411,7 +411,7 @@ export class StvorFacadeClient {
 }
 
 export async function init(config: StvorAppConfig): Promise<StvorApp> {
-  const relayUrl = config.relayUrl || 'https://relay.stvor.io';
+  const relayUrl = config.relayUrl || 'https://sdk-relay-production.up.railway.app';
   const timeout = config.timeout || 10000;
 
   if (!config.appToken || !config.appToken.startsWith('stvor_')) {
