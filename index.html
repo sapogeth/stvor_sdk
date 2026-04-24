@@ -615,7 +615,7 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
         <a href="/docs">Docs</a>
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
         <a href="/llms.txt">llms.txt</a>
-        <a href="mailto:ilyaszhaisenbaev@gmail.com">Contact</a>
+        <span id="contact-link" onclick="copyEmail()" style="cursor:pointer" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
       </div>
       <div class="footer-copy">© 2025 STVOR · v3.3.1</div>
     </footer>
@@ -832,6 +832,15 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
     // honour ?mode=machine in URL
     const initMode = new URLSearchParams(window.location.search).get('mode');
     if (initMode === 'machine') setMode('machine');
+
+    function copyEmail() {
+      navigator.clipboard.writeText('ilyaszhaisenbaev@gmail.com').then(() => {
+        const el = document.getElementById('contact-link');
+        const orig = el.textContent;
+        el.textContent = 'Copied!';
+        setTimeout(() => el.textContent = orig, 2000);
+      });
+    }
   </script>
 
 </body>

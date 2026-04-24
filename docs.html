@@ -550,7 +550,7 @@
     <div class="topbar-right">
       <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
       <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank">npm</a>
-      <a href="mailto:ilyaszhaisenbaev@gmail.com">Contact</a>
+      <span id="contact-link" onclick="copyEmail()" style="cursor:pointer;font-size:13.5px;color:var(--fg3);transition:color 0.15s" onmouseover="this.style.color='var(--fg2)'" onmouseout="this.style.color='var(--fg3)'" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
       <a href="/" class="topbar-btn">← Home</a>
     </div>
   </header>
@@ -1237,6 +1237,15 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
 
     const initMode = new URLSearchParams(window.location.search).get('mode');
     if (initMode === 'machine') setMode('machine');
+
+    function copyEmail() {
+      navigator.clipboard.writeText('ilyaszhaisenbaev@gmail.com').then(() => {
+        const el = document.getElementById('contact-link');
+        const orig = el.textContent;
+        el.textContent = 'Copied!';
+        setTimeout(() => el.textContent = orig, 2000);
+      });
+    }
   </script>
 
   <!-- MODE TOGGLE -->
