@@ -419,6 +419,104 @@
       font-size: 14px;
     }
 
+    /* ── MODE TOGGLE ── */
+    .mode-toggle {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--mono);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--fg3);
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .mode-btn.active { background: var(--bg3); color: var(--fg); }
+
+    .mode-btn .mdot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--fg3);
+      transition: background 0.2s;
+    }
+
+    .mode-btn.active .mdot { background: var(--green); }
+    .mode-btn[data-mode="machine"].active .mdot { background: var(--accent); }
+
+    /* ── MACHINE OVERLAY ── */
+    #machine-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 250;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: var(--fg2);
+      padding: 60px 40px 120px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #machine-overlay.visible { display: block; }
+    #machine-overlay.faded-in { opacity: 1; }
+
+    .machine-inner { max-width: 860px; margin: 0 auto; }
+
+    .boot-line { opacity: 0; white-space: pre; transition: opacity 0.18s ease; }
+    .boot-line.show { opacity: 1; }
+    .boot-line.fade { opacity: 0; transition: opacity 0.25s ease; }
+
+    .boot-val  { color: var(--green); }
+    .boot-head { color: var(--fg); font-weight: 500; }
+
+    .machine-content {
+      opacity: 0;
+      margin-top: 48px;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+    .machine-content.visible { opacity: 1; pointer-events: auto; }
+    .machine-content.fade-out { opacity: 0; transition: opacity 0.25s ease; }
+
+    .mc-h1  { color: var(--fg); font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    .mc-sub { color: var(--fg3); font-size: 12px; margin-bottom: 40px; }
+    .mc-section { margin-bottom: 40px; }
+    .mc-h2  { color: var(--accent); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .mc-code { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; white-space: pre; }
+    .mc-kw { color: #93c5fd; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #52525b; }
+    .mc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .mc-table th { color: var(--fg3); font-size: 11px; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
+    .mc-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg2); }
+    .mc-table tr:last-child td { border-bottom: none; }
+    .mc-table td:first-child { color: var(--fg); }
+    .mc-prop { display: flex; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
+    .mc-prop-key { color: var(--accent); min-width: 180px; }
+    .mc-prop-val { color: var(--fg2); }
+
     @media (max-width: 768px) {
       .menu-toggle { display: block; }
       .sidebar {
@@ -432,6 +530,8 @@
       h1 { font-size: 28px; }
       h2 { font-size: 20px; margin-top: 40px; }
       .topbar-right .topbar-btn { display: none; }
+      #machine-overlay { padding: 40px 20px 120px; }
+      .mode-toggle { bottom: 20px; }
     }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
@@ -1047,6 +1147,216 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
         }
       });
     });
+
+    // ── MACHINE MODE ──────────────────────────────────────────
+    const BOOT_LINES = [
+      { t: 0,   text: '[ 0.000000] stvor: kernel v3.3.1-signal', cls: 'boot-head' },
+      { t: 80,  text: '[ 0.000312] loading crypto modules...',   cls: '' },
+      { t: 160, text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
+      { t: 240, text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
+      { t: 320, text: '[ 0.001820] aes-256-gcm: online',          cls: '' },
+      { t: 400, text: '[ 0.002048] hkdf-sha256: online',          cls: '' },
+      { t: 480, text: '[ 0.002561] tofu: trust store ready',      cls: '' },
+      { t: 560, text: '[ 0.003072] replay-guard: nonce cache ok', cls: '' },
+      { t: 640, text: '[ 0.003584] relay: relay.stvor.xyz',       cls: '' },
+      { t: 720, text: '[ 0.004096] deps: 0',                      cls: 'boot-val' },
+      { t: 820, text: '[ 0.004608] status: ready',                cls: 'boot-val' },
+      { t: 920, text: '',                                          cls: '' },
+    ];
+
+    let bootTimers = [];
+
+    function clearBootTimers() {
+      bootTimers.forEach(clearTimeout);
+      bootTimers = [];
+    }
+
+    function setMode(mode) {
+      const overlay = document.getElementById('machine-overlay');
+      const btns    = document.querySelectorAll('.mode-btn');
+      btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+      if (mode === 'machine') {
+        overlay.classList.add('visible');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => overlay.classList.add('faded-in'));
+        });
+        runBoot();
+      } else {
+        fadeOutMachine(() => {
+          overlay.classList.remove('visible', 'faded-in');
+        });
+      }
+
+      const url = new URL(window.location);
+      url.searchParams.set('mode', mode);
+      history.replaceState(null, '', url);
+    }
+
+    function fadeOutMachine(cb) {
+      clearBootTimers();
+      const overlay   = document.getElementById('machine-overlay');
+      const content   = document.getElementById('mc-content');
+      const container = document.getElementById('boot-lines');
+
+      overlay.classList.remove('faded-in');
+      content.classList.add('fade-out');
+      content.classList.remove('visible');
+      Array.from(container.children).forEach(l => l.classList.add('fade'));
+
+      setTimeout(() => {
+        container.innerHTML = '';
+        content.classList.remove('fade-out');
+        cb();
+      }, 320);
+    }
+
+    function runBoot() {
+      clearBootTimers();
+      const container = document.getElementById('boot-lines');
+      const content   = document.getElementById('mc-content');
+      container.innerHTML = '';
+      content.classList.remove('visible');
+
+      BOOT_LINES.forEach(({ t, text, cls }) => {
+        const id = setTimeout(() => {
+          const line = document.createElement('div');
+          line.className = 'boot-line show' + (cls ? ' ' + cls : '');
+          line.textContent = text;
+          container.appendChild(line);
+        }, t);
+        bootTimers.push(id);
+      });
+
+      const showId = setTimeout(() => {
+        content.classList.add('visible');
+      }, BOOT_LINES[BOOT_LINES.length - 1].t + 200);
+      bootTimers.push(showId);
+    }
+
+    const initMode = new URLSearchParams(window.location.search).get('mode');
+    if (initMode === 'machine') setMode('machine');
   </script>
+
+  <!-- MODE TOGGLE -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="human" onclick="setMode('human')">
+      <span class="mdot"></span>HUMAN
+    </button>
+    <button class="mode-btn" data-mode="machine" onclick="setMode('machine')">
+      <span class="mdot"></span>MACHINE
+    </button>
+  </div>
+
+  <!-- MACHINE OVERLAY -->
+  <div id="machine-overlay">
+    <div class="machine-inner">
+      <div id="boot-lines"></div>
+      <div class="machine-content" id="mc-content">
+
+        <div class="mc-h1"># Stvor SDK — Documentation</div>
+        <div class="mc-sub">End-to-end encryption. Signal Protocol (X3DH + Double Ratchet). Zero runtime dependencies.</div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Install</div>
+          <div class="mc-code">npm install @stvor/sdk</div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Quickstart</div>
+          <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
+
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'alice'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+});
+
+bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hello!'</span> });
+<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();</div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Stvor.connect(config)</div>
+          <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">relayUrl</span><span class="mc-prop-val">string — 'https://relay.stvor.xyz' or self-hosted</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — ms, default: 10000</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">pollIntervalMs?</span><span class="mc-prop-val">number — polling interval, default: 1000</span></div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">client.send(recipientId, data, options?)</div>
+          <div class="mc-code"><span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hello'</span>);
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { amount: <span class="mc-str">100</span> });
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Date</span>());
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { timeout: <span class="mc-str">30_000</span> });
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { waitForRecipient: <span class="mc-kw">false</span> });</div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">client.onMessage(handler)</div>
+          <div class="mc-code"><span class="mc-kw">const</span> unsub = client.<span class="mc-fn">onMessage</span>(msg =&gt; {
+  <span class="mc-cm">// msg.from      — sender userId</span>
+  <span class="mc-cm">// msg.data      — decrypted value (original type preserved)</span>
+  <span class="mc-cm">// msg.timestamp — Date</span>
+  <span class="mc-cm">// msg.id        — unique string</span>
+});
+<span class="mc-fn">unsub</span>();</div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">client.waitForUser(userId, timeoutMs?)</div>
+          <div class="mc-code"><span class="mc-kw">const</span> online = <span class="mc-kw">await</span> client.<span class="mc-fn">waitForUser</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">15_000</span>);
+<span class="mc-cm">// true = registered, false = timeout</span></div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Supported data types</div>
+          <table class="mc-table">
+            <thead><tr><th>Type</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td>string</td><td>'Hello'</td></tr>
+              <tr><td>number</td><td>42, 3.14</td></tr>
+              <tr><td>boolean</td><td>true, false</td></tr>
+              <tr><td>null</td><td>null</td></tr>
+              <tr><td>Uint8Array / Buffer</td><td>Binary files, images</td></tr>
+              <tr><td>object / array</td><td>{ key: 'val' }, [1,2,3]</td></tr>
+              <tr><td>Date</td><td>new Date()</td></tr>
+              <tr><td>Set</td><td>new Set([1,2,3])</td></tr>
+              <tr><td>Map</td><td>new Map([['a',1]])</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Security properties</div>
+          <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — new key per message</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Post-Compromise Security</span><span class="mc-prop-val">DH ratchet rotation every message</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Replay protection</span><span class="mc-prop-val">Nonce + timestamp per message</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">Identity binding on first contact, throws on key change</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext, never sees keys</span></div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Relay options</div>
+          <div class="mc-prop"><span class="mc-prop-key">Hosted</span><span class="mc-prop-val">https://relay.stvor.xyz — no setup, any stvor_* token</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Local dev</span><span class="mc-prop-val">npx @stvor/sdk mock-relay — port 4444</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Self-hosted</span><span class="mc-prop-val">github.com/sapogeth/sdk-relay — node server.js</span></div>
+        </div>
+
+        <div class="mc-section">
+          <div class="mc-h2">Links</div>
+          <div class="mc-prop"><span class="mc-prop-key">npm</span><span class="mc-prop-val">npmjs.com/package/@stvor/sdk</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">docs</span><span class="mc-prop-val">sdk.stvor.xyz/docs</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">relay</span><span class="mc-prop-val">relay.stvor.xyz</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val">sdk.stvor.xyz/llms.txt</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
