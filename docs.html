@@ -1254,104 +1254,286 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
       <div id="boot-lines"></div>
       <div class="machine-content" id="mc-content">
 
-        <div class="mc-h1"># Stvor SDK — Documentation</div>
-        <div class="mc-sub">End-to-end encryption. Signal Protocol (X3DH + Double Ratchet). Zero runtime dependencies.</div>
+        <div class="mc-h1"># Stvor SDK v3.3.1 — Full Documentation</div>
+        <div class="mc-sub">Signal Protocol (X3DH + Double Ratchet) · AES-256-GCM · HKDF-SHA256 · Zero runtime dependencies</div>
 
+        <!-- OVERVIEW -->
         <div class="mc-section">
-          <div class="mc-h2">Install</div>
-          <div class="mc-code">npm install @stvor/sdk</div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">Quickstart</div>
-          <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
-
-<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
-  userId:   <span class="mc-str">'alice'</span>,
-  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
-  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
-});
-
-bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
-<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hello!'</span> });
-<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();</div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">Stvor.connect(config)</div>
-          <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">relayUrl</span><span class="mc-prop-val">string — 'https://relay.stvor.xyz' or self-hosted</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — ms, default: 10000</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">pollIntervalMs?</span><span class="mc-prop-val">number — polling interval, default: 1000</span></div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">client.send(recipientId, data, options?)</div>
-          <div class="mc-code"><span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hello'</span>);
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { amount: <span class="mc-str">100</span> });
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Date</span>());
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { timeout: <span class="mc-str">30_000</span> });
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { waitForRecipient: <span class="mc-kw">false</span> });</div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">client.onMessage(handler)</div>
-          <div class="mc-code"><span class="mc-kw">const</span> unsub = client.<span class="mc-fn">onMessage</span>(msg =&gt; {
-  <span class="mc-cm">// msg.from      — sender userId</span>
-  <span class="mc-cm">// msg.data      — decrypted value (original type preserved)</span>
-  <span class="mc-cm">// msg.timestamp — Date</span>
-  <span class="mc-cm">// msg.id        — unique string</span>
-});
-<span class="mc-fn">unsub</span>();</div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">client.waitForUser(userId, timeoutMs?)</div>
-          <div class="mc-code"><span class="mc-kw">const</span> online = <span class="mc-kw">await</span> client.<span class="mc-fn">waitForUser</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">15_000</span>);
-<span class="mc-cm">// true = registered, false = timeout</span></div>
-        </div>
-
-        <div class="mc-section">
-          <div class="mc-h2">Supported data types</div>
-          <table class="mc-table">
-            <thead><tr><th>Type</th><th>Example</th></tr></thead>
+          <div class="mc-h2">Overview</div>
+          <div class="mc-prop"><span class="mc-prop-key">Encryption</span><span class="mc-prop-val">X3DH + Double Ratchet (Signal Protocol)</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">AEAD</span><span class="mc-prop-val">AES-256-GCM with header as AAD</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Key exchange</span><span class="mc-prop-val">ECDH P-256</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Signatures</span><span class="mc-prop-val">ECDSA P-256</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">KDF</span><span class="mc-prop-val">HKDF-SHA256 + HMAC-SHA256</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Node.js runtime</span><span class="mc-prop-val">node:crypto only — zero npm deps</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Browser runtime</span><span class="mc-prop-val">Web Crypto API — zero deps, no WASM</span></div>
+          <table class="mc-table" style="margin-top:16px">
+            <thead><tr><th>Feature</th><th>Status</th></tr></thead>
             <tbody>
-              <tr><td>string</td><td>'Hello'</td></tr>
-              <tr><td>number</td><td>42, 3.14</td></tr>
-              <tr><td>boolean</td><td>true, false</td></tr>
-              <tr><td>null</td><td>null</td></tr>
-              <tr><td>Uint8Array / Buffer</td><td>Binary files, images</td></tr>
-              <tr><td>object / array</td><td>{ key: 'val' }, [1,2,3]</td></tr>
-              <tr><td>Date</td><td>new Date()</td></tr>
-              <tr><td>Set</td><td>new Set([1,2,3])</td></tr>
-              <tr><td>Map</td><td>new Map([['a',1]])</td></tr>
+              <tr><td>X3DH + Double Ratchet</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>Forward Secrecy</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>Browser (Web Crypto API)</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>All JS data types</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>Replay protection</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>Simultaneous send</td><td style="color:var(--green)">Production</td></tr>
+              <tr><td>Multi-device sync</td><td style="color:#f87171">Not ready</td></tr>
+              <tr><td>Post-quantum security</td><td style="color:#f87171">Not ready</td></tr>
             </tbody>
           </table>
         </div>
 
+        <!-- INSTALL -->
         <div class="mc-section">
-          <div class="mc-h2">Security properties</div>
-          <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — new key per message</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">Post-Compromise Security</span><span class="mc-prop-val">DH ratchet rotation every message</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">Replay protection</span><span class="mc-prop-val">Nonce + timestamp per message</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">Identity binding on first contact, throws on key change</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext, never sees keys</span></div>
+          <div class="mc-h2">Installation</div>
+          <div class="mc-code">npm install @stvor/sdk</div>
+          <div class="mc-prop" style="margin-top:8px"><span class="mc-prop-key">Node.js</span><span class="mc-prop-val">>= 18.0.0</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Browser</span><span class="mc-prop-val">Any modern browser with Web Crypto API</span></div>
+        </div>
+
+        <!-- QUICKSTART -->
+        <div class="mc-section">
+          <div class="mc-h2">Quick Start</div>
+          <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
+
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'alice@example.com'</span>,
+  appToken: <span class="mc-str">'stvor_dev_test123'</span>,   <span class="mc-cm">// any stvor_* token</span>
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>, <span class="mc-cm">// hosted, no setup needed</span>
+});
+
+<span class="mc-kw">const</span> bob = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'bob@example.com'</span>,
+  appToken: <span class="mc-str">'stvor_dev_test123'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+});
+
+bob.<span class="mc-fn">onMessage</span>((msg) => {
+  console.<span class="mc-fn">log</span>(msg.from, msg.data);
+  <span class="mc-cm">// "alice@example.com" "Hello!"</span>
+});
+
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob@example.com'</span>, <span class="mc-str">'Hello!'</span>);
+
+<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();
+<span class="mc-kw">await</span> bob.<span class="mc-fn">disconnect</span>();</div>
+        </div>
+
+        <!-- RELAY OPTIONS -->
+        <div class="mc-section">
+          <div class="mc-h2">Relay Options</div>
+          <div class="mc-prop"><span class="mc-prop-key">Hosted (recommended)</span><span class="mc-prop-val">https://relay.stvor.xyz — no account, any stvor_* token</span></div>
+          <div class="mc-code" style="margin-top:8px">relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span></div>
+
+          <div class="mc-prop" style="margin-top:16px"><span class="mc-prop-key">Local dev</span><span class="mc-prop-val">Built into the SDK — no internet needed</span></div>
+          <div class="mc-code">npx @stvor/sdk mock-relay          <span class="mc-cm"># port 4444</span>
+PORT=9000 npx @stvor/sdk mock-relay</div>
+          <div class="mc-code">relayUrl: <span class="mc-str">'http://localhost:4444'</span></div>
+
+          <div class="mc-prop" style="margin-top:16px"><span class="mc-prop-key">Self-hosted</span><span class="mc-prop-val">github.com/sapogeth/sdk-relay</span></div>
+          <div class="mc-code">git clone https://github.com/sapogeth/sdk-relay
+cd sdk-relay
+node server.js</div>
+        </div>
+
+        <!-- MODULE SETUP -->
+        <div class="mc-section">
+          <div class="mc-h2">Module Setup</div>
+          <div class="mc-prop"><span class="mc-prop-key">ESM</span><span class="mc-prop-val">recommended</span></div>
+          <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;</div>
+          <div class="mc-prop" style="margin-top:12px"><span class="mc-prop-key">CommonJS</span><span class="mc-prop-val"></span></div>
+          <div class="mc-code"><span class="mc-kw">const</span> { Stvor } = <span class="mc-fn">require</span>(<span class="mc-str">'@stvor/sdk'</span>);</div>
+          <div class="mc-prop" style="margin-top:12px"><span class="mc-prop-key">tsconfig.json</span><span class="mc-prop-val">required for ESM</span></div>
+          <div class="mc-code">{ "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext" } }</div>
+        </div>
+
+        <!-- STVOR.CONNECT -->
+        <div class="mc-section">
+          <div class="mc-h2">Stvor.connect(config)</div>
+          <div class="mc-code"><span class="mc-kw">const</span> client = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>(config: StvorConfig): Promise&lt;StvorClient&gt;</div>
+          <table class="mc-table" style="margin-top:12px">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td>userId</td><td>string</td><td style="color:var(--green)">Yes</td><td>—</td></tr>
+              <tr><td>appToken</td><td>string</td><td style="color:var(--green)">Yes</td><td>starts with stvor_</td></tr>
+              <tr><td>relayUrl</td><td>string</td><td style="color:var(--green)">Yes</td><td>—</td></tr>
+              <tr><td>timeout</td><td>number</td><td>No</td><td>10000 ms</td></tr>
+              <tr><td>pollIntervalMs</td><td>number</td><td>No</td><td>1000 ms</td></tr>
+            </tbody>
+          </table>
+          <div class="mc-code" style="margin-top:12px"><span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:         <span class="mc-str">'alice@example.com'</span>,
+  appToken:       process.env.<span class="mc-fn">STVOR_APP_TOKEN</span>,
+  relayUrl:       <span class="mc-str">'https://relay.stvor.xyz'</span>,
+  timeout:        <span class="mc-str">15_000</span>,
+  pollIntervalMs: <span class="mc-str">500</span>,
+});</div>
+          <div class="mc-prop" style="margin-top:12px"><span class="mc-prop-key">Throws INVALID_APP_TOKEN</span><span class="mc-prop-val">if token doesn't start with stvor_</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Throws RELAY_UNAVAILABLE</span><span class="mc-prop-val">if relay is unreachable</span></div>
+        </div>
+
+        <!-- CLIENT.SEND -->
+        <div class="mc-section">
+          <div class="mc-h2">client.send(recipientId, data, options?)</div>
+          <div class="mc-code"><span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(recipientId: string, data: unknown, options?): Promise&lt;void&gt;</div>
+          <table class="mc-table" style="margin-top:12px">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td>recipientId</td><td>string</td><td>—</td></tr>
+              <tr><td>data</td><td>any JS value</td><td>—</td></tr>
+              <tr><td>options.waitForRecipient</td><td>boolean</td><td>true</td></tr>
+              <tr><td>options.timeout</td><td>number</td><td>10000 ms</td></tr>
+            </tbody>
+          </table>
+          <div class="mc-code" style="margin-top:12px"><span class="mc-cm">// Text</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hello!'</span>);
+
+<span class="mc-cm">// Object</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hi'</span>, ts: <span class="mc-kw">new</span> <span class="mc-fn">Date</span>() });
+
+<span class="mc-cm">// Binary</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Uint8Array</span>([<span class="mc-str">1</span>, <span class="mc-str">2</span>, <span class="mc-str">3</span>]));
+
+<span class="mc-cm">// Wait up to 30s for recipient to come online</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { timeout: <span class="mc-str">30_000</span> });
+
+<span class="mc-cm">// Fail immediately if not registered</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { waitForRecipient: <span class="mc-kw">false</span> });</div>
+        </div>
+
+        <!-- CLIENT.ONMESSAGE -->
+        <div class="mc-section">
+          <div class="mc-h2">client.onMessage(handler)</div>
+          <div class="mc-code"><span class="mc-kw">interface</span> StvorMessage {
+  from:      string;   <span class="mc-cm">// Sender's userId</span>
+  data:      unknown;  <span class="mc-cm">// Original type preserved</span>
+  timestamp: Date;
+  id:        string;
+}
+
+<span class="mc-kw">const</span> unsubscribe = client.<span class="mc-fn">onMessage</span>((msg: StvorMessage) => {
+  console.<span class="mc-fn">log</span>(msg.from, msg.data);
+});
+
+<span class="mc-fn">unsubscribe</span>(); <span class="mc-cm">// stop receiving</span></div>
+        </div>
+
+        <!-- CLIENT.WAITFORUSER -->
+        <div class="mc-section">
+          <div class="mc-h2">client.waitForUser(userId, timeoutMs?)</div>
+          <div class="mc-code"><span class="mc-kw">const</span> online = <span class="mc-kw">await</span> alice.<span class="mc-fn">waitForUser</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">30_000</span>);
+<span class="mc-cm">// true = registered, false = timeout</span>
+<span class="mc-cm">// Note: send() waits automatically — use this only to check without sending</span>
+<span class="mc-kw">if</span> (online) {
+  <span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey!'</span>);
+}</div>
+        </div>
+
+        <!-- CLIENT.DISCONNECT -->
+        <div class="mc-section">
+          <div class="mc-h2">client.disconnect()</div>
+          <div class="mc-code"><span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();
+<span class="mc-cm">// stops polling, clears handlers, closes connection</span></div>
+        </div>
+
+        <!-- BROWSER SDK -->
+        <div class="mc-section">
+          <div class="mc-h2">Browser SDK — StvorWebSDK.create()</div>
+          <div class="mc-code"><span class="mc-kw">import</span> { StvorWebSDK } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk/web'</span>;
+
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> StvorWebSDK.<span class="mc-fn">create</span>({
+  userId:   <span class="mc-str">'alice@example.com'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+});
+
+<span class="mc-cm">// Browser handler: (from, data) — not msg object</span>
+alice.<span class="mc-fn">onMessage</span>((from: string, data: unknown) => {
+  console.<span class="mc-fn">log</span>(from, data);
+});
+
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob@example.com'</span>, { text: <span class="mc-str">'Hello!'</span> });
+alice.<span class="mc-fn">disconnect</span>();
+
+<span class="mc-cm">// Keys persisted in IndexedDB — identity survives page refreshes</span></div>
+        </div>
+
+        <!-- DATA TYPES -->
+        <div class="mc-section">
+          <div class="mc-h2">Supported Data Types</div>
+          <table class="mc-table">
+            <thead><tr><th>Type</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td>string</td><td>'Hello, world!'</td></tr>
+              <tr><td>number</td><td>42, 3.14, -7</td></tr>
+              <tr><td>boolean</td><td>true, false</td></tr>
+              <tr><td>null</td><td>null</td></tr>
+              <tr><td>Uint8Array / Buffer</td><td>Binary files, images, audio</td></tr>
+              <tr><td>object / array</td><td>{ key: 'val' }, [1, 2, 3]</td></tr>
+              <tr><td>Date</td><td>new Date()</td></tr>
+              <tr><td>Set</td><td>new Set([1, 2, 3])</td></tr>
+              <tr><td>Map</td><td>new Map([['a', 1]])</td></tr>
+            </tbody>
+          </table>
+          <div class="mc-code" style="margin-top:12px"><span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Map</span>([[<span class="mc-str">'key'</span>, <span class="mc-str">'val'</span>]]));
+
+<span class="mc-cm">// Recipient gets exact original type:</span>
+bob.<span class="mc-fn">onMessage</span>((msg) => {
+  <span class="mc-kw">if</span> (msg.data <span class="mc-kw">instanceof</span> Map) { <span class="mc-cm">/* ... */</span> }
+  <span class="mc-kw">if</span> (msg.data <span class="mc-kw">instanceof</span> Date) { <span class="mc-cm">/* ... */</span> }
+});</div>
+        </div>
+
+        <!-- SECURITY -->
+        <div class="mc-section">
+          <div class="mc-h2">Cryptography</div>
+          <div class="mc-prop"><span class="mc-prop-key">X3DH</span><span class="mc-prop-val">Extended Triple Diffie-Hellman — initial key agreement</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Double Ratchet</span><span class="mc-prop-val">DH ratchet + symmetric ratchet — forward secrecy</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ECDH P-256</span><span class="mc-prop-val">Diffie-Hellman key exchange</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ECDSA P-256</span><span class="mc-prop-val">Digital signatures (SPK verification)</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">AES-256-GCM</span><span class="mc-prop-val">Authenticated encryption, header as AAD</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">HKDF-SHA256</span><span class="mc-prop-val">Key derivation</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">HMAC-SHA256</span><span class="mc-prop-val">Chain key ratcheting</span></div>
         </div>
 
         <div class="mc-section">
-          <div class="mc-h2">Relay options</div>
-          <div class="mc-prop"><span class="mc-prop-key">Hosted</span><span class="mc-prop-val">https://relay.stvor.xyz — no setup, any stvor_* token</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">Local dev</span><span class="mc-prop-val">npx @stvor/sdk mock-relay — port 4444</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">Self-hosted</span><span class="mc-prop-val">github.com/sapogeth/sdk-relay — node server.js</span></div>
+          <div class="mc-h2">Security Guarantees</div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ E2EE</span><span class="mc-prop-val">Plaintext never leaves the device</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ Forward Secrecy</span><span class="mc-prop-val">DH ratchet per message — past messages safe</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ Post-Compromise</span><span class="mc-prop-val">Automatic ratchet advancement</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ AEAD</span><span class="mc-prop-val">AES-256-GCM — authenticated encryption</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ Replay protection</span><span class="mc-prop-val">Nonce + timestamp validation per message</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:var(--green)">✓ TOFU</span><span class="mc-prop-val">Identity verified on first contact, throws on key change</span></div>
+          <div class="mc-prop" style="margin-top:12px"><span class="mc-prop-key" style="color:#f87171">✗ Metadata</span><span class="mc-prop-val">Relay sees sender/recipient/timing</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:#f87171">✗ Post-quantum</span><span class="mc-prop-val">Uses classical P-256 — no PQC yet</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:#f87171">✗ Multi-device</span><span class="mc-prop-val">Each device = separate identity</span></div>
+          <div class="mc-prop"><span class="mc-prop-key" style="color:#fbbf24">~ Storage</span><span class="mc-prop-val">In-memory — keys cleared on restart</span></div>
         </div>
 
+        <!-- TROUBLESHOOTING -->
         <div class="mc-section">
-          <div class="mc-h2">Links</div>
-          <div class="mc-prop"><span class="mc-prop-key">npm</span><span class="mc-prop-val">npmjs.com/package/@stvor/sdk</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">docs</span><span class="mc-prop-val">sdk.stvor.xyz/docs</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">relay</span><span class="mc-prop-val">relay.stvor.xyz</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val">sdk.stvor.xyz/llms.txt</span></div>
+          <div class="mc-h2">Troubleshooting</div>
+          <div class="mc-prop"><span class="mc-prop-key">INVALID_APP_TOKEN</span><span class="mc-prop-val">Token must start with stvor_ — use stvor_dev_test123 locally</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">RELAY_UNAVAILABLE</span><span class="mc-prop-val">Run npx @stvor/sdk mock-relay or check relayUrl</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">RECIPIENT_NOT_FOUND</span><span class="mc-prop-val">Increase timeout — send() waits by default</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">DELIVERY_FAILED</span><span class="mc-prop-val">Session mismatch — disconnect and reconnect both clients</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.3.1</span></div>
+        </div>
+
+        <!-- MIGRATION -->
+        <div class="mc-section">
+          <div class="mc-h2">Migration v3.0 → v3.3</div>
+          <div class="mc-code"><span class="mc-cm">// ❌ v3.0 (old — removed)</span>
+<span class="mc-kw">const</span> app = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">init</span>({ appToken: <span class="mc-str">'...'</span>, relayUrl: <span class="mc-str">'...'</span> });
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> app.<span class="mc-fn">connect</span>(<span class="mc-str">'alice'</span>);
+alice.<span class="mc-fn">onMessage</span>((msg) => console.<span class="mc-fn">log</span>(msg.senderId, msg.content));
+
+<span class="mc-cm">// ✅ v3.3 (new)</span>
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId: <span class="mc-str">'alice'</span>, appToken: <span class="mc-str">'...'</span>, relayUrl: <span class="mc-str">'...'</span>,
+});
+alice.<span class="mc-fn">onMessage</span>((msg) => console.<span class="mc-fn">log</span>(msg.from, msg.data));
+<span class="mc-cm">// msg.senderId → msg.from</span>
+<span class="mc-cm">// msg.content  → msg.data</span></div>
         </div>
 
       </div>
