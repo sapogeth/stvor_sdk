@@ -41,6 +41,155 @@
 
     a { color: inherit; text-decoration: none; }
 
+    /* ── MODE TOGGLE ── */
+    .mode-toggle {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--mono);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--fg3);
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .mode-btn.active {
+      background: var(--bg3);
+      color: var(--fg);
+    }
+
+    .mode-btn .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--fg3);
+      transition: background 0.2s;
+    }
+
+    .mode-btn.active .dot { background: var(--green); }
+    .mode-btn[data-mode="machine"].active .dot { background: var(--accent); }
+
+    /* ── MACHINE MODE ── */
+    #machine-view {
+      display: none;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: #a1a1aa;
+      min-height: 100vh;
+      padding: 60px 40px 120px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    #machine-view.visible { display: block; }
+
+    .boot-line {
+      opacity: 0;
+      white-space: pre;
+    }
+
+    .boot-line.show { opacity: 1; }
+
+    .boot-time { color: var(--fg3); }
+    .boot-key  { color: var(--accent); }
+    .boot-val  { color: var(--green); }
+    .boot-head { color: var(--fg); font-weight: 500; }
+    .boot-dim  { color: #3f3f46; }
+
+    .machine-content {
+      display: none;
+      margin-top: 48px;
+    }
+
+    .machine-content.visible { display: block; }
+
+    .mc-h1 {
+      color: var(--fg);
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .mc-sub {
+      color: var(--fg3);
+      font-size: 12px;
+      margin-bottom: 40px;
+    }
+
+    .mc-section { margin-bottom: 40px; }
+
+    .mc-h2 {
+      color: var(--accent);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mc-code {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .mc-kw  { color: #93c5fd; }
+    .mc-fn  { color: #86efac; }
+    .mc-str { color: #fde68a; }
+    .mc-cm  { color: #52525b; }
+
+    .mc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .mc-table th { color: var(--fg3); font-size: 11px; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
+    .mc-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg2); }
+    .mc-table tr:last-child td { border-bottom: none; }
+    .mc-table td:first-child { color: var(--fg); }
+
+    .mc-prop { display: flex; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
+    .mc-prop-key { color: var(--accent); min-width: 160px; }
+    .mc-prop-val { color: var(--fg2); }
+
+    .mc-tag {
+      display: inline-block;
+      background: var(--green-dim);
+      color: var(--green);
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    /* ── HUMAN MODE ── */
+    #human-view { display: block; }
+    #human-view.hidden { display: none; }
+
     /* ── NAV ── */
     .nav {
       position: sticky;
@@ -57,27 +206,11 @@
       gap: 24px;
     }
 
-    .nav-logo {
-      font-weight: 800;
-      font-size: 18px;
-      letter-spacing: -0.5px;
-      color: var(--fg);
-    }
-
+    .nav-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; color: var(--fg); }
     .nav-logo span { color: var(--accent); }
 
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-
-    .nav-links a {
-      font-size: 14px;
-      color: var(--fg2);
-      transition: color 0.15s;
-    }
-
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 14px; color: var(--fg2); transition: color 0.15s; }
     .nav-links a:hover { color: var(--fg); }
 
     .nav-btn {
@@ -93,12 +226,7 @@
     .nav-btn:hover { opacity: 0.85; }
 
     /* ── HERO ── */
-    .hero {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 100px 40px 80px;
-      text-align: center;
-    }
+    .hero { max-width: 900px; margin: 0 auto; padding: 100px 40px 80px; text-align: center; }
 
     .hero-badge {
       display: inline-flex;
@@ -114,12 +242,7 @@
       font-weight: 500;
     }
 
-    .hero-badge-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
     .hero h1 {
       font-size: clamp(40px, 6vw, 72px);
@@ -140,12 +263,7 @@
       line-height: 1.7;
     }
 
-    .hero-cta {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+    .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
     .btn-primary {
       background: var(--accent);
@@ -196,12 +314,7 @@
     .dot-yellow { background: #febc2e; }
     .dot-green { background: #28c840; }
 
-    .code-preview-label {
-      margin-left: 8px;
-      font-size: 12px;
-      color: var(--fg3);
-      font-family: var(--mono);
-    }
+    .code-preview-label { margin-left: 8px; font-size: 12px; color: var(--fg3); font-family: var(--mono); }
 
     .code-preview pre {
       padding: 24px;
@@ -216,7 +329,6 @@
     .fn { color: #86efac; }
     .str { color: #fde68a; }
     .cm { color: #52525b; }
-    .obj { color: #c4b5fd; }
 
     /* ── STATS ── */
     .stats {
@@ -232,56 +344,16 @@
       overflow: hidden;
     }
 
-    .stat {
-      background: var(--bg2);
-      padding: 36px 28px;
-      text-align: center;
-    }
-
-    .stat-num {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: var(--fg);
-      margin-bottom: 6px;
-    }
-
+    .stat { background: var(--bg2); padding: 36px 28px; text-align: center; }
+    .stat-num { font-size: 36px; font-weight: 800; letter-spacing: -1px; color: var(--fg); margin-bottom: 6px; }
     .stat-num span { color: var(--accent); }
-
-    .stat-label {
-      font-size: 14px;
-      color: var(--fg3);
-    }
+    .stat-label { font-size: 14px; color: var(--fg3); }
 
     /* ── FEATURES ── */
-    .section {
-      max-width: 900px;
-      margin: 0 auto 80px;
-      padding: 0 40px;
-    }
-
-    .section-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent);
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .section h2 {
-      font-size: clamp(28px, 4vw, 40px);
-      font-weight: 800;
-      letter-spacing: -1px;
-      margin-bottom: 16px;
-    }
-
-    .section-sub {
-      font-size: 16px;
-      color: var(--fg2);
-      margin-bottom: 48px;
-      max-width: 560px;
-    }
+    .section { max-width: 900px; margin: 0 auto 80px; padding: 0 40px; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+    .section h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-sub { font-size: 16px; color: var(--fg2); margin-bottom: 48px; max-width: 560px; }
 
     .features-grid {
       display: grid;
@@ -293,212 +365,47 @@
       overflow: hidden;
     }
 
-    .feature {
-      background: var(--bg2);
-      padding: 28px;
-      transition: background 0.15s;
-    }
-
+    .feature { background: var(--bg2); padding: 28px; transition: background 0.15s; }
     .feature:hover { background: var(--bg3); }
-
-    .feature-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--accent-dim);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      margin-bottom: 16px;
-    }
-
-    .feature h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--fg);
-    }
-
-    .feature p {
-      font-size: 13.5px;
-      color: var(--fg2);
-      line-height: 1.6;
-    }
+    .feature-icon { width: 40px; height: 40px; background: var(--accent-dim); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
+    .feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--fg); }
+    .feature p { font-size: 13.5px; color: var(--fg2); line-height: 1.6; }
 
     /* ── HOW IT WORKS ── */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
+    .steps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 
-    .step {
-      display: grid;
-      grid-template-columns: 60px 1fr;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg2);
-    }
-
+    .step { display: grid; grid-template-columns: 60px 1fr; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
     .step:last-child { border-bottom: none; }
-
-    .step-num {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--accent);
-      background: var(--accent-dim2);
-      border-right: 1px solid var(--border);
-      font-family: var(--mono);
-    }
-
-    .step-body {
-      padding: 24px 28px;
-    }
-
-    .step-body h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .step-body p {
-      font-size: 13.5px;
-      color: var(--fg2);
-    }
-
-    .step-body code {
-      font-family: var(--mono);
-      font-size: 12.5px;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      padding: 2px 7px;
-      border-radius: 4px;
-      color: var(--accent);
-    }
+    .step-num { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--accent); background: var(--accent-dim2); border-right: 1px solid var(--border); font-family: var(--mono); }
+    .step-body { padding: 24px 28px; }
+    .step-body h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .step-body p { font-size: 13.5px; color: var(--fg2); }
+    .step-body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--accent); }
 
     /* ── TYPES TABLE ── */
-    .types-table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    .types-table th {
-      background: var(--bg3);
-      padding: 12px 18px;
-      text-align: left;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--fg3);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .types-table td {
-      padding: 12px 18px;
-      font-size: 13.5px;
-      color: var(--fg2);
-      border-bottom: 1px solid var(--border);
-      background: var(--bg2);
-    }
-
+    .types-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .types-table th { background: var(--bg3); padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; color: var(--fg3); letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .types-table td { padding: 12px 18px; font-size: 13.5px; color: var(--fg2); border-bottom: 1px solid var(--border); background: var(--bg2); }
     .types-table tr:last-child td { border-bottom: none; }
+    .types-table td:first-child { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
 
-    .types-table td:first-child {
-      font-family: var(--mono);
-      font-size: 12.5px;
-      color: var(--fg);
-    }
+    .badge-green { display: inline-block; background: var(--green-dim); color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; }
 
-    .badge-green {
-      display: inline-block;
-      background: var(--green-dim);
-      color: var(--green);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 100px;
-    }
-
-    /* ── CTA SECTION ── */
-    .cta-section {
-      max-width: 900px;
-      margin: 0 auto 80px;
-      padding: 0 40px;
-    }
-
-    .cta-box {
-      background: linear-gradient(135deg, var(--accent-dim) 0%, var(--bg2) 100%);
-      border: 1px solid rgba(59,130,246,0.3);
-      border-radius: 16px;
-      padding: 56px 48px;
-      text-align: center;
-    }
-
-    .cta-box h2 {
-      font-size: clamp(28px, 4vw, 40px);
-      font-weight: 800;
-      letter-spacing: -1px;
-      margin-bottom: 16px;
-    }
-
-    .cta-box p {
-      font-size: 16px;
-      color: var(--fg2);
-      margin-bottom: 36px;
-    }
-
-    .cta-box .btn-primary {
-      font-size: 16px;
-      padding: 14px 36px;
-    }
+    /* ── CTA ── */
+    .cta-section { max-width: 900px; margin: 0 auto 80px; padding: 0 40px; }
+    .cta-box { background: linear-gradient(135deg, var(--accent-dim) 0%, var(--bg2) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 56px 48px; text-align: center; }
+    .cta-box h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .cta-box p { font-size: 16px; color: var(--fg2); margin-bottom: 36px; }
+    .cta-box .btn-primary { font-size: 16px; padding: 14px 36px; }
 
     /* ── FOOTER ── */
-    .footer {
-      border-top: 1px solid var(--border);
-      padding: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .footer-logo {
-      font-weight: 800;
-      font-size: 16px;
-      letter-spacing: -0.5px;
-    }
-
+    .footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .footer-logo { font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
     .footer-logo span { color: var(--accent); }
-
-    .footer-links {
-      display: flex;
-      gap: 24px;
-    }
-
-    .footer-links a {
-      font-size: 13px;
-      color: var(--fg3);
-      transition: color 0.15s;
-    }
-
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 13px; color: var(--fg3); transition: color 0.15s; }
     .footer-links a:hover { color: var(--fg2); }
-
-    .footer-copy {
-      font-size: 13px;
-      color: var(--fg3);
-    }
+    .footer-copy { font-size: 13px; color: var(--fg3); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 640px) {
@@ -511,47 +418,56 @@
       .cta-section { padding: 0 20px; }
       .cta-box { padding: 36px 24px; }
       .footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; }
+      #machine-view { padding: 40px 20px 120px; }
+      .mode-toggle { bottom: 20px; }
     }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-logo">ST<span>V</span>OR</div>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#how">How it works</a>
-      <a href="/docs">Docs</a>
-      <a href="/docs" class="nav-btn">Get started →</a>
-    </div>
-  </nav>
+  <!-- MODE TOGGLE -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="human" onclick="setMode('human')">
+      <span class="dot"></span>HUMAN
+    </button>
+    <button class="mode-btn" data-mode="machine" onclick="setMode('machine')">
+      <span class="dot"></span>MACHINE
+    </button>
+  </div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-badge">
-      <div class="hero-badge-dot"></div>
-      v3.3.0 — Signal Protocol · Zero dependencies
-    </div>
+  <!-- ═══════════════════════════════════════════════════════════ HUMAN VIEW -->
+  <div id="human-view">
 
-    <h1>E2EE in your app<br><span>in 3 lines of code</span></h1>
-
-    <p>Signal Protocol encryption (X3DH + Double Ratchet) with a dead-simple API. No cryptography expertise needed. Works in Node.js and the browser.</p>
-
-    <div class="hero-cta">
-      <a href="/docs" class="btn-primary">Read the docs</a>
-      <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" class="btn-outline">GitHub →</a>
-    </div>
-
-    <div class="code-preview">
-      <div class="code-preview-bar">
-        <div class="dot dot-red"></div>
-        <div class="dot dot-yellow"></div>
-        <div class="dot dot-green"></div>
-        <div class="code-preview-label">app.ts</div>
+    <nav class="nav">
+      <div class="nav-logo">ST<span>V</span>OR</div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="/docs">Docs</a>
+        <a href="/docs" class="nav-btn">Get started →</a>
       </div>
-      <pre><span class="cm">// npm install @stvor/sdk</span>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        v3.3.0 — Signal Protocol · Zero dependencies
+      </div>
+      <h1>E2EE in your app<br><span>in 3 lines of code</span></h1>
+      <p>Signal Protocol encryption (X3DH + Double Ratchet) with a dead-simple API. No cryptography expertise needed. Works in Node.js and the browser.</p>
+      <div class="hero-cta">
+        <a href="/docs" class="btn-primary">Read the docs</a>
+        <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" class="btn-outline">GitHub →</a>
+      </div>
+      <div class="code-preview">
+        <div class="code-preview-bar">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <div class="code-preview-label">app.ts</div>
+        </div>
+        <pre><span class="cm">// npm install @stvor/sdk</span>
 <span class="kw">import</span> { Stvor } <span class="kw">from</span> <span class="str">'@stvor/sdk'</span>;
 
 <span class="cm">// One call — keys, registration, polling</span>
@@ -566,143 +482,310 @@
 
 <span class="cm">// Receive</span>
 alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</span>(msg.from, msg.data));</pre>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <!-- STATS -->
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-num">0<span>deps</span></div>
-      <div class="stat-label">Zero npm dependencies</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num"><span>&lt;</span>30s</div>
-      <div class="stat-label">Time to first encrypted message</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num">9</div>
-      <div class="stat-label">Supported JS data types</div>
-    </div>
-  </div>
-
-  <!-- FEATURES -->
-  <section class="section" id="features">
-    <div class="section-label">Why STVOR</div>
-    <h2>Everything you need.<br>Nothing you don't.</h2>
-    <p class="section-sub">Built on the same cryptography as Signal — without the complexity.</p>
-
-    <div class="features-grid">
-      <div class="feature">
-        <div class="feature-icon">🔐</div>
-        <h3>Signal Protocol</h3>
-        <p>X3DH key agreement + Double Ratchet. The same cryptography used by Signal, WhatsApp, and Wire.</p>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">0<span>deps</span></div>
+        <div class="stat-label">Zero npm dependencies</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">⚡</div>
-        <h3>Zero dependencies</h3>
-        <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">node:crypto</code>. Browser SDK uses Web Crypto API. No WASM, no npm bloat.</p>
+      <div class="stat">
+        <div class="stat-num"><span>&lt;</span>30s</div>
+        <div class="stat-label">Time to first encrypted message</div>
       </div>
-      <div class="feature">
-        <div class="feature-icon">🔄</div>
-        <h3>Forward Secrecy</h3>
-        <p>DH ratchet rotates keys every message. Compromise of today's keys exposes nothing from the past.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🌐</div>
-        <h3>Browser support</h3>
-        <p>Full Double Ratchet in the browser via Web Crypto API. Same API, same security — import from <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">@stvor/sdk/web</code>.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">📦</div>
-        <h3>Any data type</h3>
-        <p>Send strings, numbers, objects, Dates, Sets, Maps, Uint8Arrays. Exact type is preserved on delivery.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🛡️</div>
-        <h3>Replay protection</h3>
-        <p>Nonce + timestamp validation on every message. Messages are deleted from relay after delivery.</p>
+      <div class="stat">
+        <div class="stat-num">9</div>
+        <div class="stat-label">Supported JS data types</div>
       </div>
     </div>
-  </section>
 
-  <!-- HOW IT WORKS -->
-  <section class="section" id="how">
-    <div class="section-label">How it works</div>
-    <h2>Simple API, serious crypto.</h2>
-    <p class="section-sub">Three steps. No cryptography expertise required.</p>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <h3>Install & start mock relay</h3>
-          <p><code>npm install @stvor/sdk</code> then <code>npx @stvor/sdk mock-relay</code> — local relay on port 4444, no account needed.</p>
+    <section class="section" id="features">
+      <div class="section-label">Why STVOR</div>
+      <h2>Everything you need.<br>Nothing you don't.</h2>
+      <p class="section-sub">Built on the same cryptography as Signal — without the complexity.</p>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">🔐</div>
+          <h3>Signal Protocol</h3>
+          <p>X3DH key agreement + Double Ratchet. The same cryptography used by Signal, WhatsApp, and Wire.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Zero dependencies</h3>
+          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">node:crypto</code>. Browser SDK uses Web Crypto API. No WASM, no npm bloat.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔄</div>
+          <h3>Forward Secrecy</h3>
+          <p>DH ratchet rotates keys every message. Compromise of today's keys exposes nothing from the past.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <h3>Browser support</h3>
+          <p>Full Double Ratchet in the browser via Web Crypto API. Same API, same security — import from <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">@stvor/sdk/web</code>.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📦</div>
+          <h3>Any data type</h3>
+          <p>Send strings, numbers, objects, Dates, Sets, Maps, Uint8Arrays. Exact type is preserved on delivery.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛡️</div>
+          <h3>Replay protection</h3>
+          <p>Nonce + timestamp validation on every message. Messages are deleted from relay after delivery.</p>
         </div>
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <h3>Connect a user</h3>
-          <p><code>Stvor.connect({ userId, appToken, relayUrl })</code> — generates identity keys, registers with relay, starts polling. One call, fully automatic.</p>
+    </section>
+
+    <section class="section" id="how">
+      <div class="section-label">How it works</div>
+      <h2>Simple API, serious crypto.</h2>
+      <p class="section-sub">Three steps. No cryptography expertise required.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Install & start mock relay</h3>
+            <p><code>npm install @stvor/sdk</code> then <code>npx @stvor/sdk mock-relay</code> — local relay on port 4444, no account needed.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Connect a user</h3>
+            <p><code>Stvor.connect({ userId, appToken, relayUrl })</code> — generates identity keys, registers with relay, starts polling. One call, fully automatic.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Send & receive</h3>
+            <p><code>alice.send('bob', data)</code> — X3DH + Double Ratchet happens automatically. Recipient gets the message via <code>onMessage</code>, type preserved.</p>
+          </div>
         </div>
       </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <h3>Send & receive</h3>
-          <p><code>alice.send('bob', data)</code> — X3DH + Double Ratchet happens automatically. Recipient gets the message via <code>onMessage</code>, type preserved.</p>
-        </div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">Data types</div>
+      <h2>Send anything.</h2>
+      <p class="section-sub">No manual serialization. The SDK preserves the exact JavaScript type end-to-end.</p>
+      <table class="types-table">
+        <thead>
+          <tr><th>Type</th><th>Example</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>string</td><td>'Hello, world!'</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>number</td><td>42, 3.14, -7</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>boolean</td><td>true, false</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>null</td><td>null</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>Uint8Array / Buffer</td><td>Binary files, images, audio</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>object / array</td><td>{ key: 'value' }, [1, 2, 3]</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>Date</td><td>new Date()</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>Set</td><td>new Set([1, 2, 3])</td><td><span class="badge-green">Supported</span></td></tr>
+          <tr><td>Map</td><td>new Map([['a', 1]])</td><td><span class="badge-green">Supported</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="cta-section">
+      <div class="cta-box">
+        <h2>Ready to add E2EE<br>to your app?</h2>
+        <p>Full documentation, API reference, and working examples.</p>
+        <a href="/docs" class="btn-primary">Open the docs →</a>
       </div>
     </div>
-  </section>
 
-  <!-- DATA TYPES -->
-  <section class="section">
-    <div class="section-label">Data types</div>
-    <h2>Send anything.</h2>
-    <p class="section-sub">No manual serialization. The SDK preserves the exact JavaScript type end-to-end.</p>
+    <footer class="footer">
+      <div class="footer-logo">ST<span>V</span>OR</div>
+      <div class="footer-links">
+        <a href="/docs">Docs</a>
+        <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
+        <a href="/llms.txt">llms.txt</a>
+      </div>
+      <div class="footer-copy">© 2025 STVOR · v3.3.0</div>
+    </footer>
 
-    <table class="types-table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Example</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>string</td><td>'Hello, world!'</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>number</td><td>42, 3.14, -7</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>boolean</td><td>true, false</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>null</td><td>null</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>Uint8Array / Buffer</td><td>Binary files, images, audio</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>object / array</td><td>{ key: 'value' }, [1, 2, 3]</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>Date</td><td>new Date()</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>Set</td><td>new Set([1, 2, 3])</td><td><span class="badge-green">Supported</span></td></tr>
-        <tr><td>Map</td><td>new Map([['a', 1]])</td><td><span class="badge-green">Supported</span></td></tr>
-      </tbody>
-    </table>
-  </section>
+  </div><!-- /human-view -->
 
-  <!-- CTA -->
-  <div class="cta-section">
-    <div class="cta-box">
-      <h2>Ready to add E2EE<br>to your app?</h2>
-      <p>Full documentation, API reference, and working examples.</p>
-      <a href="/docs" class="btn-primary">Open the docs →</a>
-    </div>
-  </div>
+  <!-- ══════════════════════════════════════════════════════════ MACHINE VIEW -->
+  <div id="machine-view">
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-logo">ST<span>V</span>OR</div>
-    <div class="footer-links">
-      <a href="/docs">Docs</a>
-      <a href="/api.html">API</a>
-      <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
-    </div>
-    <div class="footer-copy">© 2025 STVOR · v3.3.0</div>
-  </footer>
+    <!-- Boot sequence -->
+    <div id="boot-lines"></div>
+
+    <!-- Content shown after boot -->
+    <div class="machine-content" id="machine-content">
+
+      <div class="mc-h1"># Stvor SDK</div>
+      <div class="mc-sub">End-to-end encryption for any app. Signal Protocol (X3DH + Double Ratchet). Zero runtime dependencies.</div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Install</div>
+        <div class="mc-code">npm install @stvor/sdk</div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Quickstart</div>
+        <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
+
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'alice'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+});
+
+<span class="mc-kw">const</span> bob = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'bob'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+});
+
+bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hello!'</span> });
+<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();
+<span class="mc-kw">await</span> bob.<span class="mc-fn">disconnect</span>();</div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Stvor.connect(config)</div>
+        <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">relayUrl</span><span class="mc-prop-val">string — 'https://relay.stvor.xyz' or self-hosted</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — ms, default: 10000</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">pollIntervalMs?</span><span class="mc-prop-val">number — polling interval, default: 1000</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">client.send(recipientId, data, options?)</div>
+        <div class="mc-code"><span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hello'</span>);
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { amount: <span class="mc-str">100</span>, currency: <span class="mc-str">'USD'</span> });
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, Buffer.<span class="mc-fn">from</span>([<span class="mc-str">1</span>, <span class="mc-str">2</span>, <span class="mc-str">3</span>]));
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Date</span>());
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { timeout: <span class="mc-str">30_000</span> });
+<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { waitForRecipient: <span class="mc-kw">false</span> });</div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">client.onMessage(handler)</div>
+        <div class="mc-code"><span class="mc-kw">const</span> unsub = client.<span class="mc-fn">onMessage</span>(msg =&gt; {
+  <span class="mc-cm">// msg.from      — sender userId</span>
+  <span class="mc-cm">// msg.data      — decrypted value (original type preserved)</span>
+  <span class="mc-cm">// msg.timestamp — Date</span>
+  <span class="mc-cm">// msg.id        — unique string</span>
+});
+<span class="mc-fn">unsub</span>(); <span class="mc-cm">// stop listening</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Supported data types</div>
+        <table class="mc-table">
+          <thead><tr><th>Type</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td>string</td><td>'Hello'</td></tr>
+            <tr><td>number</td><td>42, 3.14</td></tr>
+            <tr><td>boolean</td><td>true, false</td></tr>
+            <tr><td>null</td><td>null</td></tr>
+            <tr><td>Uint8Array / Buffer</td><td>Binary files, images</td></tr>
+            <tr><td>object / array</td><td>{ key: 'val' }, [1,2,3]</td></tr>
+            <tr><td>Date</td><td>new Date()</td></tr>
+            <tr><td>Set</td><td>new Set([1,2,3])</td></tr>
+            <tr><td>Map</td><td>new Map([['a',1]])</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Security properties</div>
+        <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — new key per message</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Post-Compromise Security</span><span class="mc-prop-val">DH ratchet rotation every message</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Replay protection</span><span class="mc-prop-val">Nonce + timestamp per message</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">Identity binding on first contact, throws on key change</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext, never sees keys</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Relay options</div>
+        <div class="mc-prop"><span class="mc-prop-key">Hosted</span><span class="mc-prop-val">https://relay.stvor.xyz — no setup, any stvor_* token</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Local dev</span><span class="mc-prop-val">npx @stvor/sdk mock-relay — port 4444</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Self-hosted</span><span class="mc-prop-val">github.com/sapogeth/sdk-relay — node server.js</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Links</div>
+        <div class="mc-prop"><span class="mc-prop-key">npm</span><span class="mc-prop-val">npmjs.com/package/@stvor/sdk</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">docs</span><span class="mc-prop-val">sdk.stvor.xyz/docs</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">relay</span><span class="mc-prop-val">relay.stvor.xyz</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val">sdk.stvor.xyz/llms.txt</span></div>
+      </div>
+
+    </div><!-- /machine-content -->
+  </div><!-- /machine-view -->
+
+  <script>
+    const BOOT_LINES = [
+      { t: 0,    text: '[ 0.000000] stvor: kernel v3.3.1-signal', cls: 'boot-head' },
+      { t: 80,   text: '[ 0.000312] loading crypto modules...',   cls: '' },
+      { t: 160,  text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
+      { t: 240,  text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
+      { t: 320,  text: '[ 0.001820] aes-256-gcm: online',          cls: '' },
+      { t: 400,  text: '[ 0.002048] hkdf-sha256: online',          cls: '' },
+      { t: 480,  text: '[ 0.002561] tofu: trust store ready',      cls: '' },
+      { t: 560,  text: '[ 0.003072] replay-guard: nonce cache ok', cls: '' },
+      { t: 640,  text: '[ 0.003584] relay: relay.stvor.xyz',       cls: '' },
+      { t: 720,  text: '[ 0.004096] deps: 0',                      cls: 'boot-val' },
+      { t: 820,  text: '[ 0.004608] status: ready',                cls: 'boot-val' },
+      { t: 920,  text: '',                                           cls: '' },
+    ];
+
+    let machineBooted = false;
+
+    function setMode(mode) {
+      const humanView   = document.getElementById('human-view');
+      const machineView = document.getElementById('machine-view');
+      const btns        = document.querySelectorAll('.mode-btn');
+
+      btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+      if (mode === 'machine') {
+        humanView.classList.add('hidden');
+        machineView.classList.add('visible');
+        if (!machineBooted) runBoot();
+      } else {
+        humanView.classList.remove('hidden');
+        machineView.classList.remove('visible');
+      }
+
+      // sync URL param without reload
+      const url = new URL(window.location);
+      url.searchParams.set('mode', mode);
+      history.replaceState(null, '', url);
+    }
+
+    function runBoot() {
+      machineBooted = true;
+      const container = document.getElementById('boot-lines');
+
+      BOOT_LINES.forEach(({ t, text, cls }) => {
+        setTimeout(() => {
+          const line = document.createElement('div');
+          line.className = 'boot-line show' + (cls ? ' ' + cls : '');
+          line.textContent = text;
+          container.appendChild(line);
+        }, t);
+      });
+
+      // show content after boot finishes
+      setTimeout(() => {
+        document.getElementById('machine-content').classList.add('visible');
+      }, BOOT_LINES[BOOT_LINES.length - 1].t + 200);
+    }
+
+    // honour ?mode=machine in URL (so links and bots can deep-link)
+    const initMode = new URLSearchParams(window.location.search).get('mode');
+    if (initMode === 'machine') setMode('machine');
+  </script>
 
 </body>
 </html>
