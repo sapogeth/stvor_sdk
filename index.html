@@ -109,9 +109,11 @@
     .boot-line {
       opacity: 0;
       white-space: pre;
+      transition: opacity 0.18s ease;
     }
 
     .boot-line.show { opacity: 1; }
+    .boot-line.fade { opacity: 0; transition: opacity 0.25s ease; }
 
     .boot-time { color: var(--fg3); }
     .boot-key  { color: var(--accent); }
@@ -120,11 +122,21 @@
     .boot-dim  { color: #3f3f46; }
 
     .machine-content {
-      display: none;
+      opacity: 0;
       margin-top: 48px;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
     }
 
-    .machine-content.visible { display: block; }
+    .machine-content.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .machine-content.fade-out {
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
 
     .mc-h1 {
       color: var(--fg);
@@ -739,50 +751,84 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
       { t: 920,  text: '',                                           cls: '' },
     ];
 
-    let machineBooted = false;
+    let bootTimers = [];
+
+    function clearBootTimers() {
+      bootTimers.forEach(clearTimeout);
+      bootTimers = [];
+    }
 
     function setMode(mode) {
-      const humanView   = document.getElementById('human-view');
-      const machineView = document.getElementById('machine-view');
-      const btns        = document.querySelectorAll('.mode-btn');
+      const humanView    = document.getElementById('human-view');
+      const machineView  = document.getElementById('machine-view');
+      const btns         = document.querySelectorAll('.mode-btn');
 
       btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
 
       if (mode === 'machine') {
         humanView.classList.add('hidden');
         machineView.classList.add('visible');
-        if (!machineBooted) runBoot();
+        runBoot();
       } else {
-        humanView.classList.remove('hidden');
-        machineView.classList.remove('visible');
+        fadeOutMachine(() => {
+          machineView.classList.remove('visible');
+          humanView.classList.remove('hidden');
+        });
       }
 
-      // sync URL param without reload
       const url = new URL(window.location);
       url.searchParams.set('mode', mode);
       history.replaceState(null, '', url);
     }
 
-    function runBoot() {
-      machineBooted = true;
+    function fadeOutMachine(cb) {
+      clearBootTimers();
+      const content   = document.getElementById('machine-content');
       const container = document.getElementById('boot-lines');
 
+      // fade out content
+      content.classList.add('fade-out');
+      content.classList.remove('visible');
+
+      // fade out each boot line
+      Array.from(container.children).forEach(line => {
+        line.classList.add('fade');
+      });
+
+      setTimeout(() => {
+        // reset everything for next boot
+        container.innerHTML = '';
+        content.classList.remove('fade-out');
+        cb();
+      }, 320);
+    }
+
+    function runBoot() {
+      clearBootTimers();
+      const container = document.getElementById('boot-lines');
+      const content   = document.getElementById('machine-content');
+
+      // reset state
+      container.innerHTML = '';
+      content.classList.remove('visible');
+
       BOOT_LINES.forEach(({ t, text, cls }) => {
-        setTimeout(() => {
+        const id = setTimeout(() => {
           const line = document.createElement('div');
           line.className = 'boot-line show' + (cls ? ' ' + cls : '');
           line.textContent = text;
           container.appendChild(line);
         }, t);
+        bootTimers.push(id);
       });
 
-      // show content after boot finishes
-      setTimeout(() => {
-        document.getElementById('machine-content').classList.add('visible');
+      const showId = setTimeout(() => {
+        content.classList.add('visible');
       }, BOOT_LINES[BOOT_LINES.length - 1].t + 200);
+      bootTimers.push(showId);
     }
 
-    // honour ?mode=machine in URL (so links and bots can deep-link)
+    // honour ?mode=machine in URL
     const initMode = new URLSearchParams(window.location.search).get('mode');
     if (initMode === 'machine') setMode('machine');
   </script>
