@@ -3,6 +3,7 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
+    { "source": "/llms.txt", "destination": "/llms.txt" },
     { "source": "/", "destination": "/index.html" },
     { "source": "/docs", "destination": "/docs.html" },
     { "source": "/docs.html", "destination": "/docs.html" },

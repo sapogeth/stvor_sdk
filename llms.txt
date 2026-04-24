@@ -1,0 +1,170 @@
+# Stvor SDK
+
+> End-to-end encryption for any app. Drop-in library — no cryptography knowledge required.
+
+Stvor SDK implements the Signal Protocol (X3DH + Double Ratchet) with AES-256-GCM, ECDSA P-256, and HKDF-SHA-256. Zero runtime dependencies — Node.js uses `node:crypto`, browsers use Web Crypto API.
+
+## Install
+
+```bash
+npm install @stvor/sdk
+```
+
+## Quickstart (Node.js)
+
+```ts
+import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});
+
+const bob = await Stvor.connect({
+  userId:   'bob',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});
+
+bob.onMessage(msg => {
+  console.log(`From ${msg.from}:`, msg.data);
+});
+
+await alice.send('bob', { text: 'Hello!' });
+
+await alice.disconnect();
+await bob.disconnect();
+```
+
+## Quickstart (Browser)
+
+```ts
+import { StvorWebSDK } from '@stvor/sdk/web';
+
+const sdk = await StvorWebSDK.create({
+  userId:   'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+});
+
+sdk.onMessage((from, data) => console.log(from, data));
+await sdk.send('bob', { text: 'Hello from browser!' });
+sdk.disconnect();
+```
+
+## Local Development
+
+```bash
+npx @stvor/sdk mock-relay
+```
+
+Then use `relayUrl: 'http://localhost:4444'` — no account needed.
+
+## API — Stvor.connect(config)
+
+```ts
+const client = await Stvor.connect({
+  userId:          string,   // any unique identifier
+  appToken:        string,   // must start with 'stvor_'
+  relayUrl:        string,   // 'https://relay.stvor.xyz' or self-hosted
+  timeout?:        number,   // ms, default: 10000
+  pollIntervalMs?: number,   // polling interval, default: 1000
+});
+```
+
+## API — client.send(recipientId, data, options?)
+
+Sends any JavaScript value. Type is preserved on the receiving end.
+
+```ts
+await client.send('bob', 'Hello');
+await client.send('bob', { amount: 100, currency: 'USD' });
+await client.send('bob', Buffer.from([1, 2, 3]));
+await client.send('bob', new Date());
+await client.send('bob', 'Hey', { timeout: 30_000 });
+await client.send('bob', 'Hey', { waitForRecipient: false });
+```
+
+## API — client.onMessage(handler)
+
+```ts
+const unsubscribe = client.onMessage(msg => {
+  // msg.from      — sender userId
+  // msg.data      — decrypted value (original type preserved)
+  // msg.timestamp — Date
+  // msg.id        — unique string
+});
+
+unsubscribe(); // stop listening
+```
+
+## API — client.waitForUser(userId, timeoutMs?)
+
+```ts
+const online = await client.waitForUser('bob', 15_000);
+// true = registered, false = timeout
+```
+
+## API — client.disconnect()
+
+```ts
+await client.disconnect();
+```
+
+## Supported Data Types
+
+| Type | Example |
+|------|---------|
+| string | 'Hello' |
+| number | 42, 3.14 |
+| boolean | true, false |
+| null | null |
+| Uint8Array / Buffer | Binary files, images |
+| object / array | { key: 'val' }, [1,2,3] |
+| Date | new Date() |
+| Set | new Set([1,2,3]) |
+| Map | new Map([['a',1]]) |
+
+## Security Properties
+
+- **Forward Secrecy** — Double Ratchet generates a new key per message
+- **Post-Compromise Security** — DH ratchet rotation every message
+- **Replay protection** — Nonce + timestamp validation per message
+- **TOFU** — Trust On First Use identity binding; throws on key change
+- **Zero-knowledge relay** — server only ever sees ciphertext
+- **Simultaneous send** — both sides can send before receiving
+
+## Relay Options
+
+### Hosted (recommended)
+```ts
+relayUrl: 'https://relay.stvor.xyz'
+```
+No setup. Accepts any `stvor_*` token.
+
+### Local (development)
+```bash
+npx @stvor/sdk mock-relay          # port 4444
+PORT=9000 npx @stvor/sdk mock-relay
+```
+
+### Self-hosted
+```bash
+git clone https://github.com/sapogeth/sdk-relay
+node server.js
+```
+
+## How It Works
+
+1. Each user generates an ECDH P-256 identity key pair on first connect.
+2. X3DH key agreement — both sides derive the same shared secret without the server seeing it.
+3. Double Ratchet — every message advances the ratchet; compromise of one key exposes nothing else.
+4. The relay server stores and forwards only ciphertext. It never sees plaintext or keys.
+
+## Links
+
+- npm: https://www.npmjs.com/package/@stvor/sdk
+- Docs: https://sdk.stvor.xyz/docs
+- GitHub (relay): https://github.com/sapogeth/sdk-relay
+- Hosted relay: https://relay.stvor.xyz
