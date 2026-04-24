@@ -19,14 +19,14 @@ import { Stvor } from '@stvor/sdk';
 
 const alice = await Stvor.connect({
   userId:   'alice',
-  appToken: 'stvor_live_xxx',   // from dashboard
-  relayUrl: 'https://relay.example.com',
+  appToken: 'stvor_live_xxx',              // any token starting with stvor_
+  relayUrl: 'https://relay.stvor.xyz',     // hosted relay — no setup needed
 });
 
 const bob = await Stvor.connect({
   userId:   'bob',
   appToken: 'stvor_live_xxx',
-  relayUrl: 'https://relay.example.com',
+  relayUrl: 'https://relay.stvor.xyz',
 });
 
 bob.onMessage(msg => {
@@ -40,6 +40,23 @@ await alice.disconnect();
 await bob.disconnect();
 ```
 
+### Local development
+
+```bash
+# Start local relay — no account needed
+npx @stvor/sdk mock-relay
+```
+
+```ts
+import { Stvor } from '@stvor/sdk';
+
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_dev_test123',
+  relayUrl: 'http://localhost:4444',
+});
+```
+
 ### Browser
 
 ```ts
@@ -48,7 +65,7 @@ import { StvorWebSDK } from '@stvor/sdk/web';
 const sdk = await StvorWebSDK.create({
   userId:   'alice',
   appToken: 'stvor_live_xxx',
-  relayUrl: 'https://relay.example.com',
+  relayUrl: 'https://relay.stvor.xyz',
 });
 
 sdk.onMessage((from, data) => console.log(from, data));
@@ -66,17 +83,33 @@ Keys are persisted in IndexedDB — identity survives page refreshes.
 3. Every message advances the **Double Ratchet** — compromise of one key doesn't expose past or future messages.
 4. The relay server only ever sees ciphertext.
 
+## Supported data types
+
+Send any JavaScript value — the original type is preserved on the receiving end:
+
+| Type | Example |
+|------|---------|
+| `string` | `'Hello'` |
+| `number` | `42`, `3.14` |
+| `boolean` | `true`, `false` |
+| `null` | `null` |
+| `Uint8Array` / `Buffer` | Binary files, images |
+| `object` / `array` | `{ key: 'val' }`, `[1,2,3]` |
+| `Date` | `new Date()` |
+| `Set` | `new Set([1,2,3])` |
+| `Map` | `new Map([['a',1]])` |
+
 ## API — `Stvor` (Node.js)
 
 ### `Stvor.connect(config)`
 
 ```ts
 const client = await Stvor.connect({
-  userId:         string,   // any unique identifier
-  appToken:       string,   // starts with 'stvor_'
-  relayUrl:       string,
-  timeout?:       number,   // ms, default: 10 000
-  pollIntervalMs?: number,  // message polling, default: 1 000
+  userId:          string,   // any unique identifier
+  appToken:        string,   // starts with 'stvor_'
+  relayUrl:        string,   // e.g. 'https://relay.stvor.xyz'
+  timeout?:        number,   // ms, default: 10 000
+  pollIntervalMs?: number,   // message polling interval, default: 1 000
 });
 ```
 
@@ -85,11 +118,11 @@ const client = await Stvor.connect({
 ```ts
 await client.send('bob', 'Hello');
 await client.send('bob', { amount: 100, currency: 'USD' });
-await client.send('bob', Buffer.from([1, 2, 3]));          // binary
-await client.send('bob', 'Hey', { timeout: 30_000 });      // wait up to 30s
+await client.send('bob', Buffer.from([1, 2, 3]));
+await client.send('bob', new Date());
+await client.send('bob', 'Hey', { timeout: 30_000 });      // wait up to 30s for recipient
+await client.send('bob', 'Hey', { waitForRecipient: false }); // throw if not online
 ```
-
-Supports any JS type: string, number, boolean, null, object, Buffer, Uint8Array, Date, Set, Map.
 
 ### `client.onMessage(handler)`
 
@@ -109,6 +142,7 @@ unsubscribe(); // stop listening
 ```ts
 const online = await client.waitForUser('bob', 15_000);
 // true = registered, false = timeout
+// Note: send() waits automatically — use this only when you need to check without sending
 ```
 
 ### `client.disconnect()`
@@ -125,7 +159,7 @@ Same shape as the Node.js client:
 const sdk = await StvorWebSDK.create({ userId, appToken, relayUrl, pollIntervalMs? });
 
 await sdk.send(recipientId, data);
-sdk.onMessage((from, data) => { ... });
+sdk.onMessage((from, data) => { /* ... */ });
 await sdk.waitForUser(userId, timeoutMs?);
 sdk.disconnect();
 sdk.getUserId();
@@ -134,34 +168,6 @@ sdk.getUserId();
 ## TOFU (Trust On First Use)
 
 On first contact with a peer, the SDK stores their identity key fingerprint. If the fingerprint changes on a later contact, the SDK throws — protecting against MITM attacks. Works automatically.
-
-```ts
-import { revokeTrust } from '@stvor/sdk';
-await revokeTrust('bob'); // trigger re-trust after intentional key rotation
-```
-
-## Persistence (Node.js)
-
-By default, keys live in memory. To persist across restarts:
-
-```ts
-import { Stvor, CryptoSessionManager, FileIdentityStore, FileSessionStore } from '@stvor/sdk';
-
-const manager = new CryptoSessionManager(
-  'alice',
-  new FileIdentityStore('./keys'),
-  new FileSessionStore('./sessions'),
-);
-```
-
-## Production replay protection (Redis)
-
-```ts
-import { initializeReplayProtection, RedisReplayCache } from '@stvor/sdk';
-import Redis from 'ioredis';
-
-initializeReplayProtection(new RedisReplayCache(new Redis(), { ttlSeconds: 300 }));
-```
 
 ## Security properties
 
@@ -172,28 +178,38 @@ initializeReplayProtection(new RedisReplayCache(new Redis(), { ttlSeconds: 300 }
 | Replay protection | Nonce + timestamp per message |
 | TOFU | Identity binding on first contact |
 | Zero-knowledge relay | Server only stores ciphertext |
+| Simultaneous send | Both sides can send before receiving |
 
-## CLI
+## Relay options
 
-```bash
-# Show relay status
-STVOR_RELAY_URL=http://localhost:3002 STVOR_APP_TOKEN=stvor_live_xxx stvor-cli status
+### Hosted relay (recommended)
 
-# Health check
-stvor-cli health --relay http://localhost:3002
-
-# Export stats
-stvor-cli export csv --token stvor_live_xxx
+```ts
+relayUrl: 'https://relay.stvor.xyz'
 ```
 
-## Self-hosting the relay
+No setup needed. Accepts any `stvor_*` token.
+
+### Local relay (development)
 
 ```bash
-git clone https://github.com/sapogeth/stvor_sdk
-cd stvor-api && npm install
-
-RELAY_PORT=3002 node dist/relay/server.js
+npx @stvor/sdk mock-relay          # port 4444
+PORT=9000 npx @stvor/sdk mock-relay
 ```
+
+### Self-hosted relay
+
+```bash
+git clone https://github.com/sapogeth/sdk-relay
+cd sdk-relay
+node server.js
+```
+
+Set `PORT` and `STVOR_VERBOSE=1` as needed.
+
+## Docs
+
+Full documentation: **[sdk.stvor.xyz](https://sdk.stvor.xyz/docs)**
 
 ## License
 

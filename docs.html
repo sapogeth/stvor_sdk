@@ -545,7 +545,7 @@
         <!-- QUICKSTART -->
         <section id="quickstart">
           <h2>Quick Start</h2>
-          <p>Two users, one encrypted message, zero crypto knowledge needed.</p>
+          <p>Two users, one encrypted message. Uses the hosted relay — no setup needed.</p>
 
           <div class="code-block">
             <div class="code-block-header">
@@ -556,14 +556,14 @@
 
 const alice = await Stvor.connect({
   userId:   'alice@example.com',
-  appToken: 'stvor_dev_test123',
-  relayUrl: 'http://localhost:4444',
+  appToken: 'stvor_dev_test123',            // any stvor_* token
+  relayUrl: 'https://relay.stvor.xyz',      // hosted relay, no setup needed
 });
 
 const bob = await Stvor.connect({
   userId:   'bob@example.com',
   appToken: 'stvor_dev_test123',
-  relayUrl: 'http://localhost:4444',
+  relayUrl: 'https://relay.stvor.xyz',
 });
 
 bob.onMessage((msg) => {
@@ -577,6 +577,10 @@ await alice.disconnect();
 await bob.disconnect();</code></pre>
           </div>
 
+          <div class="callout callout-tip">
+            <strong>Hosted relay:</strong> <code>https://relay.stvor.xyz</code> is live and accepts any <code>stvor_*</code> token. No account or setup required.
+          </div>
+
           <div class="callout callout-warn">
             <strong>Never hardcode tokens.</strong> Use <code>process.env.STVOR_APP_TOKEN</code> in production.
           </div>
@@ -584,22 +588,46 @@ await bob.disconnect();</code></pre>
 
         <!-- MOCK RELAY -->
         <section id="mock-relay">
-          <h2>Local Dev Relay</h2>
-          <p>The SDK includes a built-in mock relay for local development. No account, no internet needed.</p>
+          <h2>Relay Options</h2>
 
+          <h3>Hosted relay (recommended)</h3>
+          <p>Ready to use. No account, no setup. Accepts any <code>stvor_*</code> token.</p>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>relayUrl: 'https://relay.stvor.xyz'</code></pre>
+          </div>
+
+          <h3>Local relay (development)</h3>
+          <p>Built into the SDK — no internet needed.</p>
           <div class="code-block">
             <div class="code-block-header">
               <span class="code-lang">bash</span>
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             </div>
-            <pre><code># Start on port 4444 (default)
-npx @stvor/sdk mock-relay
-
-# Custom port
+            <pre><code>npx @stvor/sdk mock-relay          # port 4444
 PORT=9000 npx @stvor/sdk mock-relay</code></pre>
           </div>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">typescript</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>relayUrl: 'http://localhost:4444'</code></pre>
+          </div>
 
-          <p>The mock relay accepts any token starting with <code>stvor_</code> and stores everything in memory.</p>
+          <h3>Self-hosted relay</h3>
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>git clone https://github.com/sapogeth/sdk-relay
+cd sdk-relay
+node server.js</code></pre>
+          </div>
         </section>
 
         <!-- MODULE SETUP -->
