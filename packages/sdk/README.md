@@ -12,15 +12,15 @@ npm install @stvor/sdk
 
 ## Quickstart
 
-### Node.js
+### Node.js — 1-to-1
 
 ```ts
 import { Stvor } from '@stvor/sdk';
 
 const alice = await Stvor.connect({
   userId:   'alice',
-  appToken: 'stvor_live_xxx',              // any token starting with stvor_
-  relayUrl: 'https://relay.stvor.xyz',     // hosted relay — no setup needed
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
 });
 
 const bob = await Stvor.connect({
@@ -33,11 +33,41 @@ bob.onMessage(msg => {
   console.log(`From ${msg.from}:`, msg.data);
 });
 
-// Sends any type — string, object, Buffer, Date, Set, Map…
 await alice.send('bob', { text: 'Hello!' });
 
 await alice.disconnect();
 await bob.disconnect();
+```
+
+### Group chats
+
+```ts
+// Alice creates a group and invites members
+await alice.createGroup('team-chat', ['bob', 'charlie']);
+
+// Send to the group — one encryption, all members receive
+await alice.sendToGroup('team-chat', { text: 'Hello team!' });
+
+// Receive group messages
+bob.onGroupMessage(msg => {
+  console.log(msg.groupId, msg.from, msg.data);
+});
+
+// Manage members (auto-ratchets sender key on removal)
+await alice.addGroupMember('team-chat', 'dave');
+await alice.removeGroupMember('team-chat', 'charlie');
+```
+
+### Sealed sender (metadata protection)
+
+```ts
+// Relay sees `to` but never `from` — sender identity is hidden
+const alice = await Stvor.connect({
+  userId:       'alice',
+  appToken:     'stvor_live_xxx',
+  relayUrl:     'https://relay.stvor.xyz',
+  sealedSender: true,
+});
 ```
 
 ### Local development
@@ -48,8 +78,6 @@ npx @stvor/sdk mock-relay
 ```
 
 ```ts
-import { Stvor } from '@stvor/sdk';
-
 const alice = await Stvor.connect({
   userId:   'alice',
   appToken: 'stvor_dev_test123',
@@ -69,7 +97,6 @@ const sdk = await StvorWebSDK.create({
 });
 
 sdk.onMessage((from, data) => console.log(from, data));
-
 await sdk.send('bob', { text: 'Hello from browser!' });
 sdk.disconnect();
 ```
@@ -110,6 +137,7 @@ const client = await Stvor.connect({
   relayUrl:        string,   // e.g. 'https://relay.stvor.xyz'
   timeout?:        number,   // ms, default: 10 000
   pollIntervalMs?: number,   // message polling interval, default: 1 000
+  sealedSender?:   boolean,  // hide sender from relay, default: false
 });
 ```
 
@@ -120,8 +148,8 @@ await client.send('bob', 'Hello');
 await client.send('bob', { amount: 100, currency: 'USD' });
 await client.send('bob', Buffer.from([1, 2, 3]));
 await client.send('bob', new Date());
-await client.send('bob', 'Hey', { timeout: 30_000 });      // wait up to 30s for recipient
-await client.send('bob', 'Hey', { waitForRecipient: false }); // throw if not online
+await client.send('bob', 'Hey', { timeout: 30_000 });
+await client.send('bob', 'Hey', { waitForRecipient: false });
 ```
 
 ### `client.onMessage(handler)`
@@ -137,12 +165,62 @@ const unsubscribe = client.onMessage(msg => {
 unsubscribe(); // stop listening
 ```
 
+### `client.createGroup(groupId, memberIds)`
+
+```ts
+await client.createGroup('room-1', ['bob', 'charlie']);
+```
+
+### `client.sendToGroup(groupId, data)`
+
+```ts
+await client.sendToGroup('room-1', { text: 'Hello group!' });
+```
+
+### `client.onGroupMessage(handler)`
+
+```ts
+const unsubscribe = client.onGroupMessage(msg => {
+  // msg.groupId   — group identifier
+  // msg.from      — sender userId
+  // msg.data      — decrypted value
+  // msg.timestamp — Date
+  // msg.id        — unique string
+});
+```
+
+### `client.addGroupMember(groupId, memberId)`
+
+```ts
+await client.addGroupMember('room-1', 'dave');
+```
+
+### `client.removeGroupMember(groupId, memberId)`
+
+```ts
+// Automatically ratchets sender key — removed member cannot decrypt future messages
+await client.removeGroupMember('room-1', 'charlie');
+```
+
 ### `client.waitForUser(userId, timeoutMs?)`
 
 ```ts
 const online = await client.waitForUser('bob', 15_000);
 // true = registered, false = timeout
-// Note: send() waits automatically — use this only when you need to check without sending
+```
+
+### `client.deleteMyData()`
+
+```ts
+// GDPR Art. 17 — erases all relay-side data for this user
+await client.deleteMyData();
+```
+
+### `client.exportMyData()`
+
+```ts
+// GDPR Art. 20 — returns what the relay stores about this user
+const data = await client.exportMyData();
 ```
 
 ### `client.disconnect()`
@@ -178,7 +256,10 @@ On first contact with a peer, the SDK stores their identity key fingerprint. If 
 | Replay protection | Nonce + timestamp per message |
 | TOFU | Identity binding on first contact |
 | Zero-knowledge relay | Server only stores ciphertext |
+| Sealed sender | Optional — hides sender from relay (ephemeral ECDH) |
 | Simultaneous send | Both sides can send before receiving |
+| Group E2EE | Sender Keys — one encryption per message regardless of group size |
+| GDPR compliance | Right to erasure + data portability built in |
 
 ## Relay options
 

@@ -545,7 +545,7 @@
       <a href="/" class="topbar-logo">ST<span>V</span>OR</a>
       <div class="topbar-sep"></div>
       <span class="topbar-title">Documentation</span>
-      <span class="version-badge">v3.3.1</span>
+      <span class="version-badge">v3.4.0</span>
     </div>
     <div class="topbar-right">
       <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
@@ -576,6 +576,18 @@
         <a class="sidebar-link" href="#client-waitforuser">client.waitForUser()</a>
       </div>
       <div class="sidebar-group">
+        <div class="sidebar-group-label">Group Chats</div>
+        <a class="sidebar-link" href="#group-create">createGroup()</a>
+        <a class="sidebar-link" href="#group-send">sendToGroup()</a>
+        <a class="sidebar-link" href="#group-onmessage">onGroupMessage()</a>
+        <a class="sidebar-link" href="#group-members">add/removeMember()</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Privacy</div>
+        <a class="sidebar-link" href="#sealed-sender">Sealed Sender</a>
+        <a class="sidebar-link" href="#gdpr">GDPR Compliance</a>
+      </div>
+      <div class="sidebar-group">
         <div class="sidebar-group-label">Browser SDK</div>
         <a class="sidebar-link" href="#web-sdk">StvorWebSDK.create()</a>
         <a class="sidebar-link" href="#web-onmessage">web.onMessage()</a>
@@ -593,7 +605,7 @@
       <div class="sidebar-group">
         <div class="sidebar-group-label">Help</div>
         <a class="sidebar-link" href="#troubleshooting">Troubleshooting</a>
-        <a class="sidebar-link" href="#migration">Migration v3.0→v3.3</a>
+        <a class="sidebar-link" href="#migration">Migration v3.0→v3.4</a>
       </div>
     </nav>
 
@@ -917,6 +929,130 @@ if (online) {
 
         <hr>
 
+        <!-- GROUP CHATS -->
+        <section id="group-create">
+          <h2>createGroup(groupId, memberIds)</h2>
+          <p>Creates an E2EE group using <strong>Sender Keys</strong> (same scheme as Signal). Automatically distributes sender keys to each member via their existing 1-to-1 session.</p>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>await alice.createGroup('team-chat', ['bob', 'charlie']);</code></pre>
+          </div>
+          <div class="callout callout-tip">
+            <strong>How it works:</strong> Each member gets a copy of Alice's sender key chain, encrypted via their 1-to-1 session. The relay broadcasts one ciphertext to all members — O(1) encryption regardless of group size.
+          </div>
+        </section>
+
+        <section id="group-send">
+          <h2>sendToGroup(groupId, data)</h2>
+          <p>Sends any JavaScript value to the group. One encryption — all members receive and can decrypt.</p>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>await alice.sendToGroup('team-chat', { text: 'Hello team!' });
+await alice.sendToGroup('team-chat', new Uint8Array([1, 2, 3]));</code></pre>
+          </div>
+        </section>
+
+        <section id="group-onmessage">
+          <h2>onGroupMessage(handler)</h2>
+          <p>Subscribe to incoming group messages. Returns an unsubscribe function.</p>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>interface StvorGroupMessage {
+  groupId:   string;   // Which group
+  from:      string;   // Sender's userId
+  data:      unknown;  // Decrypted value (original type preserved)
+  timestamp: Date;
+  id:        string;
+}
+
+const unsubscribe = bob.onGroupMessage((msg: StvorGroupMessage) => {
+  console.log(msg.groupId, msg.from, msg.data);
+});
+
+unsubscribe(); // stop listening</code></pre>
+          </div>
+        </section>
+
+        <section id="group-members">
+          <h2>addGroupMember() / removeGroupMember()</h2>
+          <p>Manage group membership. On removal, the sender key is automatically ratcheted — the removed member cannot decrypt any future messages.</p>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>// Add member — sends them the current sender key
+await alice.addGroupMember('team-chat', 'dave');
+
+// Remove member — auto-ratchets sender key, dave cannot read future messages
+await alice.removeGroupMember('team-chat', 'charlie');</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
+        <!-- SEALED SENDER -->
+        <section id="sealed-sender">
+          <h2>Sealed Sender</h2>
+          <p>By default the relay sees <code>{ to: "bob", from: "alice", ciphertext: "..." }</code>. With sealed sender enabled, the relay sees only <code>{ to: "bob", ciphertext: "&lt;opaque blob&gt;" }</code> — sender identity is hidden inside the encrypted envelope.</p>
+
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>const alice = await Stvor.connect({
+  userId:       'alice',
+  appToken:     'stvor_live_xxx',
+  relayUrl:     'https://relay.stvor.xyz',
+  sealedSender: true,   // ← enable
+});</code></pre>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>What relay sees</th><th>Without sealed sender</th><th>With sealed sender</th></tr></thead>
+              <tbody>
+                <tr><td>to</td><td>✓ plaintext</td><td>✓ plaintext (needed for routing)</td></tr>
+                <tr><td>from</td><td>✓ plaintext</td><td>✗ hidden inside envelope</td></tr>
+                <tr><td>ciphertext</td><td>opaque</td><td>opaque</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p><strong>Protocol:</strong> For each message, an ephemeral ECDH key pair is generated. The sender's identity is encrypted with <code>ECDH(epk, recipient_IK) → AES-256-GCM</code>. The recipient decrypts the envelope with their identity private key to recover <code>from</code>, then proceeds with normal Double Ratchet decryption.</p>
+
+          <div class="callout callout-warn">
+            <strong>Note:</strong> Sealed sender hides the sender from the relay, but does not hide the recipient (<code>to</code> must be plaintext for routing). For full anonymity, a mix network (Tor) would be required.
+          </div>
+        </section>
+
+        <!-- GDPR -->
+        <section id="gdpr">
+          <h2>GDPR Compliance</h2>
+          <p>The relay stores only: public keys, queued ciphertexts, and timestamps. Message content is E2EE — the relay cannot access it. Two compliance endpoints are built in:</p>
+
+          <h3>deleteMyData() — Art. 17 Right to Erasure</h3>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>const result = await alice.deleteMyData();
+// { deletedAt: "2026-04-25T...", messagesDeleted: 3 }
+// Removes: public keys, all queued messages, registration record</code></pre>
+          </div>
+
+          <h3>exportMyData() — Art. 20 Data Portability</h3>
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>const data = await alice.exportMyData();
+// {
+//   userId: "alice",
+//   data: {
+//     publicKeys: { ... },        // public — not sensitive
+//     pendingMessages: 2,          // count only, not content
+//     registeredAt: "2026-04-...",
+//     lastActivity: "2026-04-...",
+//   },
+//   notice: "Message content is E2EE. The relay cannot access or export it."
+// }</code></pre>
+          </div>
+        </section>
+
+        <hr>
+
         <!-- WEB SDK -->
         <section id="web-sdk">
           <h2>StvorWebSDK.create() — Browser</h2>
@@ -1072,12 +1208,12 @@ bob.onMessage((msg) => {
           <p>Decryption error — usually a session state mismatch. Disconnect and reconnect both clients.</p>
 
           <h3>ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
-          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.3.1</code>.</p>
+          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.4.0</code>.</p>
         </section>
 
         <!-- MIGRATION -->
         <section id="migration">
-          <h2>Migration v3.0 → v3.3</h2>
+          <h2>Migration v3.0 → v3.4</h2>
 
           <div class="callout callout-danger">
             <strong>Breaking change:</strong> The two-step <code>Stvor.init()</code> + <code>app.connect()</code> API is gone. Use <code>Stvor.connect()</code> instead.
@@ -1151,7 +1287,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
 
     // ── MACHINE MODE ──────────────────────────────────────────
     const BOOT_LINES = [
-      { t: 0,   text: '[ 0.000000] stvor: kernel v3.3.1-signal', cls: 'boot-head' },
+      { t: 0,   text: '[ 0.000000] stvor: kernel v3.4.0-signal', cls: 'boot-head' },
       { t: 80,  text: '[ 0.000312] loading crypto modules...',   cls: '' },
       { t: 160, text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
       { t: 240, text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
@@ -1264,7 +1400,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
       <div id="boot-lines"></div>
       <div class="machine-content" id="mc-content">
 
-        <div class="mc-h1"># Stvor SDK v3.3.1 — Full Documentation</div>
+        <div class="mc-h1"># Stvor SDK v3.4.0 — Full Documentation</div>
         <div class="mc-sub">Signal Protocol (X3DH + Double Ratchet) · AES-256-GCM · HKDF-SHA256 · Zero runtime dependencies</div>
 
         <!-- OVERVIEW -->
@@ -1519,6 +1655,55 @@ bob.<span class="mc-fn">onMessage</span>((msg) => {
           <div class="mc-prop"><span class="mc-prop-key" style="color:#fbbf24">~ Storage</span><span class="mc-prop-val">In-memory — keys cleared on restart</span></div>
         </div>
 
+        <!-- GROUP CHATS -->
+        <div class="mc-section">
+          <div class="mc-h2">Group Chats (Sender Keys)</div>
+          <div class="mc-code"><span class="mc-cm">// Create group — distributes sender keys to all members</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">createGroup</span>(<span class="mc-str">'team-chat'</span>, [<span class="mc-str">'bob'</span>, <span class="mc-str">'charlie'</span>]);
+
+<span class="mc-cm">// Send — one encryption, all members receive</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">sendToGroup</span>(<span class="mc-str">'team-chat'</span>, { text: <span class="mc-str">'Hello team!'</span> });
+
+<span class="mc-cm">// Receive group messages</span>
+bob.<span class="mc-fn">onGroupMessage</span>(msg =&gt; {
+  console.<span class="mc-fn">log</span>(msg.groupId, msg.from, msg.data);
+});
+
+<span class="mc-cm">// Manage members (auto-ratchets on removal)</span>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">addGroupMember</span>(<span class="mc-str">'team-chat'</span>, <span class="mc-str">'dave'</span>);
+<span class="mc-kw">await</span> alice.<span class="mc-fn">removeGroupMember</span>(<span class="mc-str">'team-chat'</span>, <span class="mc-str">'charlie'</span>); <span class="mc-cm">// charlie can't read future msgs</span></div>
+          <div class="mc-prop" style="margin-top:8px"><span class="mc-prop-key">StvorGroupMessage.groupId</span><span class="mc-prop-val">string — group identifier</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">StvorGroupMessage.from</span><span class="mc-prop-val">string — sender userId</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">StvorGroupMessage.data</span><span class="mc-prop-val">unknown — original type preserved</span></div>
+        </div>
+
+        <!-- SEALED SENDER -->
+        <div class="mc-section">
+          <div class="mc-h2">Sealed Sender</div>
+          <div class="mc-code"><span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:       <span class="mc-str">'alice'</span>,
+  appToken:     <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl:     <span class="mc-str">'https://relay.stvor.xyz'</span>,
+  sealedSender: <span class="mc-kw">true</span>, <span class="mc-cm">// relay sees `to` but never `from`</span>
+});</div>
+          <div class="mc-prop" style="margin-top:8px"><span class="mc-prop-key">Without sealedSender</span><span class="mc-prop-val">relay sees: { to, from, ciphertext }</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">With sealedSender</span><span class="mc-prop-val">relay sees: { to, ciphertext: &lt;opaque envelope&gt; }</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Protocol</span><span class="mc-prop-val">ephemeral ECDH + AES-256-GCM — fresh key per message</span></div>
+        </div>
+
+        <!-- GDPR -->
+        <div class="mc-section">
+          <div class="mc-h2">GDPR Compliance</div>
+          <div class="mc-code"><span class="mc-cm">// Art. 17 — Right to erasure</span>
+<span class="mc-kw">const</span> result = <span class="mc-kw">await</span> alice.<span class="mc-fn">deleteMyData</span>();
+<span class="mc-cm">// { deletedAt, messagesDeleted }</span>
+
+<span class="mc-cm">// Art. 20 — Data portability</span>
+<span class="mc-kw">const</span> data = <span class="mc-kw">await</span> alice.<span class="mc-fn">exportMyData</span>();
+<span class="mc-cm">// { publicKeys, pendingMessages, registeredAt, lastActivity }</span>
+<span class="mc-cm">// Note: message content is E2EE — relay cannot export it</span></div>
+        </div>
+
         <!-- TROUBLESHOOTING -->
         <div class="mc-section">
           <div class="mc-h2">Troubleshooting</div>
@@ -1526,12 +1711,12 @@ bob.<span class="mc-fn">onMessage</span>((msg) => {
           <div class="mc-prop"><span class="mc-prop-key">RELAY_UNAVAILABLE</span><span class="mc-prop-val">Run npx @stvor/sdk mock-relay or check relayUrl</span></div>
           <div class="mc-prop"><span class="mc-prop-key">RECIPIENT_NOT_FOUND</span><span class="mc-prop-val">Increase timeout — send() waits by default</span></div>
           <div class="mc-prop"><span class="mc-prop-key">DELIVERY_FAILED</span><span class="mc-prop-val">Session mismatch — disconnect and reconnect both clients</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.3.1</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.4.0</span></div>
         </div>
 
         <!-- MIGRATION -->
         <div class="mc-section">
-          <div class="mc-h2">Migration v3.0 → v3.3</div>
+          <div class="mc-h2">Migration v3.0 → v3.4</div>
           <div class="mc-code"><span class="mc-cm">// ❌ v3.0 (old — removed)</span>
 <span class="mc-kw">const</span> app = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">init</span>({ appToken: <span class="mc-str">'...'</span>, relayUrl: <span class="mc-str">'...'</span> });
 <span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> app.<span class="mc-fn">connect</span>(<span class="mc-str">'alice'</span>);

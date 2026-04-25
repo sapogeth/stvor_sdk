@@ -126,6 +126,53 @@ await client.disconnect();
 | Set | new Set([1,2,3]) |
 | Map | new Map([['a',1]]) |
 
+## Group Chats
+
+```ts
+// Create group — sender keys distributed to all members via 1-to-1 sessions
+await alice.createGroup('team-chat', ['bob', 'charlie']);
+
+// Send — one encryption, all members receive
+await alice.sendToGroup('team-chat', { text: 'Hello team!' });
+
+// Receive
+bob.onGroupMessage(msg => {
+  // msg.groupId, msg.from, msg.data, msg.timestamp, msg.id
+});
+
+// Manage members (auto-ratchets sender key on removal)
+await alice.addGroupMember('team-chat', 'dave');
+await alice.removeGroupMember('team-chat', 'charlie');
+```
+
+## Sealed Sender
+
+Hides sender identity from the relay. Relay sees `to` but never `from`.
+
+```ts
+const alice = await Stvor.connect({
+  userId:       'alice',
+  appToken:     'stvor_live_xxx',
+  relayUrl:     'https://relay.stvor.xyz',
+  sealedSender: true,
+});
+```
+
+Protocol: ephemeral ECDH key pair per message → AES-256-GCM envelope. Fresh ephemeral key per message means no linkability.
+
+## GDPR Compliance
+
+```ts
+// Art. 17 — Right to erasure
+await alice.deleteMyData();
+// Deletes: public keys, queued messages, registration record
+
+// Art. 20 — Data portability
+const data = await alice.exportMyData();
+// Returns: publicKeys, pendingMessages count, registeredAt, lastActivity
+// Note: message content is E2EE — relay cannot export it
+```
+
 ## Security Properties
 
 - **Forward Secrecy** — Double Ratchet generates a new key per message
@@ -133,6 +180,9 @@ await client.disconnect();
 - **Replay protection** — Nonce + timestamp validation per message
 - **TOFU** — Trust On First Use identity binding; throws on key change
 - **Zero-knowledge relay** — server only ever sees ciphertext
+- **Sealed sender** — optional; hides sender from relay (ephemeral ECDH)
+- **Group E2EE** — Sender Keys; O(1) encryption regardless of group size
+- **GDPR built-in** — right to erasure + data portability
 - **Simultaneous send** — both sides can send before receiving
 
 ## Relay Options
