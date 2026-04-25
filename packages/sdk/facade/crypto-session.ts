@@ -186,6 +186,13 @@ export class CryptoSessionManager {
     this.initialized = true;
   }
 
+  /* ---- Identity key access for sealed sender ---- */
+
+  getIdentityPrivateKey(): Buffer {
+    if (!this.identityKeys) throw new Error('Not initialized');
+    return Buffer.from(this.identityKeys.identityKeyPair.privateKey);
+  }
+
   /* ---- Public keys ---- */
 
   getPublicKeys(): SerializedPublicKeys {

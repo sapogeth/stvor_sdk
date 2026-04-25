@@ -25,22 +25,25 @@ import { verifyFingerprint }              from './tofu-manager.js';
 import { validateMessageWithNonce }       from './replay-manager.js';
 import { encodeData, decodeData }         from './data-codec.js';
 import { StvorError, Errors }             from './errors.js';
+import { sealEnvelope, unsealEnvelope }   from './sealed-sender.js';
 
 export { StvorError };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface StvorConfig {
-  /** Ваш userId — email, UUID, username — любая строка */
   userId: string;
-  /** AppToken из дашборда, начинается с 'stvor_' */
   appToken: string;
-  /** URL relay-сервера */
   relayUrl: string;
-  /** Таймаут запросов, мс (default: 10 000) */
   timeout?: number;
-  /** Интервал поллинга, мс (default: 1 000) */
   pollIntervalMs?: number;
+  /**
+   * Hide sender identity from the relay server.
+   * When true, the relay only sees `to` — never `from`.
+   * Uses ephemeral ECDH + AES-256-GCM to seal the sender inside the envelope.
+   * Default: false (opt-in, requires both sender and recipient to support it)
+   */
+  sealedSender?: boolean;
 }
 
 export interface StvorMessage {
@@ -74,6 +77,7 @@ export class StvorClient {
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
   private readonly pollIntervalMs: number;
+  private readonly sealedSender: boolean;
 
   /** @internal */
   constructor(
@@ -81,11 +85,13 @@ export class StvorClient {
     relay: RelayClient,
     crypto: CryptoSessionManager,
     pollIntervalMs: number,
+    sealedSender: boolean,
   ) {
     this.userId        = userId;
     this.relay         = relay;
     this.crypto        = crypto;
     this.pollIntervalMs = pollIntervalMs;
+    this.sealedSender  = sealedSender;
   }
 
   // ── Send ──────────────────────────────────────────────────────────────
@@ -125,7 +131,15 @@ export class StvorClient {
     const plaintext = encoded.toString('base64url');
     const { ciphertext, header } = this.crypto.encryptForPeer(recipientId, plaintext);
 
-    await this.relay.send({ to: recipientId, from: this.userId, ciphertext, header });
+    if (this.sealedSender) {
+      const recipientIK = Buffer.from(
+        (await this.relay.getPublicKeys(recipientId))!.identityKey, 'base64url'
+      );
+      const sealed = sealEnvelope({ from: this.userId, ciphertext, header }, recipientIK);
+      await this.relay.send({ to: recipientId, from: '', ciphertext: sealed, header: '__SEALED__' });
+    } else {
+      await this.relay.send({ to: recipientId, from: this.userId, ciphertext, header });
+    }
   }
 
   /**
@@ -311,6 +325,12 @@ export class StvorClient {
       return;
     }
 
+    // ── Sealed sender: unseal envelope first ──
+    if (raw.header === '__SEALED__') {
+      const inner = unsealEnvelope(raw.ciphertext, this.crypto.getIdentityPrivateKey());
+      raw = { ...raw, from: inner.from, ciphertext: inner.ciphertext, header: inner.header };
+    }
+
     // ── SKD or regular 1-to-1 ──
     if (!this.crypto.hasSession(raw.from)) {
       const peerKeys = await this.relay.getPublicKeys(raw.from);
@@ -426,7 +446,7 @@ async function connect(config: StvorConfig): Promise<StvorClient> {
 
   await relay.register(config.userId, crypto.getPublicKeys());
 
-  const client = new StvorClient(config.userId, relay, crypto, pollIntervalMs);
+  const client = new StvorClient(config.userId, relay, crypto, pollIntervalMs, config.sealedSender ?? false);
   client.startPolling();
   return client;
 }
