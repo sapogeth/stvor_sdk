@@ -1229,7 +1229,7 @@ const app = await Stvor.init({ appToken: '...', relayUrl: '...' });
 const alice = await app.connect('alice');
 alice.onMessage((msg) => console.log(msg.senderId, msg.content));
 
-// ✅ v3.3 (new)
+// ✅ v3.4 (new)
 const alice = await Stvor.connect({
   userId: 'alice', appToken: '...', relayUrl: '...',
 });
@@ -1722,7 +1722,7 @@ bob.<span class="mc-fn">onGroupMessage</span>(msg =&gt; {
 <span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> app.<span class="mc-fn">connect</span>(<span class="mc-str">'alice'</span>);
 alice.<span class="mc-fn">onMessage</span>((msg) => console.<span class="mc-fn">log</span>(msg.senderId, msg.content));
 
-<span class="mc-cm">// ✅ v3.3 (new)</span>
+<span class="mc-cm">// ✅ v3.4 (new)</span>
 <span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
   userId: <span class="mc-str">'alice'</span>, appToken: <span class="mc-str">'...'</span>, relayUrl: <span class="mc-str">'...'</span>,
 });
