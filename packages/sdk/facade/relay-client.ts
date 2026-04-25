@@ -8,16 +8,34 @@ import type { SerializedPublicKeys } from './crypto-session';
 interface OutgoingMessage {
   to: string;
   from: string;
-  ciphertext: string; // base64url encoded
-  header: string;     // base64url encoded (85-byte binary blob)
+  ciphertext: string;
+  header: string;
 }
 
 interface IncomingMessage {
   id?: string;
   from: string;
-  ciphertext: string; // base64url encoded
-  header: string;     // base64url encoded
+  ciphertext: string;
+  header: string;
   timestamp: string;
+  // group fields (present only on group messages)
+  groupId?: string;
+  groupHeader?: string;
+}
+
+interface OutgoingGroupMessage {
+  groupId: string;
+  from: string;
+  members: string[];
+  ciphertext: string;
+  groupHeader: string;
+}
+
+export interface SenderKeyDistributionPayload {
+  groupId: string;
+  from: string;
+  chainKey: string;
+  generation: number;
 }
 
 export class RelayClient {
@@ -186,6 +204,38 @@ export class RelayClient {
     } finally {
       clearTimeout(timeoutId);
     }
+  }
+
+  async sendToGroup(message: OutgoingGroupMessage): Promise<void> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    try {
+      const res = await fetch(`${this.relayUrl}/group/${message.groupId}/message`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          from: message.from,
+          members: message.members,
+          ciphertext: message.ciphertext,
+          groupHeader: message.groupHeader,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw Errors.deliveryFailed(message.groupId);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async sendSenderKeyDistribution(payload: SenderKeyDistributionPayload, recipientId: string): Promise<void> {
+    // Sender key distribution is sent as a special 1-to-1 message with a marker header
+    // The recipient's stvor.ts will detect the __SKD__ prefix and install it
+    await this.send({
+      to: recipientId,
+      from: payload.from,
+      ciphertext: Buffer.from(JSON.stringify(payload)).toString('base64url'),
+      header: Buffer.from('__SKD__').toString('base64url'),
+    });
   }
 
   disconnect(): void {

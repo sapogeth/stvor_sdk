@@ -44,17 +44,24 @@ export interface StvorConfig {
 }
 
 export interface StvorMessage {
-  /** Кто прислал */
   from: string;
-  /** Расшифрованные данные (любой тип) */
   data: unknown;
-  /** Время отправки */
   timestamp: Date;
-  /** Уникальный ID */
+  id: string;
+}
+
+export interface StvorGroupMessage {
+  groupId: string;
+  from: string;
+  data: unknown;
+  timestamp: Date;
   id: string;
 }
 
 export type MessageHandler = (msg: StvorMessage) => void | Promise<void>;
+export type GroupMessageHandler = (msg: StvorGroupMessage) => void | Promise<void>;
+
+const SKD_HEADER_MARKER = Buffer.from('__SKD__').toString('base64url');
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
@@ -63,6 +70,7 @@ export class StvorClient {
   private readonly relay: RelayClient;
   private readonly crypto: CryptoSessionManager;
   private readonly handlers = new Set<MessageHandler>();
+  private readonly groupHandlers = new Set<GroupMessageHandler>();
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
   private readonly pollIntervalMs: number;
@@ -139,6 +147,131 @@ export class StvorClient {
 
   getUserId(): string { return this.userId; }
 
+  // ── Group API ─────────────────────────────────────────────────────────
+
+  /**
+   * Create an E2EE group and invite members.
+   * Sends sender key distribution to each member via their 1-to-1 session.
+   *
+   * @param groupId  Unique group identifier (any string)
+   * @param memberIds  Array of userIds to invite
+   */
+  async createGroup(groupId: string, memberIds: string[]): Promise<void> {
+    if (!this.alive) throw Errors.clientNotReady();
+
+    this.crypto.createGroupSession(groupId, memberIds);
+    const dist = this.crypto.getSenderKeyDistribution(groupId);
+
+    // Ensure 1-to-1 session with each member, then distribute sender key
+    for (const memberId of memberIds) {
+      if (!this.crypto.hasSession(memberId)) {
+        let peerKeys = await this.relay.getPublicKeys(memberId);
+        if (!peerKeys) peerKeys = await this.waitForKeys(memberId, 10_000);
+        if (!peerKeys) throw Errors.recipientNotFound(memberId);
+        const identityKey = Buffer.from(peerKeys.identityKey, 'base64url');
+        await verifyFingerprint(memberId, identityKey);
+        await this.crypto.establishSessionWithPeer(memberId, peerKeys);
+      }
+
+      // Encrypt & send SKD via 1-to-1 session
+      const skdPayload = JSON.stringify({
+        groupId,
+        from: this.userId,
+        chainKey: dist.chainKey,
+        generation: dist.generation,
+      });
+      const encoded = encodeData(skdPayload);
+      const plaintext = encoded.toString('base64url');
+      const { ciphertext, header } = this.crypto.encryptForPeer(memberId, plaintext);
+
+      await this.relay.send({
+        to: memberId,
+        from: this.userId,
+        ciphertext,
+        // Mark as SKD by prepending marker to header
+        header: SKD_HEADER_MARKER + '.' + header,
+      });
+    }
+  }
+
+  /**
+   * Send an encrypted message to a group.
+   * All members will receive it via their own polling.
+   */
+  async sendToGroup(
+    groupId: string,
+    data: unknown,
+  ): Promise<void> {
+    if (!this.alive) throw Errors.clientNotReady();
+    if (!this.crypto.hasGroupSession(groupId)) throw new Error(`Not in group: ${groupId}`);
+
+    const encoded = encodeData(data);
+    const plaintext = encoded.toString('base64url');
+    const { ciphertext, groupHeader } = this.crypto.encryptForGroup(groupId, plaintext);
+
+    const members = this.crypto.getGroupMembers(groupId);
+    await this.relay.sendToGroup({
+      groupId,
+      from: this.userId,
+      members,
+      ciphertext,
+      groupHeader,
+    });
+  }
+
+  /**
+   * Subscribe to incoming group messages.
+   * Returns an unsubscribe function.
+   */
+  onGroupMessage(handler: GroupMessageHandler): () => void {
+    this.groupHandlers.add(handler);
+    return () => this.groupHandlers.delete(handler);
+  }
+
+  /**
+   * Add a member to an existing group.
+   * Sends them the current sender key distribution.
+   */
+  async addGroupMember(groupId: string, memberId: string): Promise<void> {
+    if (!this.alive) throw Errors.clientNotReady();
+    this.crypto.addGroupMember(groupId, memberId);
+
+    if (!this.crypto.hasSession(memberId)) {
+      let peerKeys = await this.relay.getPublicKeys(memberId);
+      if (!peerKeys) peerKeys = await this.waitForKeys(memberId, 10_000);
+      if (!peerKeys) throw Errors.recipientNotFound(memberId);
+      const identityKey = Buffer.from(peerKeys.identityKey, 'base64url');
+      await verifyFingerprint(memberId, identityKey);
+      await this.crypto.establishSessionWithPeer(memberId, peerKeys);
+    }
+
+    const dist = this.crypto.getSenderKeyDistribution(groupId);
+    const skdPayload = JSON.stringify({ groupId, from: this.userId, chainKey: dist.chainKey, generation: dist.generation });
+    const encoded = encodeData(skdPayload);
+    const { ciphertext, header } = this.crypto.encryptForPeer(memberId, encoded.toString('base64url'));
+    await this.relay.send({ to: memberId, from: this.userId, ciphertext, header: SKD_HEADER_MARKER + '.' + header });
+  }
+
+  /**
+   * Remove a member from the group.
+   * Automatically ratchets the sender key so they can't decrypt future messages.
+   */
+  async removeGroupMember(groupId: string, memberId: string): Promise<void> {
+    if (!this.alive) throw Errors.clientNotReady();
+    this.crypto.removeGroupMember(groupId, memberId);
+
+    // Distribute new sender key to remaining members
+    const members = this.crypto.getGroupMembers(groupId);
+    const dist = this.crypto.getSenderKeyDistribution(groupId);
+    for (const remainingMember of members) {
+      if (!this.crypto.hasSession(remainingMember)) continue;
+      const skdPayload = JSON.stringify({ groupId, from: this.userId, chainKey: dist.chainKey, generation: dist.generation });
+      const encoded = encodeData(skdPayload);
+      const { ciphertext, header } = this.crypto.encryptForPeer(remainingMember, encoded.toString('base64url'));
+      await this.relay.send({ to: remainingMember, from: this.userId, ciphertext, header: SKD_HEADER_MARKER + '.' + header });
+    }
+  }
+
   /** Отключиться и остановить поллинг */
   async disconnect(): Promise<void> {
     this.alive = false;
@@ -169,7 +302,16 @@ export class StvorClient {
 
   private async processRaw(raw: {
     id?: string; from: string; ciphertext: string; header: string; timestamp: string;
+    groupId?: string; groupHeader?: string;
   }): Promise<void> {
+    // ── Group message (broadcast from relay) ──
+    if (raw.groupId && raw.groupHeader) {
+      await this.processGroupRaw(raw as typeof raw & { groupId: string; groupHeader: string });
+      if (raw.id) { try { await this.relay.deleteMessage(raw.id); } catch { /* non-fatal */ } }
+      return;
+    }
+
+    // ── SKD or regular 1-to-1 ──
     if (!this.crypto.hasSession(raw.from)) {
       const peerKeys = await this.relay.getPublicKeys(raw.from);
       if (!peerKeys) throw new Error(`No public keys for ${raw.from}`);
@@ -178,7 +320,18 @@ export class StvorClient {
       await this.crypto.establishSessionWithPeer(raw.from, peerKeys);
     }
 
-    // Replay protection через nonce из header (байты 73-84 в 85-байтовом header)
+    // Detect SKD marker: header starts with SKD_HEADER_MARKER + '.'
+    if (raw.header.startsWith(SKD_HEADER_MARKER + '.')) {
+      const realHeader = raw.header.slice(SKD_HEADER_MARKER.length + 1);
+      const encodedB64 = this.crypto.decryptFromPeer(raw.from, raw.ciphertext, realHeader);
+      const decoded = decodeData(Buffer.from(encodedB64, 'base64url'));
+      const skd = JSON.parse(decoded as string);
+      this.crypto.installSenderKey(skd.groupId, skd.from, skd.chainKey, skd.generation);
+      if (raw.id) { try { await this.relay.deleteMessage(raw.id); } catch { /* non-fatal */ } }
+      return;
+    }
+
+    // Replay protection via nonce from header (bytes 73-84)
     const headerBuf = Buffer.from(raw.header, 'base64url');
     if (headerBuf.length >= 85) {
       const nonce     = headerBuf.subarray(73, 85);
@@ -196,14 +349,35 @@ export class StvorClient {
       timestamp: new Date(raw.timestamp),
     };
 
-    // Delete message from relay after successful decryption
-    if (raw.id) {
-      try { await this.relay.deleteMessage(raw.id); } catch { /* non-fatal */ }
-    }
+    if (raw.id) { try { await this.relay.deleteMessage(raw.id); } catch { /* non-fatal */ } }
 
     for (const h of this.handlers) {
       try { await h(msg); }
       catch (e) { console.error('[Stvor] Handler error:', e); }
+    }
+  }
+
+  private async processGroupRaw(raw: {
+    id?: string; from: string; ciphertext: string; groupId: string; groupHeader: string; timestamp: string;
+  }): Promise<void> {
+    if (!this.crypto.hasGroupSession(raw.groupId)) {
+      throw new Error(`Received group message for unknown group: ${raw.groupId}`);
+    }
+
+    const encodedB64 = this.crypto.decryptFromGroup(raw.groupId, raw.from, raw.ciphertext, raw.groupHeader);
+    const decoded    = decodeData(Buffer.from(encodedB64, 'base64url'));
+
+    const msg: StvorGroupMessage = {
+      id:        raw.id ?? crypto.randomUUID(),
+      groupId:   raw.groupId,
+      from:      raw.from,
+      data:      decoded,
+      timestamp: new Date(raw.timestamp),
+    };
+
+    for (const h of this.groupHandlers) {
+      try { await h(msg); }
+      catch (e) { console.error('[Stvor] Group handler error:', e); }
     }
   }
 
