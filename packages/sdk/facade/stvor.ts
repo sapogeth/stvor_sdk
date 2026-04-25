@@ -161,6 +161,25 @@ export class StvorClient {
 
   getUserId(): string { return this.userId; }
 
+  // ── Compliance (GDPR) ─────────────────────────────────────────────────
+
+  /**
+   * GDPR Art. 17 — Right to erasure.
+   * Deletes all relay-side data for this user: public keys, queued messages.
+   * Message content was already E2EE and inaccessible to the relay.
+   */
+  async deleteMyData(): Promise<{ deletedAt: string; messagesDeleted: number }> {
+    return this.relay.deleteUser(this.userId);
+  }
+
+  /**
+   * GDPR Art. 20 — Right to data portability.
+   * Returns what the relay stores about this user (metadata only).
+   */
+  async exportMyData(): Promise<unknown> {
+    return this.relay.exportUserData(this.userId);
+  }
+
   // ── Group API ─────────────────────────────────────────────────────────
 
   /**

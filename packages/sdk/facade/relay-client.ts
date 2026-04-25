@@ -206,6 +206,38 @@ export class RelayClient {
     }
   }
 
+  async deleteUser(userId: string): Promise<{ deletedAt: string; messagesDeleted: number }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    try {
+      const res = await fetch(`${this.relayUrl}/user/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('Failed to delete user data');
+      return await res.json();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async exportUserData(userId: string): Promise<unknown> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    try {
+      const res = await fetch(`${this.relayUrl}/user/${encodeURIComponent(userId)}/export`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('Failed to export user data');
+      return await res.json();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   async sendToGroup(message: OutgoingGroupMessage): Promise<void> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
