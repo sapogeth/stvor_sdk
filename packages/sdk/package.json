@@ -1,6 +1,6 @@
 {
   "name": "@stvor/sdk",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Stvor DX Facade - Simple E2EE SDK for client-side encryption",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -67,7 +67,7 @@
   "bugs": {
     "url": "https://github.com/sapogeth/stvor_sdk/issues"
   },
-  "homepage": "https://stvor.xyz",
+  "homepage": "https://sdk.stvor.xyz",
   "scripts": {
     "build": "tsc --pretty false --noEmitOnError false || true && node postbuild-fix-extensions.cjs && node build-cjs.cjs",
     "prepublishOnly": "npm run build && npm test",
