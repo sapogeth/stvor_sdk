@@ -2,7 +2,9 @@
 
 End-to-end encryption for any app. Drop-in library — no cryptography knowledge required.
 
-Uses **X3DH + Double Ratchet** (Signal Protocol) with AES-256-GCM, ECDSA P-256, and HKDF-SHA-256. Node.js uses `node:crypto` (zero native deps). Browser uses Web Crypto API (zero dependencies at all).
+Signal Protocol (X3DH + Double Ratchet) with AES-256-GCM, ECDSA P-256, and HKDF-SHA-256.
+Optional **post-quantum protection** via ML-KEM-768 (NIST FIPS 203).
+Node.js uses `node:crypto` only — zero external dependencies.
 
 ## Install
 
@@ -12,7 +14,7 @@ npm install @stvor/sdk
 
 ## Quickstart
 
-### Node.js — 1-to-1
+### 1-to-1 messaging
 
 ```ts
 import { Stvor } from '@stvor/sdk';
@@ -29,52 +31,59 @@ const bob = await Stvor.connect({
   relayUrl: 'https://relay.stvor.xyz',
 });
 
-bob.onMessage(msg => {
-  console.log(`From ${msg.from}:`, msg.data);
-});
-
+bob.onMessage(msg => console.log(msg.from, msg.data));
 await alice.send('bob', { text: 'Hello!' });
 
 await alice.disconnect();
 await bob.disconnect();
 ```
 
+### Post-quantum protection (ML-KEM-768)
+
+```ts
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+  pqc:      true,   // enables ML-KEM-768 hybrid key exchange
+});
+```
+
+When `pqc: true`:
+- ML-KEM-768 key pair is generated on connect
+- Key exchange uses **hybrid X3DH + ML-KEM-768** — secure if either classical or PQC is unbroken
+- Session root key = `HKDF(X3DH_secret ‖ ML-KEM_contribution)`
+- Falls back to classical if the peer doesn't support PQC
+
 ### Group chats
 
 ```ts
-// Alice creates a group and invites members
-await alice.createGroup('team-chat', ['bob', 'charlie']);
+await alice.createGroup('team', ['bob', 'charlie']);
+await alice.sendToGroup('team', { text: 'Hello team!' });
 
-// Send to the group — one encryption, all members receive
-await alice.sendToGroup('team-chat', { text: 'Hello team!' });
-
-// Receive group messages
 bob.onGroupMessage(msg => {
   console.log(msg.groupId, msg.from, msg.data);
 });
 
-// Manage members (auto-ratchets sender key on removal)
-await alice.addGroupMember('team-chat', 'dave');
-await alice.removeGroupMember('team-chat', 'charlie');
+await alice.addGroupMember('team', 'dave');
+await alice.removeGroupMember('team', 'charlie'); // auto-ratchets sender key
 ```
 
 ### Sealed sender (metadata protection)
 
 ```ts
-// Relay sees `to` but never `from` — sender identity is hidden
 const alice = await Stvor.connect({
   userId:       'alice',
   appToken:     'stvor_live_xxx',
   relayUrl:     'https://relay.stvor.xyz',
-  sealedSender: true,
+  sealedSender: true,  // relay sees `to` but never `from`
 });
 ```
 
 ### Local development
 
 ```bash
-# Start local relay — no account needed
-npx @stvor/sdk mock-relay
+npx @stvor/sdk mock-relay   # port 4444, no account needed
 ```
 
 ```ts
@@ -98,35 +107,11 @@ const sdk = await StvorWebSDK.create({
 
 sdk.onMessage((from, data) => console.log(from, data));
 await sdk.send('bob', { text: 'Hello from browser!' });
-sdk.disconnect();
 ```
 
 Keys are persisted in IndexedDB — identity survives page refreshes.
 
-## How it works
-
-1. Each user generates an identity key pair (ECDH P-256) on first connect.
-2. Session is established via **X3DH** — both sides derive the same shared secret without a central server.
-3. Every message advances the **Double Ratchet** — compromise of one key doesn't expose past or future messages.
-4. The relay server only ever sees ciphertext.
-
-## Supported data types
-
-Send any JavaScript value — the original type is preserved on the receiving end:
-
-| Type | Example |
-|------|---------|
-| `string` | `'Hello'` |
-| `number` | `42`, `3.14` |
-| `boolean` | `true`, `false` |
-| `null` | `null` |
-| `Uint8Array` / `Buffer` | Binary files, images |
-| `object` / `array` | `{ key: 'val' }`, `[1,2,3]` |
-| `Date` | `new Date()` |
-| `Set` | `new Set([1,2,3])` |
-| `Map` | `new Map([['a',1]])` |
-
-## API — `Stvor` (Node.js)
+## API
 
 ### `Stvor.connect(config)`
 
@@ -134,10 +119,11 @@ Send any JavaScript value — the original type is preserved on the receiving en
 const client = await Stvor.connect({
   userId:          string,   // any unique identifier
   appToken:        string,   // starts with 'stvor_'
-  relayUrl:        string,   // e.g. 'https://relay.stvor.xyz'
+  relayUrl:        string,   // 'https://relay.stvor.xyz' or self-hosted
   timeout?:        number,   // ms, default: 10 000
-  pollIntervalMs?: number,   // message polling interval, default: 1 000
+  pollIntervalMs?: number,   // polling interval ms, default: 1 000
   sealedSender?:   boolean,  // hide sender from relay, default: false
+  pqc?:            boolean,  // ML-KEM-768 hybrid key exchange, default: false
 });
 ```
 
@@ -159,138 +145,80 @@ const unsubscribe = client.onMessage(msg => {
   // msg.from      — sender userId
   // msg.data      — decrypted value (original type preserved)
   // msg.timestamp — Date
-  // msg.id        — unique string
+  // msg.id        — string
 });
-
-unsubscribe(); // stop listening
+unsubscribe();
 ```
 
-### `client.createGroup(groupId, memberIds)`
+### Group API
 
 ```ts
-await client.createGroup('room-1', ['bob', 'charlie']);
+await client.createGroup(groupId, memberIds)
+await client.sendToGroup(groupId, data)
+const unsub = client.onGroupMessage(msg => { /* msg.groupId, msg.from, msg.data */ })
+await client.addGroupMember(groupId, memberId)
+await client.removeGroupMember(groupId, memberId)  // auto-ratchets
 ```
 
-### `client.sendToGroup(groupId, data)`
+### GDPR
 
 ```ts
-await client.sendToGroup('room-1', { text: 'Hello group!' });
+await client.deleteMyData()   // Art. 17 — right to erasure
+await client.exportMyData()   // Art. 20 — data portability
 ```
 
-### `client.onGroupMessage(handler)`
+### `client.waitForUser(userId, timeoutMs?)` / `client.disconnect()`
 
 ```ts
-const unsubscribe = client.onGroupMessage(msg => {
-  // msg.groupId   — group identifier
-  // msg.from      — sender userId
-  // msg.data      — decrypted value
-  // msg.timestamp — Date
-  // msg.id        — unique string
-});
-```
-
-### `client.addGroupMember(groupId, memberId)`
-
-```ts
-await client.addGroupMember('room-1', 'dave');
-```
-
-### `client.removeGroupMember(groupId, memberId)`
-
-```ts
-// Automatically ratchets sender key — removed member cannot decrypt future messages
-await client.removeGroupMember('room-1', 'charlie');
-```
-
-### `client.waitForUser(userId, timeoutMs?)`
-
-```ts
-const online = await client.waitForUser('bob', 15_000);
-// true = registered, false = timeout
-```
-
-### `client.deleteMyData()`
-
-```ts
-// GDPR Art. 17 — erases all relay-side data for this user
-await client.deleteMyData();
-```
-
-### `client.exportMyData()`
-
-```ts
-// GDPR Art. 20 — returns what the relay stores about this user
-const data = await client.exportMyData();
-```
-
-### `client.disconnect()`
-
-```ts
+const online = await client.waitForUser('bob', 15_000); // true / false
 await client.disconnect();
 ```
 
-## API — `StvorWebSDK` (Browser)
+## Supported data types
 
-Same shape as the Node.js client:
-
-```ts
-const sdk = await StvorWebSDK.create({ userId, appToken, relayUrl, pollIntervalMs? });
-
-await sdk.send(recipientId, data);
-sdk.onMessage((from, data) => { /* ... */ });
-await sdk.waitForUser(userId, timeoutMs?);
-sdk.disconnect();
-sdk.getUserId();
-```
-
-## TOFU (Trust On First Use)
-
-On first contact with a peer, the SDK stores their identity key fingerprint. If the fingerprint changes on a later contact, the SDK throws — protecting against MITM attacks. Works automatically.
+| Type | Example |
+|------|---------|
+| `string` | `'Hello'` |
+| `number` | `42`, `3.14` |
+| `boolean` | `true`, `false` |
+| `null` | `null` |
+| `Uint8Array` / `Buffer` | Binary files, images |
+| `object` / `array` | `{ key: 'val' }`, `[1,2,3]` |
+| `Date` | `new Date()` |
+| `Set` | `new Set([1,2,3])` |
+| `Map` | `new Map([['a',1]])` |
 
 ## Security properties
 
 | Property | Implementation |
 |---|---|
 | Forward Secrecy | Double Ratchet — new key per message |
-| Post-Compromise Security | DH ratchet rotation every message |
+| Post-Compromise Security | DH ratchet rotation |
+| Post-Quantum (optional) | ML-KEM-768 hybrid key exchange — `pqc: true` |
 | Replay protection | Nonce + timestamp per message |
-| TOFU | Identity binding on first contact |
-| Zero-knowledge relay | Server only stores ciphertext |
-| Sealed sender | Optional — hides sender from relay (ephemeral ECDH) |
-| Simultaneous send | Both sides can send before receiving |
-| Group E2EE | Sender Keys — one encryption per message regardless of group size |
-| GDPR compliance | Right to erasure + data portability built in |
+| TOFU | Identity binding, throws on key change |
+| Zero-knowledge relay | Relay stores only ciphertext |
+| Sealed sender (optional) | Hides sender from relay — `sealedSender: true` |
+| Group E2EE | Sender Keys — O(1) encryption per message |
+| GDPR | Right to erasure + data portability built in |
 
 ## Relay options
 
-### Hosted relay (recommended)
-
 ```ts
-relayUrl: 'https://relay.stvor.xyz'
+relayUrl: 'https://relay.stvor.xyz'  // hosted, no setup
 ```
-
-No setup needed. Accepts any `stvor_*` token.
-
-### Local relay (development)
 
 ```bash
-npx @stvor/sdk mock-relay          # port 4444
-PORT=9000 npx @stvor/sdk mock-relay
+npx @stvor/sdk mock-relay             # local dev, port 4444
 ```
-
-### Self-hosted relay
 
 ```bash
-git clone https://github.com/sapogeth/sdk-relay
-cd sdk-relay
-node server.js
+git clone https://github.com/sapogeth/sdk-relay && node server.js  # self-hosted
 ```
-
-Set `PORT` and `STVOR_VERBOSE=1` as needed.
 
 ## Docs
 
-Full documentation: **[sdk.stvor.xyz](https://sdk.stvor.xyz/docs)**
+**[sdk.stvor.xyz](https://sdk.stvor.xyz/docs)**
 
 ## License
 

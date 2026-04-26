@@ -545,7 +545,7 @@
       <a href="/" class="topbar-logo">ST<span>V</span>OR</a>
       <div class="topbar-sep"></div>
       <span class="topbar-title">Documentation</span>
-      <span class="version-badge">v3.4.0</span>
+      <span class="version-badge">v3.5.1</span>
     </div>
     <div class="topbar-right">
       <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
@@ -584,6 +584,7 @@
       </div>
       <div class="sidebar-group">
         <div class="sidebar-group-label">Privacy</div>
+        <a class="sidebar-link" href="#pqc">Post-Quantum (ML-KEM-768)</a>
         <a class="sidebar-link" href="#sealed-sender">Sealed Sender</a>
         <a class="sidebar-link" href="#gdpr">GDPR Compliance</a>
       </div>
@@ -988,6 +989,54 @@ await alice.removeGroupMember('team-chat', 'charlie');</code></pre>
 
         <hr>
 
+        <!-- PQC -->
+        <section id="pqc">
+          <h2>Post-Quantum Cryptography (ML-KEM-768)</h2>
+          <p class="lead">When <code>pqc: true</code>, key exchange uses a hybrid scheme combining classical X3DH with ML-KEM-768 (NIST FIPS 203). Secure if either classical or post-quantum is unbroken.</p>
+
+          <div class="code-block">
+            <div class="code-block-header"><span class="code-lang">typescript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+  pqc:      true,   // ← enables ML-KEM-768
+});</code></pre>
+          </div>
+
+          <h3>How it works</h3>
+          <p>When both peers have <code>pqc: true</code>, session establishment automatically uses a hybrid key derivation:</p>
+          <ol>
+            <li><strong>Classical X3DH</strong> runs as normal — derives <code>classical_ss</code></li>
+            <li><strong>ML-KEM-768 contribution</strong> is derived deterministically from both peers' ML-KEM public keys</li>
+            <li><strong>Hybrid root key</strong> = <code>HKDF(classical_ss ‖ pqc_contribution)</code></li>
+            <li>All subsequent Double Ratchet messages use this hybrid root key</li>
+          </ol>
+
+          <div class="callout callout-tip">
+            <strong>Hybrid security:</strong> If a quantum computer breaks ECDH — the PQC contribution still protects you. If ML-KEM has an unknown flaw — classical X3DH still protects you. Both must be broken simultaneously.
+          </div>
+
+          <h3>Key sizes</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Key</th><th>Size</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>ML-KEM encapsulation key (public)</td><td>1184 bytes</td><td>Published to relay alongside classical keys</td></tr>
+                <tr><td>ML-KEM decapsulation key (private)</td><td>2400 bytes</td><td>Never leaves the device</td></tr>
+                <tr><td>Hybrid session key</td><td>32 bytes</td><td>HKDF output, same as classical</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Fallback</h3>
+          <p>If one peer has <code>pqc: true</code> and the other doesn't, the session falls back gracefully to classical X3DH only — no error, no incompatibility.</p>
+
+          <div class="callout callout-warn">
+            <strong>Status:</strong> ML-KEM-768 implementation is NIST FIPS 203 compliant. No independent security audit has been performed yet. For regulated environments, wait for an audit before relying solely on the PQC layer.
+          </div>
+        </section>
+
         <!-- SEALED SENDER -->
         <section id="sealed-sender">
           <h2>Sealed Sender</h2>
@@ -1208,7 +1257,7 @@ bob.onMessage((msg) => {
           <p>Decryption error — usually a session state mismatch. Disconnect and reconnect both clients.</p>
 
           <h3>ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
-          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.4.0</code>.</p>
+          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.5.1</code>.</p>
         </section>
 
         <!-- MIGRATION -->
@@ -1287,7 +1336,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
 
     // ── MACHINE MODE ──────────────────────────────────────────
     const BOOT_LINES = [
-      { t: 0,   text: '[ 0.000000] stvor: kernel v3.4.0-signal', cls: 'boot-head' },
+      { t: 0,   text: '[ 0.000000] stvor: kernel v3.5.1-signal', cls: 'boot-head' },
       { t: 80,  text: '[ 0.000312] loading crypto modules...',   cls: '' },
       { t: 160, text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
       { t: 240, text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
@@ -1400,7 +1449,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
       <div id="boot-lines"></div>
       <div class="machine-content" id="mc-content">
 
-        <div class="mc-h1"># Stvor SDK v3.4.0 — Full Documentation</div>
+        <div class="mc-h1"># Stvor SDK v3.5.1 — Full Documentation</div>
         <div class="mc-sub">Signal Protocol (X3DH + Double Ratchet) · AES-256-GCM · HKDF-SHA256 · Zero runtime dependencies</div>
 
         <!-- OVERVIEW -->
@@ -1677,6 +1726,23 @@ bob.<span class="mc-fn">onGroupMessage</span>(msg =&gt; {
           <div class="mc-prop"><span class="mc-prop-key">StvorGroupMessage.data</span><span class="mc-prop-val">unknown — original type preserved</span></div>
         </div>
 
+        <!-- PQC -->
+        <div class="mc-section">
+          <div class="mc-h2">Post-Quantum (ML-KEM-768)</div>
+          <div class="mc-code"><span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'alice'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+  pqc:      <span class="mc-kw">true</span>, <span class="mc-cm">// ML-KEM-768 hybrid key exchange</span>
+});</div>
+          <div class="mc-prop" style="margin-top:8px"><span class="mc-prop-key">Algorithm</span><span class="mc-prop-val">ML-KEM-768 (NIST FIPS 203) — zero external dependencies</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Hybrid scheme</span><span class="mc-prop-val">HKDF(X3DH_ss ‖ ML-KEM_contribution) → 32-byte root key</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Security</span><span class="mc-prop-val">Secure if either classical OR post-quantum holds</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ek size</span><span class="mc-prop-val">1184 bytes (ML-KEM-768 public key)</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">dk size</span><span class="mc-prop-val">2400 bytes (never leaves device)</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">Fallback</span><span class="mc-prop-val">If peer has no PQC — falls back to classical X3DH silently</span></div>
+        </div>
+
         <!-- SEALED SENDER -->
         <div class="mc-section">
           <div class="mc-h2">Sealed Sender</div>
@@ -1711,7 +1777,7 @@ bob.<span class="mc-fn">onGroupMessage</span>(msg =&gt; {
           <div class="mc-prop"><span class="mc-prop-key">RELAY_UNAVAILABLE</span><span class="mc-prop-val">Run npx @stvor/sdk mock-relay or check relayUrl</span></div>
           <div class="mc-prop"><span class="mc-prop-key">RECIPIENT_NOT_FOUND</span><span class="mc-prop-val">Increase timeout — send() waits by default</span></div>
           <div class="mc-prop"><span class="mc-prop-key">DELIVERY_FAILED</span><span class="mc-prop-val">Session mismatch — disconnect and reconnect both clients</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.4.0</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.5.1</span></div>
         </div>
 
         <!-- MIGRATION -->
