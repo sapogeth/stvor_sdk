@@ -30,7 +30,7 @@ await test('pqc:false does not include pqcEk', async () => {
   assert(!keys.pqcEk, 'pqcEk should not be present when pqc disabled');
 });
 
-await test('Both sides with pqc:true can establish session and encrypt/decrypt', async () => {
+await test('Full KEM handshake: alice encaps to bob, bob decaps — both get same SS', async () => {
   const alice = new CryptoSessionManager('alice', undefined, undefined, true);
   const bob   = new CryptoSessionManager('bob',   undefined, undefined, true);
   await alice.initialize();
@@ -38,15 +38,35 @@ await test('Both sides with pqc:true can establish session and encrypt/decrypt',
 
   const aliceKeys = alice.getPublicKeys();
   const bobKeys   = bob.getPublicKeys();
+  assert(!!bobKeys.pqcEk, 'bob must have pqcEk');
 
-  // Both establish sessions
+  // Alice establishes session → encaps to bob → gets pending ct+ss
   await alice.establishSessionWithPeer('bob', bobKeys);
+  const ctB64 = alice.popPendingPqcCt('bob');
+  assert(ctB64 !== null, 'Alice should have a pending PQC ciphertext');
+
+  // Bob establishes session (classical only)
   await bob.establishSessionWithPeer('alice', aliceKeys);
 
-  // Alice encrypts, Bob decrypts
-  const { ciphertext, header } = alice.encryptForPeer('bob', 'hello pqc world');
+  // Bob receives ct from Alice and applies it
+  bob.applyIncomingPqcCt('alice', ctB64!);
+
+  // Now both should have the same hybrid root key — test by encrypt/decrypt
+  const { ciphertext, header } = alice.encryptForPeer('bob', 'hello quantum world');
   const plaintext = bob.decryptFromPeer('alice', ciphertext, header);
-  assert(plaintext === 'hello pqc world', `Got: ${plaintext}`);
+  assert(plaintext === 'hello quantum world', `Got: ${plaintext}`);
+});
+
+await test('popPendingPqcCt returns null on second call (ct consumed)', async () => {
+  const alice = new CryptoSessionManager('alice', undefined, undefined, true);
+  const bob   = new CryptoSessionManager('bob',   undefined, undefined, true);
+  await alice.initialize();
+  await bob.initialize();
+  await alice.establishSessionWithPeer('bob', bob.getPublicKeys());
+  const ct1 = alice.popPendingPqcCt('bob');
+  const ct2 = alice.popPendingPqcCt('bob');
+  assert(ct1 !== null, 'First call should return ct');
+  assert(ct2 === null, 'Second call should return null');
 });
 
 await test('PQC session root key differs from classical-only', async () => {

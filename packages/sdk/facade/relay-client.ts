@@ -10,6 +10,7 @@ interface OutgoingMessage {
   from: string;
   ciphertext: string;
   header: string;
+  pqcCt?: string;  // ML-KEM ciphertext, present only on first message when pqc: true
 }
 
 interface IncomingMessage {
@@ -18,6 +19,7 @@ interface IncomingMessage {
   ciphertext: string;
   header: string;
   timestamp: string;
+  pqcCt?: string;  // ML-KEM ciphertext from initiator
   // group fields (present only on group messages)
   groupId?: string;
   groupHeader?: string;
@@ -152,6 +154,7 @@ export class RelayClient {
           from: message.from,
           ciphertext: message.ciphertext,
           header: message.header,
+          ...(message.pqcCt ? { pqcCt: message.pqcCt } : {}),
         }),
         signal: controller.signal,
       });

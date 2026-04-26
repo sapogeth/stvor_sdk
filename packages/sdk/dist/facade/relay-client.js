@@ -145,6 +145,72 @@ export class RelayClient {
             clearTimeout(timeoutId);
         }
     }
+    async deleteUser(userId) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        try {
+            const res = await fetch(`${this.relayUrl}/user/${encodeURIComponent(userId)}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+                signal: controller.signal,
+            });
+            if (!res.ok)
+                throw new Error('Failed to delete user data');
+            return await res.json();
+        }
+        finally {
+            clearTimeout(timeoutId);
+        }
+    }
+    async exportUserData(userId) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        try {
+            const res = await fetch(`${this.relayUrl}/user/${encodeURIComponent(userId)}/export`, {
+                method: 'GET',
+                headers: this.getAuthHeaders(),
+                signal: controller.signal,
+            });
+            if (!res.ok)
+                throw new Error('Failed to export user data');
+            return await res.json();
+        }
+        finally {
+            clearTimeout(timeoutId);
+        }
+    }
+    async sendToGroup(message) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        try {
+            const res = await fetch(`${this.relayUrl}/group/${message.groupId}/message`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    from: message.from,
+                    members: message.members,
+                    ciphertext: message.ciphertext,
+                    groupHeader: message.groupHeader,
+                }),
+                signal: controller.signal,
+            });
+            if (!res.ok)
+                throw Errors.deliveryFailed(message.groupId);
+        }
+        finally {
+            clearTimeout(timeoutId);
+        }
+    }
+    async sendSenderKeyDistribution(payload, recipientId) {
+        // Sender key distribution is sent as a special 1-to-1 message with a marker header
+        // The recipient's stvor.ts will detect the __SKD__ prefix and install it
+        await this.send({
+            to: recipientId,
+            from: payload.from,
+            ciphertext: Buffer.from(JSON.stringify(payload)).toString('base64url'),
+            header: Buffer.from('__SKD__').toString('base64url'),
+        });
+    }
     disconnect() {
         this.connected = false;
     }

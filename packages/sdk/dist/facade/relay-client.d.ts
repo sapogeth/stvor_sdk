@@ -14,6 +14,21 @@ interface IncomingMessage {
     ciphertext: string;
     header: string;
     timestamp: string;
+    groupId?: string;
+    groupHeader?: string;
+}
+interface OutgoingGroupMessage {
+    groupId: string;
+    from: string;
+    members: string[];
+    ciphertext: string;
+    groupHeader: string;
+}
+export interface SenderKeyDistributionPayload {
+    groupId: string;
+    from: string;
+    chainKey: string;
+    generation: number;
 }
 export declare class RelayClient {
     private relayUrl;
@@ -31,6 +46,13 @@ export declare class RelayClient {
     send(message: OutgoingMessage): Promise<void>;
     fetchMessages(userId: string): Promise<IncomingMessage[]>;
     deleteMessage(messageId: string): Promise<void>;
+    deleteUser(userId: string): Promise<{
+        deletedAt: string;
+        messagesDeleted: number;
+    }>;
+    exportUserData(userId: string): Promise<unknown>;
+    sendToGroup(message: OutgoingGroupMessage): Promise<void>;
+    sendSenderKeyDistribution(payload: SenderKeyDistributionPayload, recipientId: string): Promise<void>;
     disconnect(): void;
 }
 export {};

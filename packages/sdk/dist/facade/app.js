@@ -336,7 +336,7 @@ export class StvorFacadeClient {
     }
 }
 export async function init(config) {
-    const relayUrl = config.relayUrl || 'https://relay.stvor.io';
+    const relayUrl = config.relayUrl || 'https://relay.stvor.xyz';
     const timeout = config.timeout || 10000;
     if (!config.appToken || !config.appToken.startsWith('stvor_')) {
         throw Errors.invalidAppToken();

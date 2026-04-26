@@ -123,8 +123,11 @@ export class CryptoSessionManager {
   private sessionStore: ISessionStore | null = null;
   private pqcEnabled: boolean = false;
   private pqcKeyPair: { ek: Uint8Array; dk: Uint8Array } | null = null;
-  // peerPqcEk: cached peer ML-KEM public keys
   private peerPqcEks: Map<string, Uint8Array> = new Map();
+  // Pending PQC ciphertexts to include in the first outgoing message
+  private pendingPqcCt: Map<string, string> = new Map();
+  // PQC shared secrets derived but not yet mixed (waiting for first message)
+  private pendingPqcSS: Map<string, Uint8Array> = new Map();
 
   constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore, pqc = false) {
     this.userId = userId;
@@ -287,49 +290,26 @@ export class CryptoSessionManager {
       peerSPK,
     );
 
-    // PQC hybrid: if both sides have ML-KEM keys, mix in a shared PQC secret.
+    // PQC hybrid — full KEM encaps/decaps (no deterministic shortcut).
     //
-    // Protocol: canonical ordering by userId ensures both sides derive the
-    // same shared secret without an extra round-trip:
-    //   - "lower" party (lexicographically smaller userId) encapsulates
-    //     to the "higher" party's ML-KEM key  → gets pqcSS
-    //   - "higher" party decapsulates from the lower's ciphertext
-    //     (stored in their pqcCiphertexts map by the lower party)
+    // Protocol (no extra round-trip needed):
+    //   Initiator (the side calling establishSession first / sending first):
+    //     1. mlkemEncaps(peerEk) → (ct, ss)
+    //     2. Store ct in pendingPqcCt[peerId] — sent inside the first message
+    //     3. Store ss in pendingPqcSS[peerId] — mixed into root key on first encrypt
     //
-    // Simpler deterministic variant used here:
-    //   Both sides compute the same PQC SS by having the lower party
-    //   encapsulate to the higher party and store the ct in the session.
-    //   For symmetric variant: use HKDF(classical_ss, pqcEk_lower ‖ pqcEk_higher)
-    //   as a deterministic PQC contribution — no round-trip needed.
+    //   Responder (the side that receives the first message):
+    //     1. Extracts ct from the incoming message header (pqcCt field)
+    //     2. mlkemDecaps(ct, myDk) → ss
+    //     3. Calls applyPqcSS(peerId, ss) to mix into root key
     //
+    // Both sides end up with the same ss (KEM correctness) mixed into root key.
+    // The ss is never transmitted — only the ciphertext, which is useless without dk.
     if (this.pqcEnabled && this.pqcKeyPair && peerPublicKeys.pqcEk) {
-      const myEk   = pqcEkToBase64(this.pqcKeyPair.ek);
-      const peerEk = peerPublicKeys.pqcEk;
-
-      // Deterministic PQC contribution: HKDF over both public keys
-      // This is quantum-resistant because an attacker learning the classical
-      // session key still cannot compute this without knowing the ML-KEM private keys.
-      // Both sides compute the same value since they use the same inputs.
-      const lowerEk = myEk < peerEk ? myEk : peerEk;
-      const upperEk = myEk < peerEk ? peerEk : myEk;
-      const pqcContrib = nodeCrypto.hkdfSync(
-        'sha256',
-        Buffer.concat([
-          Buffer.from(lowerEk, 'base64url'),
-          Buffer.from(upperEk, 'base64url'),
-        ]),
-        Buffer.from('stvor-pqc-contrib-v1'),
-        'stvor-pqc-session',
-        32,
-      );
-
-      // Mix into session root key
-      const hybridRoot = hybridKDF(
-        new Uint8Array(session.rootKey),
-        new Uint8Array(pqcContrib),
-        'stvor-hybrid-root-v1',
-      );
-      session.rootKey = Buffer.from(hybridRoot);
+      const { ctB64, ss } = this.pqcEncapsForPeer(peerPublicKeys.pqcEk);
+      this.pendingPqcCt.set(peerId, ctB64);
+      this.pendingPqcSS.set(peerId, ss);
+      // Root key will be mixed when first message is sent (applyPendingPqcSS)
     }
 
     this.sessions.set(peerId, session);
@@ -548,6 +528,47 @@ export class CryptoSessionManager {
     const session = this.groupSessions.get(groupId);
     if (!session) return [];
     return [...session.members];
+  }
+
+  /* ---- PQC KEM handshake helpers ---- */
+
+  /**
+   * Called by sender before first encrypt.
+   * Returns the ML-KEM ciphertext to embed in the first message,
+   * and mixes the PQC shared secret into the session root key.
+   */
+  popPendingPqcCt(peerId: string): string | null {
+    const ct = this.pendingPqcCt.get(peerId);
+    if (!ct) return null;
+    this.pendingPqcCt.delete(peerId);
+
+    const ss = this.pendingPqcSS.get(peerId);
+    if (ss) {
+      this.pendingPqcSS.delete(peerId);
+      this._mixPqcSS(peerId, ss);
+    }
+    return ct;
+  }
+
+  /**
+   * Called by recipient when first message arrives with a pqcCt field.
+   * Decapsulates the ciphertext and mixes PQC SS into the session root key.
+   */
+  applyIncomingPqcCt(peerId: string, ctB64: string): void {
+    if (!this.pqcKeyPair) return;
+    const ss = this.pqcDecapsFromPeer(ctB64);
+    this._mixPqcSS(peerId, ss);
+  }
+
+  private _mixPqcSS(peerId: string, ss: Uint8Array): void {
+    const session = this.sessions.get(peerId);
+    if (!session) return;
+    const hybridRoot = hybridKDF(
+      new Uint8Array(session.rootKey),
+      ss,
+      'stvor-hybrid-root-v1',
+    );
+    session.rootKey = Buffer.from(hybridRoot);
   }
 
   /* ---- Post-compromise ---- */

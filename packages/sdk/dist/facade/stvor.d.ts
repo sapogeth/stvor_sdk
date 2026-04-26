@@ -23,38 +23,54 @@ import { RelayClient } from './relay-client.js';
 import { StvorError } from './errors.js';
 export { StvorError };
 export interface StvorConfig {
-    /** Ваш userId — email, UUID, username — любая строка */
     userId: string;
-    /** AppToken из дашборда, начинается с 'stvor_' */
     appToken: string;
-    /** URL relay-сервера */
     relayUrl: string;
-    /** Таймаут запросов, мс (default: 10 000) */
     timeout?: number;
-    /** Интервал поллинга, мс (default: 1 000) */
     pollIntervalMs?: number;
+    /**
+     * Hide sender identity from the relay server.
+     * When true, the relay only sees `to` — never `from`.
+     * Uses ephemeral ECDH + AES-256-GCM to seal the sender inside the envelope.
+     * Default: false
+     */
+    sealedSender?: boolean;
+    /**
+     * Enable Post-Quantum Cryptography (ML-KEM-768 / Kyber).
+     * When true, key exchange uses a hybrid scheme:
+     *   Classical X3DH + ML-KEM-768 → HKDF(classical_ss ‖ pqc_ss)
+     * Secure if EITHER classical OR post-quantum is secure.
+     * Default: false
+     */
+    pqc?: boolean;
 }
 export interface StvorMessage {
-    /** Кто прислал */
     from: string;
-    /** Расшифрованные данные (любой тип) */
     data: unknown;
-    /** Время отправки */
     timestamp: Date;
-    /** Уникальный ID */
+    id: string;
+}
+export interface StvorGroupMessage {
+    groupId: string;
+    from: string;
+    data: unknown;
+    timestamp: Date;
     id: string;
 }
 export type MessageHandler = (msg: StvorMessage) => void | Promise<void>;
+export type GroupMessageHandler = (msg: StvorGroupMessage) => void | Promise<void>;
 export declare class StvorClient {
     private readonly userId;
     private readonly relay;
     private readonly crypto;
     private readonly handlers;
+    private readonly groupHandlers;
     private pollTimer;
     private alive;
     private readonly pollIntervalMs;
+    private readonly sealedSender;
     /** @internal */
-    constructor(userId: string, relay: RelayClient, crypto: CryptoSessionManager, pollIntervalMs: number);
+    constructor(userId: string, relay: RelayClient, crypto: CryptoSessionManager, pollIntervalMs: number, sealedSender: boolean);
     /**
      * Отправить любые данные получателю.
      * Сессия устанавливается автоматически при первом обращении.
@@ -79,11 +95,54 @@ export declare class StvorClient {
      */
     waitForUser(userId: string, timeoutMs?: number): Promise<boolean>;
     getUserId(): string;
+    /**
+     * GDPR Art. 17 — Right to erasure.
+     * Deletes all relay-side data for this user: public keys, queued messages.
+     * Message content was already E2EE and inaccessible to the relay.
+     */
+    deleteMyData(): Promise<{
+        deletedAt: string;
+        messagesDeleted: number;
+    }>;
+    /**
+     * GDPR Art. 20 — Right to data portability.
+     * Returns what the relay stores about this user (metadata only).
+     */
+    exportMyData(): Promise<unknown>;
+    /**
+     * Create an E2EE group and invite members.
+     * Sends sender key distribution to each member via their 1-to-1 session.
+     *
+     * @param groupId  Unique group identifier (any string)
+     * @param memberIds  Array of userIds to invite
+     */
+    createGroup(groupId: string, memberIds: string[]): Promise<void>;
+    /**
+     * Send an encrypted message to a group.
+     * All members will receive it via their own polling.
+     */
+    sendToGroup(groupId: string, data: unknown): Promise<void>;
+    /**
+     * Subscribe to incoming group messages.
+     * Returns an unsubscribe function.
+     */
+    onGroupMessage(handler: GroupMessageHandler): () => void;
+    /**
+     * Add a member to an existing group.
+     * Sends them the current sender key distribution.
+     */
+    addGroupMember(groupId: string, memberId: string): Promise<void>;
+    /**
+     * Remove a member from the group.
+     * Automatically ratchets the sender key so they can't decrypt future messages.
+     */
+    removeGroupMember(groupId: string, memberId: string): Promise<void>;
     /** Отключиться и остановить поллинг */
     disconnect(): Promise<void>;
     /** @internal — вызывается из Stvor.connect() */
     startPolling(): void;
     private processRaw;
+    private processGroupRaw;
     private waitForKeys;
 }
 /**
