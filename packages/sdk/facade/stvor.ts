@@ -41,9 +41,17 @@ export interface StvorConfig {
    * Hide sender identity from the relay server.
    * When true, the relay only sees `to` — never `from`.
    * Uses ephemeral ECDH + AES-256-GCM to seal the sender inside the envelope.
-   * Default: false (opt-in, requires both sender and recipient to support it)
+   * Default: false
    */
   sealedSender?: boolean;
+  /**
+   * Enable Post-Quantum Cryptography (ML-KEM-768 / Kyber).
+   * When true, key exchange uses a hybrid scheme:
+   *   Classical X3DH + ML-KEM-768 → HKDF(classical_ss ‖ pqc_ss)
+   * Secure if EITHER classical OR post-quantum is secure.
+   * Default: false
+   */
+  pqc?: boolean;
 }
 
 export interface StvorMessage {
@@ -87,11 +95,11 @@ export class StvorClient {
     pollIntervalMs: number,
     sealedSender: boolean,
   ) {
-    this.userId        = userId;
-    this.relay         = relay;
-    this.crypto        = crypto;
+    this.userId         = userId;
+    this.relay          = relay;
+    this.crypto         = crypto;
     this.pollIntervalMs = pollIntervalMs;
-    this.sealedSender  = sealedSender;
+    this.sealedSender   = sealedSender;
   }
 
   // ── Send ──────────────────────────────────────────────────────────────
@@ -125,6 +133,11 @@ export class StvorClient {
       const identityKey = Buffer.from(peerKeys.identityKey, 'base64url');
       await verifyFingerprint(recipientId, identityKey);
       await this.crypto.establishSessionWithPeer(recipientId, peerKeys);
+
+      // PQC hybrid handshake: if both sides have ML-KEM keys, encapsulate
+      if (this.crypto.isPqcEnabled() && peerKeys.pqcEk) {
+        this.crypto.storePeerPqcEk(recipientId, peerKeys.pqcEk);
+      }
     }
 
     const encoded   = encodeData(data);
@@ -455,7 +468,7 @@ async function connect(config: StvorConfig): Promise<StvorClient> {
   const pollIntervalMs = config.pollIntervalMs ?? 1_000;
 
   const relay  = new RelayClient(config.relayUrl, config.appToken, timeout);
-  const crypto = new CryptoSessionManager(config.userId);
+  const crypto = new CryptoSessionManager(config.userId, undefined, undefined, config.pqc ?? false);
 
   await crypto.initialize();
 

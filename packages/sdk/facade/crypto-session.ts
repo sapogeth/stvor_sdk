@@ -7,6 +7,7 @@
  */
 
 import nodeCrypto from 'node:crypto';
+import { pqcKeyGen, pqcEncaps, pqcDecaps, hybridKDF, pqcEkToBase64, pqcEkFromBase64, pqcCtFromBase64 } from '../pqc/index.js';
 import {
   SessionState,
   KeyPair,
@@ -36,6 +37,7 @@ export interface SerializedPublicKeys {
   signedPreKey: string;
   signedPreKeySignature: string;
   oneTimePreKey: string; // kept for relay compat — always empty
+  pqcEk?: string;        // ML-KEM-768 encapsulation key (base64url), present when pqc: true
 }
 
 /* ================================================================
@@ -119,11 +121,16 @@ export class CryptoSessionManager {
   private initPromise: Promise<void> | null = null;
   private identityStore: IIdentityStore | null = null;
   private sessionStore: ISessionStore | null = null;
+  private pqcEnabled: boolean = false;
+  private pqcKeyPair: { ek: Uint8Array; dk: Uint8Array } | null = null;
+  // peerPqcEk: cached peer ML-KEM public keys
+  private peerPqcEks: Map<string, Uint8Array> = new Map();
 
-  constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore) {
+  constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore, pqc = false) {
     this.userId = userId;
     this.identityStore = identityStore || null;
     this.sessionStore = sessionStore || null;
+    this.pqcEnabled = pqc;
   }
 
   /* ---- Initialisation ---- */
@@ -171,6 +178,11 @@ export class CryptoSessionManager {
       signedPreKeySignature: sig,
     };
 
+    // Generate ML-KEM-768 key pair if PQC enabled
+    if (this.pqcEnabled) {
+      this.pqcKeyPair = pqcKeyGen();
+    }
+
     if (this.identityStore) {
       try {
         await this.identityStore.saveIdentityKeys(this.userId, {
@@ -202,7 +214,54 @@ export class CryptoSessionManager {
       signedPreKey: toB64(this.identityKeys.signedPreKeyPair.publicKey),
       signedPreKeySignature: toB64(this.identityKeys.signedPreKeySignature),
       oneTimePreKey: '',
+      // Include ML-KEM public key when PQC is enabled
+      ...(this.pqcEnabled && this.pqcKeyPair
+        ? { pqcEk: pqcEkToBase64(this.pqcKeyPair.ek) }
+        : {}),
     };
+  }
+
+  /* ---- PQC methods ---- */
+
+  isPqcEnabled(): boolean { return this.pqcEnabled; }
+
+  /**
+   * Encapsulate a shared secret to a peer who has a PQC key.
+   * Called by sender during session setup.
+   * Returns { ciphertext, pqcSharedSecret } — ciphertext sent to peer in register message.
+   */
+  pqcEncapsForPeer(peerEkB64: string): { ctB64: string; ss: Uint8Array } {
+    const peerEk = pqcEkFromBase64(peerEkB64);
+    const { ciphertext, sharedSecret } = pqcEncaps(peerEk);
+    return { ctB64: Buffer.from(ciphertext).toString('base64url'), ss: sharedSecret };
+  }
+
+  /**
+   * Decapsulate a PQC ciphertext sent by a peer.
+   * Returns the shared secret.
+   */
+  pqcDecapsFromPeer(ctB64: string): Uint8Array {
+    if (!this.pqcKeyPair) throw new Error('PQC not enabled or key not generated');
+    const ct = pqcCtFromBase64(ctB64);
+    return pqcDecaps(ct, this.pqcKeyPair.dk);
+  }
+
+  /**
+   * Derive hybrid session key combining classical X3DH and PQC shared secrets.
+   */
+  hybridSessionKey(classicalSS: Uint8Array, pqcSS: Uint8Array): Uint8Array {
+    return hybridKDF(classicalSS, pqcSS);
+  }
+
+  /**
+   * Cache a peer's PQC encapsulation key (received during key exchange).
+   */
+  storePeerPqcEk(peerId: string, ekB64: string): void {
+    this.peerPqcEks.set(peerId, pqcEkFromBase64(ekB64));
+  }
+
+  getPeerPqcEk(peerId: string): Uint8Array | undefined {
+    return this.peerPqcEks.get(peerId);
   }
 
   /* ---- Session establishment ---- */
