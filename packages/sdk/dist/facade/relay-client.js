@@ -97,6 +97,7 @@ export class RelayClient {
                     from: message.from,
                     ciphertext: message.ciphertext,
                     header: message.header,
+                    ...(message.pqcCt ? { pqcCt: message.pqcCt } : {}),
                 }),
                 signal: controller.signal,
             });

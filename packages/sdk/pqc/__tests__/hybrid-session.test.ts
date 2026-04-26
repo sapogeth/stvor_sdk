@@ -41,12 +41,13 @@ await test('Full KEM handshake: alice encaps to bob, bob decaps — both get sam
   assert(!!bobKeys.pqcEk, 'bob must have pqcEk');
 
   // Alice establishes session → encaps to bob → gets pending ct+ss
-  await alice.establishSessionWithPeer('bob', bobKeys);
+  // Pass bobKeys with empty oneTimePreKey so OPK logic doesn't interfere
+  await alice.establishSessionWithPeer('bob', { ...bobKeys, oneTimePreKey: '' });
   const ctB64 = alice.popPendingPqcCt('bob');
   assert(ctB64 !== null, 'Alice should have a pending PQC ciphertext');
 
-  // Bob establishes session (classical only)
-  await bob.establishSessionWithPeer('alice', aliceKeys);
+  // Bob establishes session (classical only, no OPK)
+  await bob.establishSessionWithPeer('alice', { ...aliceKeys, oneTimePreKey: '' });
 
   // Bob receives ct from Alice and applies it
   bob.applyIncomingPqcCt('alice', ctB64!);
@@ -70,19 +71,23 @@ await test('popPendingPqcCt returns null on second call (ct consumed)', async ()
 });
 
 await test('PQC session root key differs from classical-only', async () => {
-  // Classical only
+  // Classical only — strip OPK to isolate PQC difference
   const a1 = new CryptoSessionManager('alice');
   const b1 = new CryptoSessionManager('bob');
   await a1.initialize(); await b1.initialize();
-  await a1.establishSessionWithPeer('bob', b1.getPublicKeys());
-  await b1.establishSessionWithPeer('alice', a1.getPublicKeys());
+  const b1Keys = { ...b1.getPublicKeys(), oneTimePreKey: '' };
+  const a1Keys = { ...a1.getPublicKeys(), oneTimePreKey: '' };
+  await a1.establishSessionWithPeer('bob', b1Keys);
+  await b1.establishSessionWithPeer('alice', a1Keys);
 
-  // PQC hybrid
+  // PQC hybrid — also strip OPK
   const a2 = new CryptoSessionManager('alice', undefined, undefined, true);
   const b2 = new CryptoSessionManager('bob',   undefined, undefined, true);
   await a2.initialize(); await b2.initialize();
-  await a2.establishSessionWithPeer('bob', b2.getPublicKeys());
-  await b2.establishSessionWithPeer('alice', a2.getPublicKeys());
+  const b2Keys = { ...b2.getPublicKeys(), oneTimePreKey: '' };
+  const a2Keys = { ...a2.getPublicKeys(), oneTimePreKey: '' };
+  await a2.establishSessionWithPeer('bob', b2Keys);
+  await b2.establishSessionWithPeer('alice', a2Keys);
 
   // c1 and c2 should be different (different root keys from different key material)
   const { ciphertext: c1, header: h1 } = a1.encryptForPeer('bob', 'test');
@@ -101,9 +106,11 @@ await test('Fallback: pqc:true sender + pqc:false receiver still works (classica
   const bob   = new CryptoSessionManager('bob'); // no PQC
   await alice.initialize(); await bob.initialize();
 
+  const bobKeys   = { ...bob.getPublicKeys(),   oneTimePreKey: '' };
+  const aliceKeys = { ...alice.getPublicKeys(), oneTimePreKey: '' };
   // bob has no pqcEk — alice falls back to classical
-  await alice.establishSessionWithPeer('bob', bob.getPublicKeys());
-  await bob.establishSessionWithPeer('alice', alice.getPublicKeys());
+  await alice.establishSessionWithPeer('bob', bobKeys);
+  await bob.establishSessionWithPeer('alice', aliceKeys);
 
   const { ciphertext, header } = alice.encryptForPeer('bob', 'fallback test');
   const plaintext = bob.decryptFromPeer('alice', ciphertext, header);

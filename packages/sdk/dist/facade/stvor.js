@@ -65,21 +65,19 @@ export class StvorClient {
             const identityKey = Buffer.from(peerKeys.identityKey, 'base64url');
             await verifyFingerprint(recipientId, identityKey);
             await this.crypto.establishSessionWithPeer(recipientId, peerKeys);
-            // PQC hybrid handshake: if both sides have ML-KEM keys, encapsulate
-            if (this.crypto.isPqcEnabled() && peerKeys.pqcEk) {
-                this.crypto.storePeerPqcEk(recipientId, peerKeys.pqcEk);
-            }
         }
         const encoded = encodeData(data);
         const plaintext = encoded.toString('base64url');
         const { ciphertext, header } = this.crypto.encryptForPeer(recipientId, plaintext);
+        // PQC: on first message, embed the ML-KEM ciphertext so recipient can decaps
+        const pqcCt = this.crypto.popPendingPqcCt(recipientId) ?? undefined;
         if (this.sealedSender) {
             const recipientIK = Buffer.from((await this.relay.getPublicKeys(recipientId)).identityKey, 'base64url');
             const sealed = sealEnvelope({ from: this.userId, ciphertext, header }, recipientIK);
-            await this.relay.send({ to: recipientId, from: '', ciphertext: sealed, header: '__SEALED__' });
+            await this.relay.send({ to: recipientId, from: '', ciphertext: sealed, header: '__SEALED__', pqcCt });
         }
         else {
-            await this.relay.send({ to: recipientId, from: this.userId, ciphertext, header });
+            await this.relay.send({ to: recipientId, from: this.userId, ciphertext, header, pqcCt });
         }
     }
     /**
@@ -290,6 +288,10 @@ export class StvorClient {
             const identityKey = Buffer.from(peerKeys.identityKey, 'base64url');
             await verifyFingerprint(raw.from, identityKey);
             await this.crypto.establishSessionWithPeer(raw.from, peerKeys);
+        }
+        // PQC: if first message carries a ML-KEM ciphertext, decaps and mix into root key
+        if (raw.pqcCt && this.crypto.isPqcEnabled()) {
+            this.crypto.applyIncomingPqcCt(raw.from, raw.pqcCt);
         }
         // Detect SKD marker: header starts with SKD_HEADER_MARKER + '.'
         if (raw.header.startsWith(SKD_HEADER_MARKER + '.')) {

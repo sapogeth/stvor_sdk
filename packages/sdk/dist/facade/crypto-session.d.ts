@@ -75,6 +75,8 @@ export declare class CryptoSessionManager {
     private pqcEnabled;
     private pqcKeyPair;
     private peerPqcEks;
+    private pendingPqcCt;
+    private pendingPqcSS;
     constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore, pqc?: boolean);
     initialize(): Promise<void>;
     private _doInit;
@@ -133,5 +135,17 @@ export declare class CryptoSessionManager {
     addGroupMember(groupId: string, memberId: string): void;
     removeGroupMember(groupId: string, memberId: string): void;
     getGroupMembers(groupId: string): string[];
+    /**
+     * Called by sender before first encrypt.
+     * Returns the ML-KEM ciphertext to embed in the first message,
+     * and mixes the PQC shared secret into the session root key.
+     */
+    popPendingPqcCt(peerId: string): string | null;
+    /**
+     * Called by recipient when first message arrives with a pqcCt field.
+     * Decapsulates the ciphertext and mixes PQC SS into the session root key.
+     */
+    applyIncomingPqcCt(peerId: string, ctB64: string): void;
+    private _mixPqcSS;
     forceRatchet(peerId: string): Promise<void>;
 }

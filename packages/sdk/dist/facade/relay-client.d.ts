@@ -7,6 +7,7 @@ interface OutgoingMessage {
     from: string;
     ciphertext: string;
     header: string;
+    pqcCt?: string;
 }
 interface IncomingMessage {
     id?: string;
@@ -14,6 +15,7 @@ interface IncomingMessage {
     ciphertext: string;
     header: string;
     timestamp: string;
+    pqcCt?: string;
     groupId?: string;
     groupHeader?: string;
 }
