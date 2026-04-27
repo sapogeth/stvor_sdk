@@ -156,8 +156,8 @@ test('Full E2EE Integration with Persistence', async (t) => {
     await bob.initialize();
 
     // Establish sessions
-    await alice.establishSession('bob', bob.getPublicKeys());
-    await bob.establishSession('alice', alice.getPublicKeys());
+    const bobPub = bob.getPublicKeys(); await alice.establishSession('bob', { ...bobPub, oneTimePreKey: '' });
+    const alicePub = alice.getPublicKeys(); await bob.establishSession('alice', { ...alicePub, oneTimePreKey: '' });
 
     // Encrypt message
     const message = 'Secure message from Alice';
@@ -282,8 +282,8 @@ test('Full E2EE Integration with Persistence', async (t) => {
     await bob.initialize();
 
     // Establish sessions
-    await alice.establishSession('bob', bob.getPublicKeys());
-    await bob.establishSession('alice', alice.getPublicKeys());
+    const bobPub = bob.getPublicKeys(); await alice.establishSession('bob', { ...bobPub, oneTimePreKey: '' });
+    const alicePub = alice.getPublicKeys(); await bob.establishSession('alice', { ...alicePub, oneTimePreKey: '' });
 
     // Exchange multiple messages
     const messages = ['Hello', 'How are you?', 'Good morning!', { type: 'json', data: 123 }];

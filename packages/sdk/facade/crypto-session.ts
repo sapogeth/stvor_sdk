@@ -322,28 +322,38 @@ export class CryptoSessionManager {
 
     // X3DH with optional one-time prekey (OPK)
     //
-    // Two roles:
-    //  Initiator: peer published an OPK → pass peerOPK public key, opkIsPrivate=false
-    //             DH4 = ECDH(mySPK.priv, peerOPK.pub)
+    // OPK protocol (asymmetric — requires relay to carry which OPK was used):
     //
-    //  Responder: we are Bob, peer (Alice) consumed one of our OPKs.
-    //             peerPublicKeys.oneTimePreKey = the OPK Alice used (our own pub key).
-    //             We look up our corresponding private key and pass it, opkIsPrivate=true
-    //             DH4 = ECDH(myOPK.priv, peerSPK.pub)  — same result as initiator
+    //  Initiator: fetches peer's public keys from relay (includes peerOPK public).
+    //             Calls establishSession(peerId, peerKeys) → opkIsPrivate=false.
+    //             DH4 = ECDH(mySPK.priv, peerOPK.pub)
+    //             On first send, `stvor.ts` passes peerKeys directly from relay.
+    //
+    //  Responder: peer's first message tells Bob which OPK was used.
+    //             stvor.ts calls establishSession(senderId, senderKeys) with
+    //             senderKeys.oneTimePreKey set to the OPK that was consumed.
+    //             We look up our private key → opkIsPrivate=true.
+    //             DH4 = ECDH(myOPK.priv, peerSPK.pub)
+    //
+    // Safety: if oneTimePreKey is set but we don't find it in our published pool,
+    // it belongs to the peer (not us) — use it as initiator only if we haven't
+    // established a session yet (i.e., we are actually the initiator).
+    // If we already have a session, ignore the OPK to avoid asymmetry.
     let opk: Buffer | undefined;
     let opkIsPrivate = false;
 
     if (peerPublicKeys.oneTimePreKey) {
       const myOpkPriv = this.getOpkPrivateKey(peerPublicKeys.oneTimePreKey);
       if (myOpkPriv) {
-        // We are the responder — peer used one of our OPKs
+        // Responder role: we found our own OPK private key → peer used it
         opk = myOpkPriv;
         opkIsPrivate = true;
-      } else {
-        // We are the initiator — peer published their OPK for us to use
+      } else if (!this.sessions.has(peerId)) {
+        // Initiator role: no existing session, peer published their OPK → use it
         opk = fromB64(peerPublicKeys.oneTimePreKey);
         opkIsPrivate = false;
       }
+      // If we already have a session, skip OPK to avoid breaking symmetry
     }
 
     const session = ratchetEstablishSession(
