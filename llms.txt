@@ -1,8 +1,8 @@
 # Stvor SDK
 
-> End-to-end encryption for any app. Drop-in library — no cryptography knowledge required.
+> End-to-end encryption for any app. No cryptography expertise required.
 
-Stvor SDK implements the Signal Protocol (X3DH + Double Ratchet) with AES-256-GCM, ECDSA P-256, and HKDF-SHA-256. Zero runtime dependencies — Node.js uses `node:crypto`, browsers use Web Crypto API.
+Stvor SDK implements Signal Protocol (X3DH + Double Ratchet + one-time prekeys) and optionally ML-KEM-768 post-quantum KEM (NIST FIPS 203) — using only Node.js built-in APIs. Zero external dependencies.
 
 ## Install
 
@@ -10,7 +10,9 @@ Stvor SDK implements the Signal Protocol (X3DH + Double Ratchet) with AES-256-GC
 npm install @stvor/sdk
 ```
 
-## Quickstart (Node.js)
+Node.js >= 18. Zero npm dependencies.
+
+## Quickstart
 
 ```ts
 import { Stvor } from '@stvor/sdk';
@@ -27,41 +29,14 @@ const bob = await Stvor.connect({
   relayUrl: 'https://relay.stvor.xyz',
 });
 
-bob.onMessage(msg => {
-  console.log(`From ${msg.from}:`, msg.data);
-});
-
+bob.onMessage(msg => console.log(msg.from, msg.data));
 await alice.send('bob', { text: 'Hello!' });
 
 await alice.disconnect();
 await bob.disconnect();
 ```
 
-## Quickstart (Browser)
-
-```ts
-import { StvorWebSDK } from '@stvor/sdk/web';
-
-const sdk = await StvorWebSDK.create({
-  userId:   'alice',
-  appToken: 'stvor_live_xxx',
-  relayUrl: 'https://relay.stvor.xyz',
-});
-
-sdk.onMessage((from, data) => console.log(from, data));
-await sdk.send('bob', { text: 'Hello from browser!' });
-sdk.disconnect();
-```
-
-## Local Development
-
-```bash
-npx @stvor/sdk mock-relay
-```
-
-Then use `relayUrl: 'http://localhost:4444'` — no account needed.
-
-## API — Stvor.connect(config)
+## Stvor.connect(config)
 
 ```ts
 const client = await Stvor.connect({
@@ -69,13 +44,13 @@ const client = await Stvor.connect({
   appToken:        string,   // must start with 'stvor_'
   relayUrl:        string,   // 'https://relay.stvor.xyz' or self-hosted
   timeout?:        number,   // ms, default: 10000
-  pollIntervalMs?: number,   // polling interval, default: 1000
+  pollIntervalMs?: number,   // default: 1000
+  sealedSender?:   boolean,  // hide sender from relay, default: false
+  pqc?:            boolean,  // ML-KEM-768 post-quantum hybrid, default: false
 });
 ```
 
-## API — client.send(recipientId, data, options?)
-
-Sends any JavaScript value. Type is preserved on the receiving end.
+## client.send(recipientId, data, options?)
 
 ```ts
 await client.send('bob', 'Hello');
@@ -86,30 +61,77 @@ await client.send('bob', 'Hey', { timeout: 30_000 });
 await client.send('bob', 'Hey', { waitForRecipient: false });
 ```
 
-## API — client.onMessage(handler)
+## client.onMessage(handler)
 
 ```ts
 const unsubscribe = client.onMessage(msg => {
   // msg.from      — sender userId
   // msg.data      — decrypted value (original type preserved)
   // msg.timestamp — Date
-  // msg.id        — unique string
+  // msg.id        — string
+});
+unsubscribe();
+```
+
+## Group Chats
+
+```ts
+// Create group — sender keys distributed to all members via 1-to-1 sessions
+await alice.createGroup('team-chat', ['bob', 'charlie']);
+
+// One encryption, all members receive
+await alice.sendToGroup('team-chat', { text: 'Hello team!' });
+
+// Receive
+bob.onGroupMessage(msg => {
+  // msg.groupId, msg.from, msg.data, msg.timestamp, msg.id
 });
 
-unsubscribe(); // stop listening
+// Manage members (auto-ratchets on removal — removed member cannot decrypt future messages)
+await alice.addGroupMember('team-chat', 'dave');
+await alice.removeGroupMember('team-chat', 'charlie');
 ```
 
-## API — client.waitForUser(userId, timeoutMs?)
+## Post-Quantum (ML-KEM-768)
 
 ```ts
-const online = await client.waitForUser('bob', 15_000);
-// true = registered, false = timeout
+const alice = await Stvor.connect({
+  userId:   'alice',
+  appToken: 'stvor_live_xxx',
+  relayUrl: 'https://relay.stvor.xyz',
+  pqc:      true,
+});
 ```
 
-## API — client.disconnect()
+When `pqc: true`:
+- ML-KEM-768 key pair generated on connect (encapsulation key: 1184 bytes)
+- On first message: sender mlkemEncaps(peerEk) → ciphertext embedded in message
+- Recipient: mlkemDecaps(ct, dk) → same shared secret
+- Root key = HKDF(X3DH_secret ‖ ML-KEM_secret, "stvor-hybrid-root-v1")
+- Verified against NIST ACVTS official test vectors (KeyGen + Encap + Decap)
+- Falls back to classical X3DH if peer doesn't support PQC
+
+## Sealed Sender
 
 ```ts
-await client.disconnect();
+// Relay sees `to` but never `from`
+const alice = await Stvor.connect({ ..., sealedSender: true });
+```
+
+Each message: ephemeral ECDH keypair → ECDH(epk, recipientIK) → AES-256-GCM envelope.
+Fresh ephemeral key per message — no linkability.
+
+## GDPR Compliance
+
+```ts
+// Art. 17 — right to erasure
+await alice.deleteMyData();
+// { deletedAt, messagesDeleted }
+
+// Art. 20 — data portability
+const data = await alice.exportMyData();
+// { publicKeys, pendingMessages, registeredAt, lastActivity }
+// Note: message content is E2EE — relay cannot export it
 ```
 
 ## Supported Data Types
@@ -126,64 +148,33 @@ await client.disconnect();
 | Set | new Set([1,2,3]) |
 | Map | new Map([['a',1]]) |
 
-## Group Chats
-
-```ts
-// Create group — sender keys distributed to all members via 1-to-1 sessions
-await alice.createGroup('team-chat', ['bob', 'charlie']);
-
-// Send — one encryption, all members receive
-await alice.sendToGroup('team-chat', { text: 'Hello team!' });
-
-// Receive
-bob.onGroupMessage(msg => {
-  // msg.groupId, msg.from, msg.data, msg.timestamp, msg.id
-});
-
-// Manage members (auto-ratchets sender key on removal)
-await alice.addGroupMember('team-chat', 'dave');
-await alice.removeGroupMember('team-chat', 'charlie');
-```
-
-## Sealed Sender
-
-Hides sender identity from the relay. Relay sees `to` but never `from`.
-
-```ts
-const alice = await Stvor.connect({
-  userId:       'alice',
-  appToken:     'stvor_live_xxx',
-  relayUrl:     'https://relay.stvor.xyz',
-  sealedSender: true,
-});
-```
-
-Protocol: ephemeral ECDH key pair per message → AES-256-GCM envelope. Fresh ephemeral key per message means no linkability.
-
-## GDPR Compliance
-
-```ts
-// Art. 17 — Right to erasure
-await alice.deleteMyData();
-// Deletes: public keys, queued messages, registration record
-
-// Art. 20 — Data portability
-const data = await alice.exportMyData();
-// Returns: publicKeys, pendingMessages count, registeredAt, lastActivity
-// Note: message content is E2EE — relay cannot export it
-```
-
 ## Security Properties
 
-- **Forward Secrecy** — Double Ratchet generates a new key per message
-- **Post-Compromise Security** — DH ratchet rotation every message
-- **Replay protection** — Nonce + timestamp validation per message
-- **TOFU** — Trust On First Use identity binding; throws on key change
-- **Zero-knowledge relay** — server only ever sees ciphertext
-- **Sealed sender** — optional; hides sender from relay (ephemeral ECDH)
-- **Group E2EE** — Sender Keys; O(1) encryption regardless of group size
+- **Forward Secrecy** — Double Ratchet, new key per message
+- **Post-Compromise Security** — DH ratchet rotation
+- **Post-Quantum** — ML-KEM-768 hybrid (optional, NIST FIPS 203 verified)
+- **One-time prekeys** — full X3DH with OPK pool, forward secrecy before first ratchet
+- **Replay protection** — nonce + timestamp validation
+- **TOFU** — SHA-256 fingerprint binding, throws on key change
+- **Zero-knowledge relay** — relay stores only ciphertext
+- **Sealed sender** — ephemeral ECDH hides sender from relay (optional)
+- **Group E2EE** — Sender Keys, O(1) encryption per message
 - **GDPR built-in** — right to erasure + data portability
-- **Simultaneous send** — both sides can send before receiving
+
+## Cryptography (zero external dependencies)
+
+| Primitive | Use |
+|---|---|
+| ECDH P-256 | X3DH key agreement |
+| ECDSA P-256 | Signed prekey verification |
+| AES-256-GCM | AEAD encryption |
+| HKDF-SHA-256 | Key derivation |
+| HMAC-SHA-256 | Chain key ratcheting |
+| SHA3-512 | X3DH G function |
+| SHAKE-128 | ML-KEM SampleNTT |
+| SHAKE-256 | ML-KEM PRF/noise |
+| SHA-256 | TOFU fingerprinting |
+| ML-KEM-768 | Post-quantum KEM (FIPS 203, from scratch) |
 
 ## Relay Options
 
@@ -193,24 +184,28 @@ relayUrl: 'https://relay.stvor.xyz'
 ```
 No setup. Accepts any `stvor_*` token.
 
-### Local (development)
+### Local dev
 ```bash
-npx @stvor/sdk mock-relay          # port 4444
-PORT=9000 npx @stvor/sdk mock-relay
+npx @stvor/sdk mock-relay   # port 4444
 ```
 
 ### Self-hosted
 ```bash
-git clone https://github.com/sapogeth/sdk-relay
-node server.js
+git clone https://github.com/sapogeth/sdk-relay && node server.js
 ```
 
-## How It Works
+## Browser SDK
 
-1. Each user generates an ECDH P-256 identity key pair on first connect.
-2. X3DH key agreement — both sides derive the same shared secret without the server seeing it.
-3. Double Ratchet — every message advances the ratchet; compromise of one key exposes nothing else.
-4. The relay server stores and forwards only ciphertext. It never sees plaintext or keys.
+```ts
+import { StvorWebSDK } from '@stvor/sdk/web';
+
+const sdk = await StvorWebSDK.create({ userId, appToken, relayUrl });
+sdk.onMessage((from, data) => { ... });
+await sdk.send(recipientId, data);
+sdk.disconnect();
+```
+
+Keys persisted in IndexedDB — identity survives page refreshes.
 
 ## Links
 
@@ -218,3 +213,4 @@ node server.js
 - Docs: https://sdk.stvor.xyz/docs
 - GitHub (relay): https://github.com/sapogeth/sdk-relay
 - Hosted relay: https://relay.stvor.xyz
+- llms.txt: https://sdk.stvor.xyz/llms.txt

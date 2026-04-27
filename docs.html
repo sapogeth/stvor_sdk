@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>STVOR SDK — Documentation</title>
+  <title>Stvor SDK — Documentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -545,7 +545,7 @@
       <a href="/" class="topbar-logo">ST<span>V</span>OR</a>
       <div class="topbar-sep"></div>
       <span class="topbar-title">Documentation</span>
-      <span class="version-badge">v3.5.1</span>
+      <span class="version-badge">v3.5.4</span>
     </div>
     <div class="topbar-right">
       <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
@@ -617,7 +617,7 @@
         <!-- OVERVIEW -->
         <section id="overview">
           <h1>STVOR SDK</h1>
-          <p class="lead">Add Signal Protocol end-to-end encryption to any app in minutes. X3DH + Double Ratchet — the same cryptography used by Signal — with a three-line API. Zero cryptography expertise required.</p>
+          <p class="lead">Add production-grade E2EE to any app in minutes. Signal Protocol (X3DH + Double Ratchet + one-time prekeys) with optional ML-KEM-768 post-quantum protection — behind a three-line API. No cryptography expertise required.</p>
 
           <div class="callout callout-tip">
             <strong>Zero dependencies.</strong> Node.js SDK uses only the built-in <code>node:crypto</code> module. Browser SDK uses Web Crypto API. No WASM, no libsodium, no npm bloat.
@@ -628,11 +628,14 @@
               <thead><tr><th>Feature</th><th>Status</th></tr></thead>
               <tbody>
                 <tr><td>X3DH + Double Ratchet</td><td><span class="badge badge-green">Production</span></td></tr>
-                <tr><td>Forward Secrecy</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>One-time prekeys (OPK)</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Group chats (Sender Keys)</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>ML-KEM-768 (NIST FIPS 203)</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Sealed sender</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>GDPR compliance</td><td><span class="badge badge-green">Production</span></td></tr>
                 <tr><td>Browser (Web Crypto API)</td><td><span class="badge badge-green">Production</span></td></tr>
-                <tr><td>All JS data types</td><td><span class="badge badge-green">Production</span></td></tr>
+                <tr><td>Forward Secrecy</td><td><span class="badge badge-green">Production</span></td></tr>
                 <tr><td>Replay protection</td><td><span class="badge badge-green">Production</span></td></tr>
-                <tr><td>Simultaneous send</td><td><span class="badge badge-green">Production</span></td></tr>
                 <tr><td>Multi-device sync</td><td><span class="badge badge-red">Not ready</span></td></tr>
                 <tr><td>Multi-instance (distributed)</td><td><span class="badge badge-red">Not ready</span></td></tr>
               </tbody>
@@ -1188,7 +1191,7 @@ bob.onMessage((msg) => {
         <!-- CRYPTO -->
         <section id="crypto">
           <h2>Cryptography</h2>
-          <p>STVOR v3.3 implements the Signal Protocol using only native crypto APIs — no external libraries.</p>
+          <p>Stvor v3.5.4 implements Signal Protocol + ML-KEM-768 (NIST FIPS 203) using only native crypto APIs — zero external dependencies.</p>
 
           <ul>
             <li><strong>X3DH</strong> — Extended Triple Diffie-Hellman for initial key agreement</li>
@@ -1231,8 +1234,9 @@ bob.onMessage((msg) => {
                 <tr><td>Multi-device sync</td><td><span class="badge badge-red">Not ready</span></td><td>Each device = separate identity</td></tr>
                 <tr><td>Multi-instance relay</td><td><span class="badge badge-red">Not ready</span></td><td>Requires distributed state</td></tr>
                 <tr><td>Persistent storage</td><td><span class="badge badge-yellow">In-memory</span></td><td>Keys cleared on restart</td></tr>
-                <tr><td>Post-quantum security</td><td><span class="badge badge-red">Not ready</span></td><td>Uses classical P-256</td></tr>
-                <tr><td>Metadata privacy</td><td><span class="badge badge-red">Not provided</span></td><td>Relay sees sender/recipient</td></tr>
+                <tr><td>Post-quantum (ML-KEM-768)</td><td><span class="badge badge-green">Available</span></td><td>Enable with <code>pqc: true</code> — hybrid X3DH+ML-KEM, NIST FIPS 203 verified</td></tr>
+                <tr><td>Metadata privacy (sender)</td><td><span class="badge badge-green">Available</span></td><td>Enable with <code>sealedSender: true</code> — relay cannot see sender</td></tr>
+                <tr><td>Metadata privacy (recipient)</td><td><span class="badge badge-red">Not provided</span></td><td>Relay sees <code>to</code> for routing — mix networks required for full anonymity</td></tr>
               </tbody>
             </table>
           </div>
@@ -1257,7 +1261,7 @@ bob.onMessage((msg) => {
           <p>Decryption error — usually a session state mismatch. Disconnect and reconnect both clients.</p>
 
           <h3>ERR_PACKAGE_PATH_NOT_EXPORTED</h3>
-          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.5.1</code>.</p>
+          <p>Use <code>@stvor/sdk</code> for Node.js and <code>@stvor/sdk/web</code> for browser. Update to <code>^3.5.4</code>.</p>
         </section>
 
         <!-- MIGRATION -->
@@ -1336,7 +1340,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
 
     // ── MACHINE MODE ──────────────────────────────────────────
     const BOOT_LINES = [
-      { t: 0,   text: '[ 0.000000] stvor: kernel v3.5.1-signal', cls: 'boot-head' },
+      { t: 0,   text: '[ 0.000000] stvor: kernel v3.5.4-signal', cls: 'boot-head' },
       { t: 80,  text: '[ 0.000312] loading crypto modules...',   cls: '' },
       { t: 160, text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
       { t: 240, text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
@@ -1449,7 +1453,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
       <div id="boot-lines"></div>
       <div class="machine-content" id="mc-content">
 
-        <div class="mc-h1"># Stvor SDK v3.5.1 — Full Documentation</div>
+        <div class="mc-h1"># Stvor SDK v3.5.4 — Full Documentation</div>
         <div class="mc-sub">Signal Protocol (X3DH + Double Ratchet) · AES-256-GCM · HKDF-SHA256 · Zero runtime dependencies</div>
 
         <!-- OVERVIEW -->
@@ -1472,7 +1476,7 @@ alice.onMessage((msg) => console.log(msg.from, msg.data));</code></pre>
               <tr><td>Replay protection</td><td style="color:var(--green)">Production</td></tr>
               <tr><td>Simultaneous send</td><td style="color:var(--green)">Production</td></tr>
               <tr><td>Multi-device sync</td><td style="color:#f87171">Not ready</td></tr>
-              <tr><td>Post-quantum security</td><td style="color:#f87171">Not ready</td></tr>
+              <tr><td>Post-quantum (ML-KEM-768)</td><td style="color:var(--green)">Production — pqc:true</td></tr>
             </tbody>
           </table>
         </div>
@@ -1777,7 +1781,7 @@ bob.<span class="mc-fn">onGroupMessage</span>(msg =&gt; {
           <div class="mc-prop"><span class="mc-prop-key">RELAY_UNAVAILABLE</span><span class="mc-prop-val">Run npx @stvor/sdk mock-relay or check relayUrl</span></div>
           <div class="mc-prop"><span class="mc-prop-key">RECIPIENT_NOT_FOUND</span><span class="mc-prop-val">Increase timeout — send() waits by default</span></div>
           <div class="mc-prop"><span class="mc-prop-key">DELIVERY_FAILED</span><span class="mc-prop-val">Session mismatch — disconnect and reconnect both clients</span></div>
-          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.5.1</span></div>
+          <div class="mc-prop"><span class="mc-prop-key">ERR_PACKAGE_PATH_NOT_EXPORTED</span><span class="mc-prop-val">Use @stvor/sdk/web for browser, update to ^3.5.4</span></div>
         </div>
 
         <!-- MIGRATION -->

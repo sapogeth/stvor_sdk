@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="STVOR SDK — Signal Protocol E2EE in minutes. Zero crypto knowledge required.">
+  <meta name="description" content="Stvor SDK — End-to-end encryption for any app. Signal Protocol + ML-KEM-768 post-quantum. Zero dependencies. npm install @stvor/sdk">
   <title>STVOR — End-to-End Encryption SDK</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -464,10 +464,10 @@
     <section class="hero">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        v3.5.1 — Signal Protocol · ML-KEM-768 · Zero dependencies
+        v3.5.4 · Signal Protocol · ML-KEM-768 · NIST FIPS 203
       </div>
-      <h1>E2EE in your app<br><span>in 3 lines of code</span></h1>
-      <p>Signal Protocol encryption (X3DH + Double Ratchet) with a dead-simple API. No cryptography expertise needed. Works in Node.js and the browser.</p>
+      <h1>E2EE for any app.<br><span>Ship in minutes.</span></h1>
+      <p>Signal Protocol (X3DH + Double Ratchet) + optional post-quantum ML-KEM-768 encryption — behind a three-line API. No cryptography expertise required. Verified against NIST FIPS 203 test vectors.</p>
       <div class="hero-cta">
         <a href="/docs" class="btn-primary">Read the docs</a>
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" class="btn-outline">GitHub →</a>
@@ -500,52 +500,52 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
     <div class="stats">
       <div class="stat">
         <div class="stat-num">0<span>deps</span></div>
-        <div class="stat-label">Zero npm dependencies</div>
+        <div class="stat-label">Zero npm dependencies — node:crypto only</div>
       </div>
       <div class="stat">
-        <div class="stat-num"><span>&lt;</span>30s</div>
-        <div class="stat-label">Time to first encrypted message</div>
+        <div class="stat-num">ML-KEM<span>-768</span></div>
+        <div class="stat-label">Post-quantum · NIST FIPS 203 · verified</div>
       </div>
       <div class="stat">
         <div class="stat-num">9</div>
-        <div class="stat-label">Supported JS data types</div>
+        <div class="stat-label">Supported JS types — string to Map</div>
       </div>
     </div>
 
     <section class="section" id="features">
       <div class="section-label">Why STVOR</div>
-      <h2>Everything you need.<br>Nothing you don't.</h2>
-      <p class="section-sub">Built on the same cryptography as Signal — without the complexity.</p>
+      <h2>Production-grade encryption.<br>Developer-grade API.</h2>
+      <p class="section-sub">Everything Signal uses — packaged for developers who want results, not a PhD.</p>
       <div class="features-grid">
         <div class="feature">
           <div class="feature-icon">🔐</div>
           <h3>Signal Protocol</h3>
-          <p>X3DH key agreement + Double Ratchet. The same cryptography used by Signal, WhatsApp, and Wire.</p>
+          <p>Full X3DH key agreement + Double Ratchet with one-time prekeys. The same cryptography as Signal, WhatsApp, and Wire — forward secrecy from the first message.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚛️</div>
+          <h3>Post-Quantum ready</h3>
+          <p>ML-KEM-768 (NIST FIPS 203) implemented from scratch — no external libraries. Verified against official NIST ACVTS test vectors. Enable with <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">pqc: true</code>.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">⚡</div>
           <h3>Zero dependencies</h3>
-          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">node:crypto</code>. Browser SDK uses Web Crypto API. No WASM, no npm bloat.</p>
+          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">node:crypto</code>. Browser uses Web Crypto API. No WASM, no npm bloat, no supply chain risk.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🔄</div>
-          <h3>Forward Secrecy</h3>
-          <p>DH ratchet rotates keys every message. Compromise of today's keys exposes nothing from the past.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🌐</div>
-          <h3>Browser support</h3>
-          <p>Full Double Ratchet in the browser via Web Crypto API. Same API, same security — import from <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">@stvor/sdk/web</code>.</p>
+          <div class="feature-icon">👥</div>
+          <h3>Group chats</h3>
+          <p>Sender Keys scheme — O(1) encryption regardless of group size. Auto-ratchets sender key on member removal. Same API as 1-to-1.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">📦</div>
-          <h3>Any data type</h3>
-          <p>Send strings, numbers, objects, Dates, Sets, Maps, Uint8Arrays. Exact type is preserved on delivery.</p>
+          <h3>Any JS type</h3>
+          <p>Send strings, numbers, objects, Dates, Sets, Maps, Uint8Arrays — original type is preserved end-to-end. No manual serialization.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🛡️</div>
-          <h3>Replay protection</h3>
-          <p>Nonce + timestamp validation on every message. Messages are deleted from relay after delivery.</p>
+          <div class="feature-icon">🌐</div>
+          <h3>Browser + Node.js</h3>
+          <p>Full Double Ratchet in the browser via Web Crypto API. Same API, same security. Keys persist in IndexedDB across page refreshes.</p>
         </div>
       </div>
     </section>
@@ -603,9 +603,9 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
 
     <div class="cta-section">
       <div class="cta-box">
-        <h2>Ready to add E2EE<br>to your app?</h2>
-        <p>Full documentation, API reference, and working examples.</p>
-        <a href="/docs" class="btn-primary">Open the docs →</a>
+        <h2>Add E2EE to your app<br>in the next 30 minutes.</h2>
+        <p>Full API reference, working examples, and a hosted relay — no server setup required.</p>
+        <a href="/docs" class="btn-primary">Read the docs →</a>
       </div>
     </div>
 
@@ -617,7 +617,7 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
         <a href="/llms.txt">llms.txt</a>
         <span id="contact-link" onclick="copyEmail()" style="cursor:pointer" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
       </div>
-      <div class="footer-copy">© 2025 STVOR · v3.5.1</div>
+      <div class="footer-copy">© 2025 STVOR · v3.5.4</div>
     </footer>
 
   </div><!-- /human-view -->
@@ -738,18 +738,18 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
 
   <script>
     const BOOT_LINES = [
-      { t: 0,    text: '[ 0.000000] stvor: kernel v3.5.1-signal', cls: 'boot-head' },
-      { t: 80,   text: '[ 0.000312] loading crypto modules...',   cls: '' },
-      { t: 160,  text: '[ 0.001024] x3dh: key agreement ready',   cls: '' },
-      { t: 240,  text: '[ 0.001337] double-ratchet: initialized',  cls: '' },
-      { t: 320,  text: '[ 0.001820] aes-256-gcm: online',          cls: '' },
-      { t: 400,  text: '[ 0.002048] hkdf-sha256: online',          cls: '' },
-      { t: 480,  text: '[ 0.002561] tofu: trust store ready',      cls: '' },
-      { t: 560,  text: '[ 0.003072] replay-guard: nonce cache ok', cls: '' },
-      { t: 640,  text: '[ 0.003584] relay: relay.stvor.xyz',       cls: '' },
-      { t: 720,  text: '[ 0.004096] deps: 0',                      cls: 'boot-val' },
-      { t: 820,  text: '[ 0.004608] status: ready',                cls: 'boot-val' },
-      { t: 920,  text: '',                                           cls: '' },
+      { t: 0,    text: '[ 0.000000] stvor: kernel v3.5.4',          cls: 'boot-head' },
+      { t: 80,   text: '[ 0.000312] loading crypto modules...',     cls: '' },
+      { t: 160,  text: '[ 0.001024] x3dh: key agreement ready',     cls: '' },
+      { t: 240,  text: '[ 0.001337] double-ratchet: initialized',    cls: '' },
+      { t: 320,  text: '[ 0.001820] one-time-prekeys: pool=10',      cls: '' },
+      { t: 400,  text: '[ 0.002048] aes-256-gcm: online',            cls: '' },
+      { t: 480,  text: '[ 0.002561] ml-kem-768: FIPS 203 verified',  cls: '' },
+      { t: 560,  text: '[ 0.003072] sealed-sender: available',       cls: '' },
+      { t: 640,  text: '[ 0.003584] relay: relay.stvor.xyz',         cls: '' },
+      { t: 720,  text: '[ 0.004096] deps: 0',                        cls: 'boot-val' },
+      { t: 820,  text: '[ 0.004608] status: ready',                  cls: 'boot-val' },
+      { t: 920,  text: '',                                             cls: '' },
     ];
 
     let bootTimers = [];
