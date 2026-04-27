@@ -124,35 +124,30 @@ export function ecVerify(data, sig, pub) {
  * Both sides independently derive the SAME shared secret.
  * Canonical ordering ensures deterministic computation.
  * ================================================================ */
-export function x3dhSymmetric(myIK, mySPK, peerIK, peerSPK, peerOPK) {
-    // Determine canonical ordering: sort identity keys to ensure both sides compute same result
+export function x3dhSymmetric(myIK, mySPK, peerIK, peerSPK, opk, // OPK context: initiator passes peerOPK public key; responder passes myOPK private key
+opkIsPrivate = false) {
     const iAmLower = Buffer.compare(myIK.publicKey, peerIK) < 0;
-    // Create canonical ordering of IKs for consistent salt
     const lowerIK = iAmLower ? myIK.publicKey : peerIK;
     const upperIK = iAmLower ? peerIK : myIK.publicKey;
-    // DH1: Identity key agreement (CRITICAL for authentication binding)
     const dh1 = ecdhSecret(myIK.privateKey, peerIK);
-    // DH2: Initiator identity × Responder SPK
     const dh2 = iAmLower
         ? ecdhSecret(myIK.privateKey, peerSPK)
         : ecdhSecret(mySPK.privateKey, peerIK);
-    // DH3: Initiator SPK × Responder identity  
     const dh3 = iAmLower
         ? ecdhSecret(mySPK.privateKey, peerIK)
         : ecdhSecret(myIK.privateKey, peerSPK);
-    // DH4: Initiator SPK × Responder OTP (if available)
+    // DH4 = ECDH(initiator_SPK, responder_OPK)
+    // Initiator:  opk = responder_OPK_pub  → ECDH(mySPK.priv,  opk_pub)
+    // Responder:  opk = myOPK_priv         → ECDH(myOPK_priv,  peerSPK)
     const dh4Buffers = [dh1, dh2, dh3];
-    if (peerOPK && peerOPK.length === PUB_LEN) {
-        dh4Buffers.push(ecdhSecret(mySPK.privateKey, peerOPK));
+    if (opk && opk.length > 0) {
+        const dh4 = opkIsPrivate
+            ? ecdhSecret(opk, peerSPK) // responder: OPK.priv × initiator_SPK.pub
+            : ecdhSecret(mySPK.privateKey, opk); // initiator: SPK.priv × OPK.pub
+        dh4Buffers.push(dh4);
     }
-    // Combine all DH outputs with proper domain separation
     const ikm = Buffer.concat(dh4Buffers);
-    // Use canonical ordering for salt so both sides compute the same value
-    const salt = Buffer.concat([
-        Buffer.from('X3DH-SALT'),
-        lowerIK,
-        upperIK,
-    ]);
+    const salt = Buffer.concat([Buffer.from('X3DH-SALT'), lowerIK, upperIK]);
     return hkdf(ikm, salt, 'X3DH-SK', 32);
 }
 /* ================================================================
@@ -162,8 +157,9 @@ export function x3dhSymmetric(myIK, mySPK, peerIK, peerSPK, peerOPK) {
  * initiator DH ratchet; the first receive triggers a responder
  * DH ratchet.  Either side can go first.
  * ================================================================ */
-export function establishSession(myIK, mySPK, peerIK, peerSPK) {
-    const sk = x3dhSymmetric(myIK, mySPK, peerIK, peerSPK);
+export function establishSession(myIK, mySPK, peerIK, peerSPK, opk, // initiator: peer's OPK public key; responder: own OPK private key
+opkIsPrivate = false) {
+    const sk = x3dhSymmetric(myIK, mySPK, peerIK, peerSPK, opk, opkIsPrivate);
     const ratchetKP = generateKeyPair();
     return {
         myIdentityPublicKey: Buffer.from(myIK.publicKey),

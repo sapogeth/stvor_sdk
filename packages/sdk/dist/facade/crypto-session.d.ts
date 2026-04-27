@@ -77,10 +77,16 @@ export declare class CryptoSessionManager {
     private peerPqcEks;
     private pendingPqcCt;
     private pendingPqcSS;
+    private opkPool;
+    private publishedOpks;
+    private static readonly OPK_POOL_SIZE;
     constructor(userId: string, identityStore?: IIdentityStore, sessionStore?: ISessionStore, pqc?: boolean);
     initialize(): Promise<void>;
     private _doInit;
     getIdentityPrivateKey(): Buffer;
+    private _refillOpkPool;
+    private _consumeOpk;
+    getOpkPrivateKey(opkPublicB64: string): Buffer | null;
     getPublicKeys(): SerializedPublicKeys;
     isPqcEnabled(): boolean;
     /**

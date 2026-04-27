@@ -50,8 +50,10 @@ export declare function generateKeyPair(): KeyPair;
 export declare function ecSign(data: Buffer, kp: KeyPair): Buffer;
 /** ECDSA-P256-SHA256 verify */
 export declare function ecVerify(data: Buffer, sig: Buffer, pub: Buffer): boolean;
-export declare function x3dhSymmetric(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer, peerOPK?: Buffer): Buffer;
-export declare function establishSession(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer): SessionState;
+export declare function x3dhSymmetric(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer, opk?: Buffer, // OPK context: initiator passes peerOPK public key; responder passes myOPK private key
+opkIsPrivate?: boolean): Buffer;
+export declare function establishSession(myIK: KeyPair, mySPK: KeyPair, peerIK: Buffer, peerSPK: Buffer, opk?: Buffer, // initiator: peer's OPK public key; responder: own OPK private key
+opkIsPrivate?: boolean): SessionState;
 export declare function encryptMessage(session: SessionState, plaintext: Buffer): {
     ciphertext: Buffer;
     header: Buffer;

@@ -1,20 +1,9 @@
 /**
  * STVOR TOFU (Trust On First Use) Manager
- * Implements persistent TOFU with fallback to in-memory
  *
- * VERSION 2.0 - PRODUCTION READY
- *
- * Features:
- * - Persistent storage interface
- * - In-memory fallback for development
- * - Fingerprint verification
- * - Key rotation support
- *
- * SEMANTICS:
- * - Fingerprint = BLAKE2b(identity_public_key)
- * - Binding: identity key ONLY (not bundle, not SPK)
- * - Key rotation: requires manual re-trust via trustNewFingerprint()
- * - Multi-device: NOT supported (each device = new identity)
+ * Fingerprint = SHA-256(identity_public_key), hex-encoded.
+ * Binding: identity key only — SPK rotation does not change fingerprint.
+ * On key change: throws hard error (possible MITM).
  */
 interface FingerprintRecord {
     fingerprint: string;
@@ -34,12 +23,8 @@ export interface ITofuStore {
  */
 export declare function initializeTofu(customStore?: ITofuStore): void;
 /**
- * Generate BLAKE2b-256 fingerprint from identity public key
- *
- * BINDING: Identity key ONLY
- * - SPK rotation does NOT change fingerprint
- * - OPK exhaustion does NOT change fingerprint
- * - Only identity key rotation changes fingerprint
+ * Generate SHA-256 fingerprint from identity public key.
+ * Binding: identity key only.
  */
 export declare function generateFingerprint(identityPublicKey: Uint8Array): string;
 /**

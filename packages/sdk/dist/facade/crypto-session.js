@@ -36,10 +36,13 @@ export class CryptoSessionManager {
         this.pqcEnabled = false;
         this.pqcKeyPair = null;
         this.peerPqcEks = new Map();
-        // Pending PQC ciphertexts to include in the first outgoing message
         this.pendingPqcCt = new Map();
-        // PQC shared secrets derived but not yet mixed (waiting for first message)
         this.pendingPqcSS = new Map();
+        // One-time prekey pool: public key (b64) → KeyPair
+        // Keys stay in pool until consumed via getOpkPrivateKey (when peer uses them)
+        this.opkPool = new Map();
+        // Published OPKs waiting to be consumed: public key → KeyPair
+        this.publishedOpks = new Map();
         this.userId = userId;
         this.identityStore = identityStore || null;
         this.sessionStore = sessionStore || null;
@@ -91,6 +94,8 @@ export class CryptoSessionManager {
         if (this.pqcEnabled) {
             this.pqcKeyPair = pqcKeyGen();
         }
+        // Generate initial OPK pool
+        this._refillOpkPool();
         if (this.identityStore) {
             try {
                 await this.identityStore.saveIdentityKeys(this.userId, {
@@ -111,15 +116,45 @@ export class CryptoSessionManager {
             throw new Error('Not initialized');
         return Buffer.from(this.identityKeys.identityKeyPair.privateKey);
     }
+    /* ---- One-time prekeys (OPK) ---- */
+    _refillOpkPool() {
+        while (this.opkPool.size < CryptoSessionManager.OPK_POOL_SIZE) {
+            const kp = generateKeyPair();
+            this.opkPool.set(toB64(kp.publicKey), kp);
+        }
+    }
+    // Picks one OPK from the pool, moves it to publishedOpks (so getOpkPrivateKey can find it)
+    _consumeOpk() {
+        const entry = this.opkPool.entries().next().value;
+        if (!entry)
+            return null;
+        const [pub, kp] = entry;
+        this.opkPool.delete(pub);
+        this.publishedOpks.set(pub, kp); // keep private key until peer actually uses it
+        return kp;
+    }
+    // Called during session establishment when we are the responder:
+    // peer tells us which OPK they used → we look it up, return private key, and remove it
+    getOpkPrivateKey(opkPublicB64) {
+        const kp = this.publishedOpks.get(opkPublicB64);
+        if (!kp)
+            return null;
+        this.publishedOpks.delete(opkPublicB64); // OPK is single-use
+        return Buffer.from(kp.privateKey);
+    }
     /* ---- Public keys ---- */
     getPublicKeys() {
         if (!this.identityKeys)
             throw new Error('Not initialized');
+        // Attach one OPK public key — consumed on first use
+        const opk = this._consumeOpk();
+        if (this.opkPool.size < 3)
+            this._refillOpkPool(); // refill when running low
         return {
             identityKey: toB64(this.identityKeys.identityKeyPair.publicKey),
             signedPreKey: toB64(this.identityKeys.signedPreKeyPair.publicKey),
             signedPreKeySignature: toB64(this.identityKeys.signedPreKeySignature),
-            oneTimePreKey: '',
+            oneTimePreKey: opk ? toB64(opk.publicKey) : '',
             // Include ML-KEM public key when PQC is enabled
             ...(this.pqcEnabled && this.pqcKeyPair
                 ? { pqcEk: pqcEkToBase64(this.pqcKeyPair.ek) }
@@ -175,8 +210,32 @@ export class CryptoSessionManager {
         if (peerSig.length > 0 && !ecVerify(peerSPK, peerSig, peerIK)) {
             throw new Error('Invalid signed pre-key signature — possible MITM attack');
         }
-        // Classical X3DH session
-        const session = ratchetEstablishSession(this.identityKeys.identityKeyPair, this.identityKeys.signedPreKeyPair, peerIK, peerSPK);
+        // X3DH with optional one-time prekey (OPK)
+        //
+        // Two roles:
+        //  Initiator: peer published an OPK → pass peerOPK public key, opkIsPrivate=false
+        //             DH4 = ECDH(mySPK.priv, peerOPK.pub)
+        //
+        //  Responder: we are Bob, peer (Alice) consumed one of our OPKs.
+        //             peerPublicKeys.oneTimePreKey = the OPK Alice used (our own pub key).
+        //             We look up our corresponding private key and pass it, opkIsPrivate=true
+        //             DH4 = ECDH(myOPK.priv, peerSPK.pub)  — same result as initiator
+        let opk;
+        let opkIsPrivate = false;
+        if (peerPublicKeys.oneTimePreKey) {
+            const myOpkPriv = this.getOpkPrivateKey(peerPublicKeys.oneTimePreKey);
+            if (myOpkPriv) {
+                // We are the responder — peer used one of our OPKs
+                opk = myOpkPriv;
+                opkIsPrivate = true;
+            }
+            else {
+                // We are the initiator — peer published their OPK for us to use
+                opk = fromB64(peerPublicKeys.oneTimePreKey);
+                opkIsPrivate = false;
+            }
+        }
+        const session = ratchetEstablishSession(this.identityKeys.identityKeyPair, this.identityKeys.signedPreKeyPair, peerIK, peerSPK, opk, opkIsPrivate);
         // PQC hybrid — full KEM encaps/decaps (no deterministic shortcut).
         //
         // Protocol (no extra round-trip needed):
@@ -446,3 +505,4 @@ export class CryptoSessionManager {
         }
     }
 }
+CryptoSessionManager.OPK_POOL_SIZE = 10;

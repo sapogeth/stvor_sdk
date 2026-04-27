@@ -1,30 +1,41 @@
 /**
- * Number Theoretic Transform for ML-KEM (Kyber)
+ * Number Theoretic Transform for ML-KEM (FIPS 203)
  *
- * Ring: Z_q[x]/(x^256 + 1), q = 3329
- * Straightforward implementation following the ML-KEM spec exactly.
+ * Ring: Z_q[x]/(x^256 + 1), q = 3329, primitive root ζ = 17
+ *
+ * Zeta table: ZETAS[k] = 17^brv7(k) mod 3329, k = 0..255
+ * NTT uses ZETAS[1..127], baseMul uses ZETAS[128..255].
  */
 
 export const N = 256;
 export const Q = 3329;
 
-// ── Zeta table ────────────────────────────────────────────────────────────────
-// zetas[i] = 17^brv7(i) mod 3329
-// The primitive 512th root of unity is ζ = 17
+// 7-bit bit-reversal
+function brv7(x: number): number {
+  let r = 0;
+  for (let i = 0; i < 7; i++) { r = (r << 1) | (x & 1); x >>= 1; }
+  return r;
+}
 
+// ZETAS[k] = 17^brv7(k) mod 3329, k = 0..127
+// Used by NTT (forward: k=1..127) and invNTT (reverse: k=127..1)
 export const ZETAS: number[] = (() => {
-  function brv7(x: number): number {
-    let r = 0;
-    for (let i = 0; i < 7; i++) { r = (r << 1) | (x & 1); x >>= 1; }
-    return r;
-  }
   const powers: number[] = new Array(128);
-  let p = 1;
-  for (let i = 0; i < 128; i++) {
-    powers[i] = p;
-    p = (p * 17) % Q;
-  }
-  return Array.from({ length: 128 }, (_, i) => powers[brv7(i)]);
+  let p = 1n;
+  for (let i = 0; i < 128; i++) { powers[i] = Number(p); p = p * 17n % 3329n; }
+  return Array.from({ length: 128 }, (_, k) => powers[brv7(k)]);
+})();
+
+// GAMMAS[i] = ζ^(2·brv₇(i)+1) mod 3329, i = 0..127
+// Used by baseMul: pair i of the NTT-domain product uses GAMMAS[i] as the root.
+// FIPS 203 §4.3, Algorithm 11.
+export const GAMMAS: number[] = (() => {
+  const pow = (b: bigint, e: bigint, m: bigint) => {
+    let r = 1n; b = b % m;
+    while (e > 0n) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; }
+    return Number(r);
+  };
+  return Array.from({ length: 128 }, (_, i) => pow(17n, BigInt(2 * brv7(i) + 1), 3329n));
 })();
 
 // ── Modular arithmetic ────────────────────────────────────────────────────────
@@ -34,14 +45,10 @@ export function modQ(a: number): number {
   return a < 0 ? a + Q : a;
 }
 
-// Optimised reduce into [0, Q)
-export function reduce(a: number): number {
-  return modQ(a);
-}
+export function reduce(a: number): number { return modQ(a); }
 
-// ── NTT ───────────────────────────────────────────────────────────────────────
-// Algorithm 9 from FIPS 203.
-// Input/output coefficients in Z_q (integers mod q).
+// ── NTT (Algorithm 9, FIPS 203) ───────────────────────────────────────────────
+// In-place forward NTT. Coefficients remain in Z_q.
 
 export function ntt(f: Int16Array): void {
   let k = 1;
@@ -57,8 +64,7 @@ export function ntt(f: Int16Array): void {
   }
 }
 
-// ── Inverse NTT ───────────────────────────────────────────────────────────────
-// Algorithm 10 from FIPS 203.
+// ── Inverse NTT (Algorithm 10, FIPS 203) ─────────────────────────────────────
 
 export function invNtt(f: Int16Array): void {
   let k = 127;
@@ -73,35 +79,34 @@ export function invNtt(f: Int16Array): void {
     }
   }
   // Multiply by 128^{-1} mod 3329 = 3303
-  const INV128 = 3303;
-  for (let i = 0; i < N; i++) {
-    f[i] = (f[i] * INV128) % Q;
-  }
+  for (let i = 0; i < N; i++) f[i] = (f[i] * 3303) % Q;
 }
 
-// ── Base multiplication ───────────────────────────────────────────────────────
-// Pointwise multiplication of two NTT-domain polys using degree-2 factors.
+// ── Base multiplication (Algorithm 11/12, FIPS 203) ──────────────────────────
+// Multiplies two NTT-domain polynomials.
+// The 128 degree-2 factors use ZETAS[128..255]:
+//   pair i (indices 4i, 4i+1, 4i+2, 4i+3) uses ZETAS[128+i] and -ZETAS[128+i]
 
+// baseMul: multiply two NTT-domain polynomials.
+// Follows the Kyber/ML-KEM reference implementation exactly:
+//   For i = 0..63:
+//     Pair at (4i, 4i+1): basemul with zeta =  ZETAS[64+i]
+//     Pair at (4i+2, 4i+3): basemul with zeta = -ZETAS[64+i]
+// (Kyber ref: poly_basemul_montgomery in poly.c)
 export function baseMul(r: Int16Array, a: Int16Array, b: Int16Array): void {
   for (let i = 0; i < 64; i++) {
     const zeta = ZETAS[64 + i];
     const i0 = 4 * i, i1 = 4 * i + 1, i2 = 4 * i + 2, i3 = 4 * i + 3;
-    // (a0 + a1*X)(b0 + b1*X) mod (X^2 - zeta)
-    r[i0] = modQ((a[i0] * b[i0] + a[i1] * b[i1] * zeta) % Q);
+    // Pair 0: mod (X² − zeta)
+    r[i0] = modQ((a[i0] * b[i0] + (a[i1] * b[i1] % Q) * zeta) % Q);
     r[i1] = modQ((a[i0] * b[i1] + a[i1] * b[i0]) % Q);
-    // (a2 + a3*X)(b2 + b3*X) mod (X^2 + zeta) [negated zeta for odd pair]
-    r[i2] = modQ((a[i2] * b[i2] - a[i3] * b[i3] * zeta % Q + Q) % Q);
+    // Pair 1: mod (X² + zeta)  [note: -zeta ≡ Q-zeta]
+    r[i2] = modQ((a[i2] * b[i2] - (a[i3] * b[i3] % Q) * zeta % Q + 2 * Q) % Q);
     r[i3] = modQ((a[i2] * b[i3] + a[i3] * b[i2]) % Q);
   }
 }
 
-// Legacy aliases used by poly.ts
-export function fqmul(a: number, b: number): number {
-  return (a * b) % Q;
-}
-export function montgomeryReduce(a: number): number {
-  return modQ(a);
-}
-export function barrettReduce(a: number): number {
-  return modQ(a);
-}
+// Legacy aliases
+export function fqmul(a: number, b: number): number { return (a * b) % Q; }
+export function montgomeryReduce(a: number): number { return modQ(a); }
+export function barrettReduce(a: number): number { return modQ(a); }

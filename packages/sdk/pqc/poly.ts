@@ -105,19 +105,23 @@ export function polyFromBytes(a: Uint8Array): Poly {
 }
 
 /**
- * Sample polynomial from centered binomial distribution (CBD)
- * Used for noise sampling in ML-KEM
- * eta=2: each coeff in {-2,-1,0,1,2}
+ * SamplePolyCBD_η2 (Algorithm 8, FIPS 203)
+ * Input: 64*η = 128 bytes (PRF output)
+ * For each coefficient i in [0,256):
+ *   bits at positions 4i..4i+3 of the byte array
+ *   a = bit[4i] + bit[4i+1]
+ *   b = bit[4i+2] + bit[4i+3]
+ *   f[i] = a - b  (mod q)
  */
 export function polyCBD2(seed: Uint8Array): Poly {
   const r = polyNew();
-  for (let i = 0; i < N / 4; i++) {
-    const b = seed[i];
-    for (let j = 0; j < 4; j++) {
-      const a = ((b >> (2 * j)) & 1) + ((b >> (2 * j + 1)) & 1);
-      const c = ((b >> (2 * j + 8)) & 1) + ((b >> (2 * j + 9)) & 1);
-      r[4 * i + j] = modQ(a - c + Q);
-    }
+  for (let i = 0; i < N; i++) {
+    const byteIdx = Math.floor(i / 2);
+    const bitOff  = (i % 2) * 4;
+    const byte    = seed[byteIdx];
+    const a = ((byte >> bitOff) & 1) + ((byte >> (bitOff + 1)) & 1);
+    const b = ((byte >> (bitOff + 2)) & 1) + ((byte >> (bitOff + 3)) & 1);
+    r[i] = modQ(a - b + Q);
   }
   return r;
 }
@@ -143,24 +147,47 @@ export function polyCBD3(seed: Uint8Array): Poly {
 }
 
 /**
- * Generate deterministic polynomial from seed using SHAKE-128 (via SHA-3)
- * Used for matrix A generation
+ * SampleNTT (Algorithm 7, FIPS 203): sample a polynomial from SHAKE-128 XOF.
+ * XOF input: rho ‖ i ‖ j  (FIPS 203 §4.2.2)
+ * Rejection-samples coefficients in [0, q) from the XOF stream.
  */
 export function polyUniform(seed: Uint8Array, i: number, j: number): Poly {
-  // XOF: SHA3-128 (approximation — Node.js doesn't have SHAKE natively)
-  // Use SHA-256 in counter mode as XOF substitute
+  // SHAKE-128 with large output — rejection sampling needs ~840 bytes on average
+  // Request enough to fill N=256 coefficients without re-squeezing
+  const outLen = 840;
+  const stream = new Uint8Array(
+    (nodeCrypto.createHash('shake128', { outputLength: outLen }) as any)
+      .update(Buffer.concat([seed, Buffer.from([i, j])]))
+      .digest()
+  );
+
   const r = polyNew();
-  let count = 0;
+  let pos = 0;
   let filled = 0;
-  while (filled < N) {
-    const hash = nodeCrypto.createHash('sha256')
-      .update(seed)
-      .update(Buffer.from([i, j, count & 0xff, (count >> 8) & 0xff]))
-      .digest();
-    count++;
-    for (let k = 0; k + 2 < hash.length && filled < N; k += 2) {
-      const val = (hash[k] | (hash[k+1] << 8)) & 0x0fff;
-      if (val < Q) r[filled++] = val;
+  while (filled < N && pos + 2 < stream.length) {
+    const b0 = stream[pos], b1 = stream[pos + 1], b2 = stream[pos + 2];
+    pos += 3;
+    const d1 = b0 | ((b1 & 0x0f) << 8);
+    const d2 = (b1 >> 4) | (b2 << 4);
+    if (d1 < Q) r[filled++] = d1;
+    if (d2 < Q && filled < N) r[filled++] = d2;
+  }
+  // Fallback if stream exhausted (shouldn't happen with outLen=840)
+  if (filled < N) {
+    let extra = outLen;
+    while (filled < N) {
+      const more = new Uint8Array(
+        (nodeCrypto.createHash('shake128', { outputLength: extra + 168 }) as any)
+          .update(Buffer.concat([seed, Buffer.from([i, j])]))
+          .digest()
+      );
+      for (let p = extra; p + 2 < more.length && filled < N; p += 3) {
+        const d1 = more[p] | ((more[p+1] & 0x0f) << 8);
+        const d2 = (more[p+1] >> 4) | (more[p+2] << 4);
+        if (d1 < Q) r[filled++] = d1;
+        if (d2 < Q && filled < N) r[filled++] = d2;
+      }
+      extra += 168;
     }
   }
   return r;
