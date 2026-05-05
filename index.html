@@ -4,27 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Stvor SDK — End-to-end encryption for any app. Signal Protocol + ML-KEM-768 post-quantum. Zero dependencies. npm install @stvor/sdk">
-  <title>STVOR — End-to-End Encryption SDK</title>
+  <title>STVOR — Quantum-Safe Encryption SDK</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #09090b;
-      --bg2: #111113;
-      --bg3: #18181b;
-      --border: #27272a;
-      --border2: #3f3f46;
-      --fg: #fafafa;
-      --fg2: #a1a1aa;
-      --fg3: #71717a;
-      --accent: #3b82f6;
-      --accent-dim: rgba(59,130,246,0.12);
-      --accent-dim2: rgba(59,130,246,0.06);
-      --green: #22c55e;
-      --green-dim: rgba(34,197,94,0.1);
-      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --bg:          #0a0a0f;
+      --bg2:         #0f0f1a;
+      --bg3:         #16162a;
+      --bg4:         #1e1e35;
+      --border:      #2a2a4a;
+      --border2:     #3a3a5c;
+      --fg:          #f0f0ff;
+      --fg2:         #a0a0c0;
+      --fg3:         #6060a0;
+      --accent:      #7c3aed;
+      --accent2:     #9d5ff7;
+      --accent3:     #6025d1;
+      --accent-dim:  rgba(124,58,237,0.15);
+      --accent-dim2: rgba(124,58,237,0.07);
+      --purple-glow: rgba(124,58,237,0.3);
+      --green:       #22c55e;
+      --green-dim:   rgba(34,197,94,0.1);
+      --mono: 'JetBrains Mono', monospace;
       --sans: 'Inter', system-ui, sans-serif;
     }
 
@@ -37,9 +41,24 @@
       font-size: 15px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     a { color: inherit; text-decoration: none; }
+
+    /* ── BACKGROUND EFFECTS ── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
     /* ── MODE TOGGLE ── */
     .mode-toggle {
@@ -47,15 +66,14 @@
       bottom: 28px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 200;
+      z-index: 300;
       display: flex;
       align-items: center;
-      gap: 0;
       background: var(--bg2);
       border: 1px solid var(--border2);
       border-radius: 100px;
       padding: 4px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,58,237,0.1);
     }
 
     .mode-btn {
@@ -64,7 +82,7 @@
       gap: 7px;
       padding: 8px 18px;
       border-radius: 100px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       font-family: var(--mono);
       cursor: pointer;
@@ -72,24 +90,14 @@
       background: transparent;
       color: var(--fg3);
       transition: all 0.2s;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
-    .mode-btn.active {
-      background: var(--bg3);
-      color: var(--fg);
-    }
-
-    .mode-btn .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--fg3);
-      transition: background 0.2s;
-    }
-
+    .mode-btn.active { background: var(--bg4); color: var(--fg); }
+    .mode-btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg3); transition: background 0.2s; }
     .mode-btn.active .dot { background: var(--green); }
-    .mode-btn[data-mode="machine"].active .dot { background: var(--accent); }
+    .mode-btn[data-mode="machine"].active .dot { background: var(--accent2); }
 
     /* ── MACHINE MODE ── */
     #machine-view {
@@ -97,109 +105,45 @@
       font-family: var(--mono);
       font-size: 13.5px;
       line-height: 1.8;
-      color: #a1a1aa;
+      color: var(--fg2);
       min-height: 100vh;
       padding: 60px 40px 120px;
       max-width: 860px;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     #machine-view.visible { display: block; }
 
-    .boot-line {
-      opacity: 0;
-      white-space: pre;
-      transition: opacity 0.18s ease;
-    }
-
+    .boot-line { opacity: 0; white-space: pre; transition: opacity 0.18s ease; }
     .boot-line.show { opacity: 1; }
     .boot-line.fade { opacity: 0; transition: opacity 0.25s ease; }
 
-    .boot-time { color: var(--fg3); }
-    .boot-key  { color: var(--accent); }
-    .boot-val  { color: var(--green); }
+    .boot-val  { color: var(--accent2); }
     .boot-head { color: var(--fg); font-weight: 500; }
-    .boot-dim  { color: #3f3f46; }
 
-    .machine-content {
-      opacity: 0;
-      margin-top: 48px;
-      transition: opacity 0.4s ease;
-      pointer-events: none;
-    }
+    .machine-content { opacity: 0; margin-top: 48px; transition: opacity 0.4s ease; pointer-events: none; }
+    .machine-content.visible { opacity: 1; pointer-events: auto; }
+    .machine-content.fade-out { opacity: 0; transition: opacity 0.25s ease; }
 
-    .machine-content.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .machine-content.fade-out {
-      opacity: 0;
-      transition: opacity 0.25s ease;
-    }
-
-    .mc-h1 {
-      color: var(--fg);
-      font-size: 18px;
-      font-weight: 500;
-      margin-bottom: 4px;
-    }
-
-    .mc-sub {
-      color: var(--fg3);
-      font-size: 12px;
-      margin-bottom: 40px;
-    }
-
+    .mc-h1  { color: var(--fg); font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    .mc-sub { color: var(--fg3); font-size: 12px; margin-bottom: 40px; }
     .mc-section { margin-bottom: 40px; }
-
-    .mc-h2 {
-      color: var(--accent);
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .mc-code {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px 24px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-      white-space: pre;
-    }
-
-    .mc-kw  { color: #93c5fd; }
-    .mc-fn  { color: #86efac; }
-    .mc-str { color: #fde68a; }
-    .mc-cm  { color: #52525b; }
-
+    .mc-h2  { color: var(--accent2); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .mc-code { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; white-space: pre; }
+    .mc-kw { color: #c4b5fd; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #52525b; }
     .mc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
     .mc-table th { color: var(--fg3); font-size: 11px; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
     .mc-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg2); }
     .mc-table tr:last-child td { border-bottom: none; }
     .mc-table td:first-child { color: var(--fg); }
-
     .mc-prop { display: flex; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
-    .mc-prop-key { color: var(--accent); min-width: 160px; }
+    .mc-prop-key { color: var(--accent2); min-width: 160px; }
     .mc-prop-val { color: var(--fg2); }
 
-    .mc-tag {
-      display: inline-block;
-      background: var(--green-dim);
-      color: var(--green);
-      font-size: 10px;
-      padding: 1px 7px;
-      border-radius: 4px;
-      margin-left: 8px;
-    }
-
     /* ── HUMAN MODE ── */
-    #human-view { display: block; }
+    #human-view { display: block; position: relative; z-index: 1; }
     #human-view.hidden { display: none; }
 
     /* ── NAV ── */
@@ -207,109 +151,194 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(9,9,11,0.85);
-      backdrop-filter: blur(16px);
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       padding: 0 40px;
-      height: 60px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 24px;
     }
 
-    .nav-logo { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; color: var(--fg); }
-    .nav-logo span { color: var(--accent); }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      color: var(--fg);
+    }
 
-    .nav-links { display: flex; align-items: center; gap: 32px; }
-    .nav-links a { font-size: 14px; color: var(--fg2); transition: color 0.15s; }
+    .nav-logo-text { color: var(--fg); }
+    .nav-logo-text span { color: var(--accent2); }
+
+    .pqc-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-dim);
+      border: 1px solid rgba(124,58,237,0.35);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent2);
+      letter-spacing: 0.5px;
+      font-family: var(--mono);
+    }
+
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { font-size: 14px; color: var(--fg2); transition: color 0.15s; font-weight: 500; }
     .nav-links a:hover { color: var(--fg); }
 
     .nav-btn {
       background: var(--accent);
       color: #fff !important;
-      padding: 8px 18px;
-      border-radius: 6px;
+      padding: 9px 20px;
+      border-radius: 8px;
       font-size: 14px;
-      font-weight: 500;
-      transition: opacity 0.15s !important;
+      font-weight: 600;
+      transition: all 0.15s;
+      box-shadow: 0 0 20px rgba(124,58,237,0.3);
     }
 
-    .nav-btn:hover { opacity: 0.85; }
+    .nav-btn:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(124,58,237,0.5); }
 
     /* ── HERO ── */
-    .hero { max-width: 900px; margin: 0 auto; padding: 100px 40px 80px; text-align: center; }
+    .hero {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 110px 40px 80px;
+      text-align: center;
+    }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       background: var(--accent-dim);
-      border: 1px solid rgba(59,130,246,0.25);
+      border: 1px solid rgba(124,58,237,0.3);
       border-radius: 100px;
-      padding: 5px 14px;
-      font-size: 13px;
-      color: var(--accent);
-      margin-bottom: 36px;
-      font-weight: 500;
+      padding: 6px 16px;
+      font-size: 12px;
+      color: var(--accent2);
+      margin-bottom: 40px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      font-family: var(--mono);
     }
 
-    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .hero-badge-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent2);
+      box-shadow: 0 0 8px var(--accent2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
 
     .hero h1 {
-      font-size: clamp(40px, 6vw, 72px);
-      font-weight: 800;
-      letter-spacing: -2px;
-      line-height: 1.08;
-      margin-bottom: 24px;
+      font-size: clamp(48px, 7vw, 88px);
+      font-weight: 900;
+      letter-spacing: -3px;
+      line-height: 1.0;
+      margin-bottom: 28px;
       color: var(--fg);
     }
 
-    .hero h1 span { color: var(--accent); }
+    .hero h1 .purple { color: var(--accent2); }
+    .hero h1 .purple-light { color: #c4b5fd; }
 
     .hero p {
-      font-size: clamp(16px, 2vw, 20px);
+      font-size: clamp(16px, 2vw, 19px);
       color: var(--fg2);
-      max-width: 600px;
-      margin: 0 auto 44px;
-      line-height: 1.7;
+      max-width: 580px;
+      margin: 0 auto 48px;
+      line-height: 1.75;
     }
 
-    .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 60px;
+    }
 
     .btn-primary {
       background: var(--accent);
       color: #fff;
-      padding: 12px 28px;
-      border-radius: 8px;
+      padding: 13px 28px;
+      border-radius: 10px;
       font-size: 15px;
       font-weight: 600;
-      transition: opacity 0.15s;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(124,58,237,0.4);
     }
 
-    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:hover {
+      background: var(--accent2);
+      box-shadow: 0 4px 32px rgba(124,58,237,0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-install {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--fg2);
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: var(--mono);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .btn-install:hover { border-color: var(--accent); color: var(--fg); }
+
+    .btn-install .copy-icon {
+      font-size: 12px;
+      color: var(--fg3);
+      background: var(--bg3);
+      padding: 3px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .btn-install:hover .copy-icon { color: var(--accent2); }
 
     .btn-outline {
       background: transparent;
       color: var(--fg2);
-      padding: 12px 28px;
-      border-radius: 8px;
+      padding: 13px 24px;
+      border-radius: 10px;
       font-size: 15px;
       font-weight: 500;
       border: 1px solid var(--border2);
       transition: all 0.15s;
     }
 
-    .btn-outline:hover { color: var(--fg); border-color: var(--fg2); }
+    .btn-outline:hover { color: var(--fg); border-color: var(--accent); }
 
     /* ── CODE PREVIEW ── */
     .code-preview {
-      max-width: 720px;
-      margin: 60px auto 0;
+      max-width: 700px;
+      margin: 0 auto;
       background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.1);
     }
 
     .code-preview-bar {
@@ -329,22 +358,22 @@
     .code-preview-label { margin-left: 8px; font-size: 12px; color: var(--fg3); font-family: var(--mono); }
 
     .code-preview pre {
-      padding: 24px;
+      padding: 24px 28px;
       font-family: var(--mono);
       font-size: 13.5px;
-      line-height: 1.7;
+      line-height: 1.75;
       overflow-x: auto;
       color: #e4e4e7;
     }
 
-    .kw { color: #93c5fd; }
+    .kw { color: #c4b5fd; }
     .fn { color: #86efac; }
     .str { color: #fde68a; }
-    .cm { color: #52525b; }
+    .cm { color: #4a4a6a; }
 
     /* ── STATS ── */
     .stats {
-      max-width: 900px;
+      max-width: 860px;
       margin: 80px auto;
       padding: 0 40px;
       display: grid;
@@ -352,50 +381,62 @@
       gap: 1px;
       background: var(--border);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
     }
 
     .stat { background: var(--bg2); padding: 36px 28px; text-align: center; }
-    .stat-num { font-size: 36px; font-weight: 800; letter-spacing: -1px; color: var(--fg); margin-bottom: 6px; }
-    .stat-num span { color: var(--accent); }
-    .stat-label { font-size: 14px; color: var(--fg3); }
+    .stat-num { font-size: 32px; font-weight: 800; letter-spacing: -1px; color: var(--fg); margin-bottom: 6px; }
+    .stat-num span { color: var(--accent2); }
+    .stat-label { font-size: 13px; color: var(--fg3); }
 
-    /* ── FEATURES ── */
-    .section { max-width: 900px; margin: 0 auto 80px; padding: 0 40px; }
-    .section-label { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+    /* ── SECTIONS ── */
+    .section { max-width: 860px; margin: 0 auto 80px; padding: 0 40px; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
     .section h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
     .section-sub { font-size: 16px; color: var(--fg2); margin-bottom: 48px; max-width: 560px; }
 
+    /* ── FEATURES GRID ── */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 1px;
       background: var(--border);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
     }
 
     .feature { background: var(--bg2); padding: 28px; transition: background 0.15s; }
     .feature:hover { background: var(--bg3); }
-    .feature-icon { width: 40px; height: 40px; background: var(--accent-dim); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
+
+    .feature-icon {
+      width: 42px; height: 42px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
     .feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--fg); }
     .feature p { font-size: 13.5px; color: var(--fg2); line-height: 1.6; }
 
-    /* ── HOW IT WORKS ── */
-    .steps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-
-    .step { display: grid; grid-template-columns: 60px 1fr; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
+    /* ── STEPS ── */
+    .steps { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .step { display: grid; grid-template-columns: 64px 1fr; border-bottom: 1px solid var(--border); background: var(--bg2); }
     .step:last-child { border-bottom: none; }
-    .step-num { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--accent); background: var(--accent-dim2); border-right: 1px solid var(--border); font-family: var(--mono); }
+    .step-num { display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--accent2); background: var(--accent-dim2); border-right: 1px solid var(--border); font-family: var(--mono); }
     .step-body { padding: 24px 28px; }
     .step-body h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
     .step-body p { font-size: 13.5px; color: var(--fg2); }
-    .step-body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--accent); }
+    .step-body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--accent2); }
 
     /* ── TYPES TABLE ── */
-    .types-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .types-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
     .types-table th { background: var(--bg3); padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; color: var(--fg3); letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
     .types-table td { padding: 12px 18px; font-size: 13.5px; color: var(--fg2); border-bottom: 1px solid var(--border); background: var(--bg2); }
     .types-table tr:last-child td { border-bottom: none; }
@@ -404,19 +445,41 @@
     .badge-green { display: inline-block; background: var(--green-dim); color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; }
 
     /* ── CTA ── */
-    .cta-section { max-width: 900px; margin: 0 auto 80px; padding: 0 40px; }
-    .cta-box { background: linear-gradient(135deg, var(--accent-dim) 0%, var(--bg2) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 56px 48px; text-align: center; }
-    .cta-box h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
-    .cta-box p { font-size: 16px; color: var(--fg2); margin-bottom: 36px; }
-    .cta-box .btn-primary { font-size: 16px; padding: 14px 36px; }
+    .cta-section { max-width: 860px; margin: 0 auto 80px; padding: 0 40px; }
+
+    .cta-box {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, var(--bg2) 60%);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 20px;
+      padding: 64px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(124,58,237,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-box h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; position: relative; }
+    .cta-box p { font-size: 16px; color: var(--fg2); margin-bottom: 36px; position: relative; }
+    .cta-box .btn-primary { font-size: 16px; padding: 14px 36px; position: relative; }
 
     /* ── FOOTER ── */
     .footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-    .footer-logo { font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
-    .footer-logo span { color: var(--accent); }
+    .footer-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
+    .footer-logo span { color: var(--accent2); }
     .footer-links { display: flex; gap: 24px; }
-    .footer-links a { font-size: 13px; color: var(--fg3); transition: color 0.15s; }
-    .footer-links a:hover { color: var(--fg2); }
+    .footer-links a, .footer-links span { font-size: 13px; color: var(--fg3); transition: color 0.15s; cursor: pointer; }
+    .footer-links a:hover, .footer-links span:hover { color: var(--fg2); }
     .footer-copy { font-size: 13px; color: var(--fg3); }
 
     /* ── RESPONSIVE ── */
@@ -424,11 +487,12 @@
       .nav { padding: 0 20px; }
       .nav-links { gap: 16px; }
       .nav-links a:not(.nav-btn) { display: none; }
-      .hero { padding: 60px 20px 48px; }
+      .hero { padding: 70px 20px 48px; }
+      .hero h1 { letter-spacing: -2px; }
       .stats { grid-template-columns: 1fr; margin: 48px 20px; }
       .section { padding: 0 20px; margin-bottom: 56px; }
       .cta-section { padding: 0 20px; }
-      .cta-box { padding: 36px 24px; }
+      .cta-box { padding: 40px 24px; }
       .footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; }
       #machine-view { padding: 40px 20px 120px; }
       .mode-toggle { bottom: 20px; }
@@ -452,7 +516,10 @@
   <div id="human-view">
 
     <nav class="nav">
-      <div class="nav-logo">ST<span>V</span>OR</div>
+      <div class="nav-logo">
+        <div class="nav-logo-text">ST<span>V</span>OR</div>
+        <div class="pqc-badge">PQC</div>
+      </div>
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#how">How it works</a>
@@ -464,14 +531,24 @@
     <section class="hero">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        v3.5.4 · Signal Protocol · ML-KEM-768 · NIST FIPS 203
+        NOW AVAILABLE · V3.5.4 · NIST FIPS 203
       </div>
-      <h1>E2EE for any app.<br><span>Ship in minutes.</span></h1>
-      <p>Signal Protocol (X3DH + Double Ratchet) + optional post-quantum ML-KEM-768 encryption — behind a three-line API. No cryptography expertise required. Verified against NIST FIPS 203 test vectors.</p>
+
+      <h1>Quantum-safe<br>encryption.<br><span class="purple">3 lines</span> <span class="purple-light">of code.</span></h1>
+
+      <p>The missing security layer for your app. Post-quantum E2EE that works in Web2, Web3, and AI agents — without a PhD in cryptography.</p>
+
       <div class="hero-cta">
-        <a href="/docs" class="btn-primary">Read the docs</a>
+        <a href="/docs" class="btn-primary">See how it works →</a>
+        <div class="btn-install" onclick="copyInstall()" id="install-btn">
+          <span style="color:var(--fg3)">$</span>
+          <span style="color:var(--accent2)">npm install</span>
+          <span>@stvor/sdk</span>
+          <span class="copy-icon" id="copy-label">copy</span>
+        </div>
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" class="btn-outline">GitHub →</a>
       </div>
+
       <div class="code-preview">
         <div class="code-preview-bar">
           <div class="dot dot-red"></div>
@@ -482,17 +559,14 @@
         <pre><span class="cm">// npm install @stvor/sdk</span>
 <span class="kw">import</span> { Stvor } <span class="kw">from</span> <span class="str">'@stvor/sdk'</span>;
 
-<span class="cm">// One call — keys, registration, polling</span>
 <span class="kw">const</span> alice = <span class="kw">await</span> Stvor.<span class="fn">connect</span>({
   userId:   <span class="str">'alice@example.com'</span>,
   appToken: <span class="str">'stvor_live_xxx'</span>,
   relayUrl: <span class="str">'https://relay.stvor.xyz'</span>,
+  pqc:      <span class="kw">true</span>,  <span class="cm">// ML-KEM-768 hybrid key exchange</span>
 });
 
-<span class="cm">// Send any JavaScript value — type preserved</span>
-<span class="kw">await</span> alice.<span class="fn">send</span>(<span class="str">'bob@example.com'</span>, { text: <span class="str">'Hello!'</span>, ts: <span class="kw">new</span> <span class="fn">Date</span>() });
-
-<span class="cm">// Receive</span>
+<span class="kw">await</span> alice.<span class="fn">send</span>(<span class="str">'bob@example.com'</span>, { text: <span class="str">'Hello!'</span> });
 alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</span>(msg.from, msg.data));</pre>
       </div>
     </section>
@@ -525,12 +599,12 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
         <div class="feature">
           <div class="feature-icon">⚛️</div>
           <h3>Post-Quantum ready</h3>
-          <p>ML-KEM-768 (NIST FIPS 203) implemented from scratch — no external libraries. Verified against official NIST ACVTS test vectors. Enable with <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">pqc: true</code>.</p>
+          <p>ML-KEM-768 (NIST FIPS 203) implemented from scratch — no external libraries. Verified against official NIST ACVTS test vectors. Enable with <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;color:var(--accent2)">pqc: true</code>.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">⚡</div>
           <h3>Zero dependencies</h3>
-          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;">node:crypto</code>. Browser uses Web Crypto API. No WASM, no npm bloat, no supply chain risk.</p>
+          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;color:var(--accent2)">node:crypto</code>. Browser uses Web Crypto API. No WASM, no npm bloat, no supply chain risk.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">👥</div>
@@ -584,9 +658,7 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
       <h2>Send anything.</h2>
       <p class="section-sub">No manual serialization. The SDK preserves the exact JavaScript type end-to-end.</p>
       <table class="types-table">
-        <thead>
-          <tr><th>Type</th><th>Example</th><th>Status</th></tr>
-        </thead>
+        <thead><tr><th>Type</th><th>Example</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>string</td><td>'Hello, world!'</td><td><span class="badge-green">Supported</span></td></tr>
           <tr><td>number</td><td>42, 3.14, -7</td><td><span class="badge-green">Supported</span></td></tr>
@@ -610,12 +682,12 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
     </div>
 
     <footer class="footer">
-      <div class="footer-logo">ST<span>V</span>OR</div>
+      <div class="footer-logo">ST<span>V</span>OR <div class="pqc-badge" style="font-size:10px;padding:2px 6px">PQC</div></div>
       <div class="footer-links">
         <a href="/docs">Docs</a>
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
         <a href="/llms.txt">llms.txt</a>
-        <span id="contact-link" onclick="copyEmail()" style="cursor:pointer" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
+        <span id="contact-link" onclick="copyEmail()" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
       </div>
       <div class="footer-copy">© 2025 STVOR · v3.5.4</div>
     </footer>
@@ -624,11 +696,7 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
 
   <!-- ══════════════════════════════════════════════════════════ MACHINE VIEW -->
   <div id="machine-view">
-
-    <!-- Boot sequence -->
     <div id="boot-lines"></div>
-
-    <!-- Content shown after boot -->
     <div class="machine-content" id="machine-content">
 
       <div class="mc-h1"># Stvor SDK</div>
@@ -647,18 +715,12 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
   userId:   <span class="mc-str">'alice'</span>,
   appToken: <span class="mc-str">'stvor_live_xxx'</span>,
   relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
-});
-
-<span class="mc-kw">const</span> bob = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
-  userId:   <span class="mc-str">'bob'</span>,
-  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
-  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
+  pqc:      <span class="mc-kw">true</span>,
 });
 
 bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
 <span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hello!'</span> });
-<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();
-<span class="mc-kw">await</span> bob.<span class="mc-fn">disconnect</span>();</div>
+<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();</div>
       </div>
 
       <div class="mc-section">
@@ -666,63 +728,19 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
         <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier</span></div>
         <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
         <div class="mc-prop"><span class="mc-prop-key">relayUrl</span><span class="mc-prop-val">string — 'https://relay.stvor.xyz' or self-hosted</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">pqc?</span><span class="mc-prop-val">boolean — ML-KEM-768 hybrid, default: false</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">sealedSender?</span><span class="mc-prop-val">boolean — hide sender from relay, default: false</span></div>
         <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — ms, default: 10000</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">pollIntervalMs?</span><span class="mc-prop-val">number — polling interval, default: 1000</span></div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">client.send(recipientId, data, options?)</div>
-        <div class="mc-code"><span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hello'</span>);
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { amount: <span class="mc-str">100</span>, currency: <span class="mc-str">'USD'</span> });
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, Buffer.<span class="mc-fn">from</span>([<span class="mc-str">1</span>, <span class="mc-str">2</span>, <span class="mc-str">3</span>]));
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-kw">new</span> <span class="mc-fn">Date</span>());
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { timeout: <span class="mc-str">30_000</span> });
-<span class="mc-kw">await</span> client.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, <span class="mc-str">'Hey'</span>, { waitForRecipient: <span class="mc-kw">false</span> });</div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">client.onMessage(handler)</div>
-        <div class="mc-code"><span class="mc-kw">const</span> unsub = client.<span class="mc-fn">onMessage</span>(msg =&gt; {
-  <span class="mc-cm">// msg.from      — sender userId</span>
-  <span class="mc-cm">// msg.data      — decrypted value (original type preserved)</span>
-  <span class="mc-cm">// msg.timestamp — Date</span>
-  <span class="mc-cm">// msg.id        — unique string</span>
-});
-<span class="mc-fn">unsub</span>(); <span class="mc-cm">// stop listening</span></div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Supported data types</div>
-        <table class="mc-table">
-          <thead><tr><th>Type</th><th>Example</th></tr></thead>
-          <tbody>
-            <tr><td>string</td><td>'Hello'</td></tr>
-            <tr><td>number</td><td>42, 3.14</td></tr>
-            <tr><td>boolean</td><td>true, false</td></tr>
-            <tr><td>null</td><td>null</td></tr>
-            <tr><td>Uint8Array / Buffer</td><td>Binary files, images</td></tr>
-            <tr><td>object / array</td><td>{ key: 'val' }, [1,2,3]</td></tr>
-            <tr><td>Date</td><td>new Date()</td></tr>
-            <tr><td>Set</td><td>new Set([1,2,3])</td></tr>
-            <tr><td>Map</td><td>new Map([['a',1]])</td></tr>
-          </tbody>
-        </table>
       </div>
 
       <div class="mc-section">
         <div class="mc-h2">Security properties</div>
         <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — new key per message</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Post-Compromise Security</span><span class="mc-prop-val">DH ratchet rotation every message</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Replay protection</span><span class="mc-prop-val">Nonce + timestamp per message</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">Identity binding on first contact, throws on key change</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext, never sees keys</span></div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Relay options</div>
-        <div class="mc-prop"><span class="mc-prop-key">Hosted</span><span class="mc-prop-val">https://relay.stvor.xyz — no setup, any stvor_* token</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Local dev</span><span class="mc-prop-val">npx @stvor/sdk mock-relay — port 4444</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Self-hosted</span><span class="mc-prop-val">github.com/sapogeth/sdk-relay — node server.js</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Post-Quantum</span><span class="mc-prop-val">ML-KEM-768 hybrid — NIST FIPS 203 verified</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">SHA-256 fingerprint binding, throws on key change</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Sealed sender</span><span class="mc-prop-val">Ephemeral ECDH hides sender from relay</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">GDPR</span><span class="mc-prop-val">deleteMyData() + exportMyData() built in</span></div>
       </div>
 
       <div class="mc-section">
@@ -733,8 +751,8 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
         <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val">sdk.stvor.xyz/llms.txt</span></div>
       </div>
 
-    </div><!-- /machine-content -->
-  </div><!-- /machine-view -->
+    </div>
+  </div>
 
   <script>
     const BOOT_LINES = [
@@ -754,29 +772,19 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
 
     let bootTimers = [];
 
-    function clearBootTimers() {
-      bootTimers.forEach(clearTimeout);
-      bootTimers = [];
-    }
+    function clearBootTimers() { bootTimers.forEach(clearTimeout); bootTimers = []; }
 
     function setMode(mode) {
-      const humanView    = document.getElementById('human-view');
-      const machineView  = document.getElementById('machine-view');
-      const btns         = document.querySelectorAll('.mode-btn');
-
-      btns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-
+      const humanView   = document.getElementById('human-view');
+      const machineView = document.getElementById('machine-view');
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
       if (mode === 'machine') {
         humanView.classList.add('hidden');
         machineView.classList.add('visible');
         runBoot();
       } else {
-        fadeOutMachine(() => {
-          machineView.classList.remove('visible');
-          humanView.classList.remove('hidden');
-        });
+        fadeOutMachine(() => { machineView.classList.remove('visible'); humanView.classList.remove('hidden'); });
       }
-
       const url = new URL(window.location);
       url.searchParams.set('mode', mode);
       history.replaceState(null, '', url);
@@ -784,35 +792,18 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
 
     function fadeOutMachine(cb) {
       clearBootTimers();
-      const content   = document.getElementById('machine-content');
+      const content = document.getElementById('machine-content');
       const container = document.getElementById('boot-lines');
-
-      // fade out content
-      content.classList.add('fade-out');
-      content.classList.remove('visible');
-
-      // fade out each boot line
-      Array.from(container.children).forEach(line => {
-        line.classList.add('fade');
-      });
-
-      setTimeout(() => {
-        // reset everything for next boot
-        container.innerHTML = '';
-        content.classList.remove('fade-out');
-        cb();
-      }, 320);
+      content.classList.add('fade-out'); content.classList.remove('visible');
+      Array.from(container.children).forEach(l => l.classList.add('fade'));
+      setTimeout(() => { container.innerHTML = ''; content.classList.remove('fade-out'); cb(); }, 320);
     }
 
     function runBoot() {
       clearBootTimers();
       const container = document.getElementById('boot-lines');
       const content   = document.getElementById('machine-content');
-
-      // reset state
-      container.innerHTML = '';
-      content.classList.remove('visible');
-
+      container.innerHTML = ''; content.classList.remove('visible');
       BOOT_LINES.forEach(({ t, text, cls }) => {
         const id = setTimeout(() => {
           const line = document.createElement('div');
@@ -822,14 +813,10 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
         }, t);
         bootTimers.push(id);
       });
-
-      const showId = setTimeout(() => {
-        content.classList.add('visible');
-      }, BOOT_LINES[BOOT_LINES.length - 1].t + 200);
+      const showId = setTimeout(() => content.classList.add('visible'), BOOT_LINES[BOOT_LINES.length - 1].t + 200);
       bootTimers.push(showId);
     }
 
-    // honour ?mode=machine in URL
     const initMode = new URLSearchParams(window.location.search).get('mode');
     if (initMode === 'machine') setMode('machine');
 
@@ -839,6 +826,15 @@ bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">l
         const orig = el.textContent;
         el.textContent = 'Copied!';
         setTimeout(() => el.textContent = orig, 2000);
+      });
+    }
+
+    function copyInstall() {
+      navigator.clipboard.writeText('npm install @stvor/sdk').then(() => {
+        const el = document.getElementById('copy-label');
+        el.textContent = 'copied!';
+        el.style.color = 'var(--accent2)';
+        setTimeout(() => { el.textContent = 'copy'; el.style.color = ''; }, 2000);
       });
     }
   </script>
