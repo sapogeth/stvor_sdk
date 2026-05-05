@@ -3,32 +3,45 @@
 <head>
     <title>STVOR Local Dashboard Configuration</title>
     <style>
+        :root {
+            --bg: #08060f;
+            --surface: #120d23;
+            --surface-strong: #1b1634;
+            --border: #3f2f72;
+            --accent: #c4a5ff;
+            --accent-strong: #8d6bff;
+            --success: #10b981;
+            --text: #f8f5ff;
+            --code-bg: #100b26;
+            --code-fg: #d8b4fe;
+        }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             max-width: 800px; 
             margin: 0 auto; 
             padding: 20px;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: var(--bg);
+            color: var(--text);
         }
-        .container { background: #1e293b; padding: 30px; border-radius: 12px; border: 1px solid #334155; }
-        h1 { color: #3b82f6; margin-bottom: 20px; }
+        .container { background: var(--surface); padding: 30px; border-radius: 12px; border: 1px solid var(--border); }
+        h1 { color: var(--accent); margin-bottom: 20px; }
         .option { 
-            background: #334155; 
+            background: var(--surface-strong); 
             padding: 20px; 
             margin: 15px 0; 
             border-radius: 8px;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid var(--accent);
         }
         .url { 
             background: #0f172a; 
             padding: 8px 12px; 
             border-radius: 4px; 
             font-family: monospace;
-            color: #10b981;
+            color: var(--success);
         }
-        code { background: #0f172a; padding: 2px 6px; border-radius: 4px; color: #fbbf24; }
-        .note { background: #1f2937; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #f59e0b; }
+        code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: var(--code-fg); }
+        .note { background: var(--surface-strong); padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid var(--accent); }
+        .action-button { background: var(--accent-strong); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -72,14 +85,13 @@
 
         <div class="note">
             <strong>🔍 Статус вашего сервера:</strong><br>
-            • API Server: <span style="color: #10b981;">✅ http://localhost:3001</span><br>
-            • HTTP Relay: <span style="color: #10b981;">✅ http://localhost:3002</span><br>
-            • WebSocket: <span style="color: #10b981;">✅ ws://localhost:8080</span>
+            • API Server: <span style="color: var(--success);">✅ http://localhost:3001</span><br>
+            • HTTP Relay: <span style="color: var(--success);">✅ http://localhost:3002</span><br>
+            • WebSocket: <span style="color: var(--success);">✅ ws://localhost:8080</span>
         </div>
 
         <div style="margin-top: 30px; text-align: center;">
-            <a href="http://localhost:3001/dashboard.html" 
-               style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            <a href="http://localhost:3001/dashboard.html" class="action-button">
                 🚀 Открыть локальный дашборд
             </a>
         </div>

@@ -29,9 +29,13 @@ export declare function polyToBytes(a: Poly): Uint8Array;
  */
 export declare function polyFromBytes(a: Uint8Array): Poly;
 /**
- * Sample polynomial from centered binomial distribution (CBD)
- * Used for noise sampling in ML-KEM
- * eta=2: each coeff in {-2,-1,0,1,2}
+ * SamplePolyCBD_η2 (Algorithm 8, FIPS 203)
+ * Input: 64*η = 128 bytes (PRF output)
+ * For each coefficient i in [0,256):
+ *   bits at positions 4i..4i+3 of the byte array
+ *   a = bit[4i] + bit[4i+1]
+ *   b = bit[4i+2] + bit[4i+3]
+ *   f[i] = a - b  (mod q)
  */
 export declare function polyCBD2(seed: Uint8Array): Poly;
 /**
@@ -39,7 +43,8 @@ export declare function polyCBD2(seed: Uint8Array): Poly;
  */
 export declare function polyCBD3(seed: Uint8Array): Poly;
 /**
- * Generate deterministic polynomial from seed using SHAKE-128 (via SHA-3)
- * Used for matrix A generation
+ * SampleNTT (Algorithm 7, FIPS 203): sample a polynomial from SHAKE-128 XOF.
+ * XOF input: rho ‖ i ‖ j  (FIPS 203 §4.2.2)
+ * Rejection-samples coefficients in [0, q) from the XOF stream.
  */
 export declare function polyUniform(seed: Uint8Array, i: number, j: number): Poly;

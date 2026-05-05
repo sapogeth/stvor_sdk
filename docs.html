@@ -10,16 +10,16 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #09090b;
-      --bg2: #111113;
-      --bg3: #18181b;
-      --border: #27272a;
-      --border2: #3f3f46;
-      --fg: #fafafa;
-      --fg2: #a1a1aa;
-      --fg3: #71717a;
-      --accent: #3b82f6;
-      --accent-dim: rgba(59,130,246,0.12);
+      --bg: #08060f;
+      --bg2: #120d23;
+      --bg3: #1c1636;
+      --border: #3f2f72;
+      --border2: #5c4eb0;
+      --fg: #f8f5ff;
+      --fg2: #d6cfff;
+      --fg3: #9a85c9;
+      --accent: #8d6bff;
+      --accent-dim: rgba(141,107,255,0.14);
       --green: #22c55e;
       --green-dim: rgba(34,197,94,0.1);
       --yellow: #fbbf24;
@@ -73,7 +73,7 @@
       color: var(--fg);
     }
 
-    .topbar-logo span { color: var(--accent); }
+    .topbar-logo span { color: inherit; }
 
     .topbar-sep {
       width: 1px;
@@ -542,7 +542,7 @@
   <header class="topbar">
     <div class="topbar-left">
       <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-      <a href="/" class="topbar-logo">ST<span>V</span>OR</a>
+      <a href="/" class="topbar-logo">STVOR</a>
       <div class="topbar-sep"></div>
       <span class="topbar-title">Documentation</span>
       <span class="version-badge">v3.5.4</span>

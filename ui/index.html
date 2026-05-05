@@ -8,17 +8,17 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1e40af;
-      --bg-main: #ffffff;
-      --bg-secondary: #f8fafc;
-      --border: #e2e8f0;
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-muted: #64748b;
-      --success: #059669;
+      --primary: #8d6bff;
+      --primary-dark: #6d4cff;
+      --bg-main: #08060f;
+      --bg-secondary: #120d23;
+      --border: #3f2f72;
+      --text-primary: #f8f5ff;
+      --text-secondary: #c7b8ff;
+      --text-muted: #9a85c9;
+      --success: #22c55e;
       --danger: #dc2626;
-      --warning: #f59e0b;
+      --warning: #fbbf24;
       --sidebar-width: clamp(200px, 20vw, 280px);
       --font-size-base: clamp(13px, 2vw, 16px);
       --font-size-h1: clamp(24px, 6vw, 48px);
@@ -32,7 +32,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: clamp(1.5, 0.5vw + 1.5, 1.8);
       color: var(--text-primary);
-      background: var(--bg-secondary);
+      background: var(--bg-main);
       margin: 0;
       font-size: var(--font-size-base);
     }
@@ -91,7 +91,7 @@
     .nav-item.active {
       color: var(--primary);
       border-left-color: var(--primary);
-      background: #eff6ff;
+      background: var(--bg-secondary);
     }
     
     .main-content {
@@ -124,8 +124,8 @@
     .tagline { font-size: clamp(16px, 3vw, 20px); color: var(--text-secondary); }
     
     .intro-card {
-      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
-      border: 1px solid #bfdbfe;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
       border-radius: clamp(8px, 2vw, 12px);
       padding: clamp(16px, 3vw, 24px);
       margin-bottom: clamp(24px, 4vw, 40px);
@@ -150,7 +150,7 @@
       margin: clamp(12px, 2vw, 16px) 0;
     }
     
-    ul { margin: 0 0 clamp(12px, 2vw, 20px) 0; padding-left: clamp(16px, 3vw, 24px); color: #475569; }
+    ul { margin: 0 0 clamp(12px, 2vw, 20px) 0; padding-left: clamp(16px, 3vw, 24px); color: var(--text-secondary); }
     li { margin-bottom: clamp(4px, 1vw, 8px); }
     
     .code-block {
@@ -161,8 +161,8 @@
       position: absolute;
       top: clamp(8px, 2vw, 12px);
       right: clamp(8px, 2vw, 12px);
-      background: #334155;
-      color: #e2e8f0;
+      background: var(--surface);
+      color: #f8f5ff;
       border: none;
       padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
       border-radius: 4px;
@@ -171,12 +171,12 @@
       opacity: 0.8;
       transition: all 0.2s;
     }
-    .copy-btn:hover { opacity: 1; background: #475569; }
+    .copy-btn:hover { opacity: 1; background: var(--primary-dark); }
     .copy-btn.copied { background: var(--success); }
     
     pre {
-      background: #0f172a;
-      color: #e2e8f0;
+      background: var(--bg-secondary);
+      color: #f8f5ff;
       padding: clamp(12px, 2.5vw, 20px);
       border-radius: 8px;
       overflow-x: auto;
@@ -197,23 +197,23 @@
       transition: all 0.2s;
       text-decoration: none;
     }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-secondary { background: #e2e8f0; color: #334155; margin-left: 8px; }
-    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--surface); color: var(--text-secondary); margin-left: 8px; }
+    .btn-secondary:hover { background: var(--primary-dark); }
     
     .warning {
-      background: #fef3c7;
-      border-left: 4px solid #f59e0b;
+      background: var(--bg-secondary);
+      border-left: 4px solid var(--primary);
       padding: clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px);
       border-radius: 0 6px 6px 0;
       margin: clamp(12px, 2vw, 16px) 0;
       font-size: clamp(12px, 1.8vw, 14px);
-      color: #92400e;
+      color: #f8f5ff;
     }
     .success-box {
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: clamp(16px, 3vw, 24px);
       margin: clamp(12px, 2vw, 16px) 0;
@@ -224,7 +224,7 @@
       gap: clamp(12px, 2vw, 16px);
       margin: clamp(16px, 2.5vw, 24px) 0;
       padding: clamp(12px, 2.5vw, 20px);
-      background: white;
+      background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: clamp(6px, 1.5vw, 8px);
     }
@@ -247,9 +247,9 @@
     footer {
       margin-top: clamp(32px, 5vw, 64px);
       padding-top: clamp(12px, 2vw, 24px);
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid #3f2f72;
       text-align: center;
-      color: #94a3b8;
+      color: #9a85c9;
       font-size: clamp(11px, 1.5vw, 14px);
     }
 
@@ -370,7 +370,7 @@
     @media (max-width: 480px) {
       :root {
         --sidebar-width: 0;
-        --text-primary: #0f172a;
+        --text-primary: #f8f5ff;
       }
       
       body { font-size: 14px; }
@@ -707,7 +707,7 @@ const app = await Stvor.init({
 
         <div class="success-box">
           <h4 style="margin: 0 0 8px 0; color: var(--success);">📋 package.json для нового проекта</h4>
-          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>{
+          <pre style="background: var(--surface); margin: 0; padding: 16px;"><code>{
   "name": "my-e2ee-app",
   "type": "module",
   "dependencies": {
@@ -827,27 +827,27 @@ curl http://localhost:4444/status/alice</code></pre>
         <div class="card">
           <h3 style="margin-top: 0;">Breaking Changes from v2.4</h3>
           <table style="width: 100%; border-collapse: collapse;">
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px; font-weight: 600; color: var(--danger);">❌ v2.4 (сломано)</td>
               <td style="padding: 8px; font-weight: 600; color: var(--success);">✅ v3.0 (исправлено)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Подпись SPK через HMAC с публичным ключом</td>
               <td style="padding: 8px;">Настоящая ECDSA P-256 подпись</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">X3DH с эфемерным ключом внутри функции</td>
               <td style="padding: 8px;">Symmetric X3DH — обе стороны получают идентичный секрет</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Nonce не передаётся при дешифровке</td>
               <td style="padding: 8px;">Nonce в заголовке (85 bytes: pubkey + counters + nonce)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Заголовок обрезает P-256 ключ (32 из 65 байт)</td>
               <td style="padding: 8px;">Полный 65-byte uncompressed P-256 ключ в заголовке</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">DH ratchet условие инвертировано</td>
               <td style="padding: 8px;">Корректный DH ratchet с skip message keys</td>
             </tr>
@@ -929,37 +929,37 @@ await alice.send('bob', 'Hello from v3.0! 🔐');
         <h3>Что изменилось внутри</h3>
         <div class="card">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <tr style="border-bottom: 2px solid #e2e8f0;">
+            <tr style="border-bottom: 2px solid var(--border);">
               <td style="padding: 8px; font-weight: 700;">Компонент</td>
               <td style="padding: 8px; font-weight: 700;">v2.4</td>
               <td style="padding: 8px; font-weight: 700;">v3.0</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Крипто-библиотека</td>
               <td style="padding: 8px;">libsodium-wrappers</td>
               <td style="padding: 8px;"><code>node:crypto</code> (built-in)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Key exchange</td>
               <td style="padding: 8px;">X25519 (асимметричный X3DH)</td>
               <td style="padding: 8px;">ECDH P-256 (symmetric X3DH)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Подписи SPK</td>
               <td style="padding: 8px;">HMAC (подделываемые)</td>
               <td style="padding: 8px;">ECDSA P-256 (настоящие цифровые подписи)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Шифрование</td>
               <td style="padding: 8px;">XChaCha20-Poly1305</td>
               <td style="padding: 8px;">AES-256-GCM + AAD</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Заголовок</td>
               <td style="padding: 8px;">Обрезанный (32/65 байт)</td>
               <td style="padding: 8px;">Полный 85 байт (65 pub + 4+4 counters + 12 nonce)</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Nonce</td>
               <td style="padding: 8px;">Не передавался</td>
               <td style="padding: 8px;">Внутри заголовка (байты 73-84)</td>
@@ -987,27 +987,27 @@ await alice.send('bob', 'Hello from v3.0! 🔐');
         <h2 id="architecture">Production Architecture</h2>
         
         <h3>Component Roles</h3>
-        <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%); border-color: #bfdbfe;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(141,107,255,0.08) 0%, rgba(18,13,35,0.85) 100%); border-color: var(--border);">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px; font-weight: 600;">📂 Component</td>
               <td style="padding: 8px; font-weight: 600;">Role</td>
               <td style="padding: 8px; font-weight: 600;">Trust Level</td>
               <td style="padding: 8px; font-weight: 600;">Handles Data</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;"><strong>SDK</strong></td>
               <td style="padding: 8px;">Encryption/decryption, signing</td>
               <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
               <td style="padding: 8px;">Plaintext, keys</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;"><strong>Relay</strong></td>
               <td style="padding: 8px;">Route encrypted messages</td>
               <td style="padding: 8px;" style="color: var(--text-muted);">⚠️ Untrusted</td>
               <td style="padding: 8px;">Ciphertexts only</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;"><strong>Backend</strong></td>
               <td style="padding: 8px;">Verify metrics, audit, storage</td>
               <td style="padding: 8px;" style="color: var(--success);">✅ Trusted</td>
@@ -1023,34 +1023,34 @@ await alice.send('bob', 'Hello from v3.0! 🔐');
         </div>
 
         <h3>Production vs Development Modes</h3>
-        <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%); border-color: #fcd34d;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(18,13,35,0.85) 100%); border-color: var(--warning);">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px; font-weight: 600;">Property</td>
               <td style="padding: 8px; font-weight: 600; text-align: center;">Dev Mode</td>
               <td style="padding: 8px; font-weight: 600; text-align: center;">Prod Mode</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Encryption</td>
               <td style="padding: 8px; text-align: center;">✅ Full</td>
               <td style="padding: 8px; text-align: center;">✅ Full</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Replay Protection</td>
               <td style="padding: 8px; text-align: center;">❌ Memory only</td>
               <td style="padding: 8px; text-align: center;">✅ Persistent</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Session Persistence</td>
               <td style="padding: 8px; text-align: center;">❌ Lost on restart</td>
               <td style="padding: 8px; text-align: center;">✅ Survives restarts</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Storage Adapters</td>
               <td style="padding: 8px; text-align: center;">⚠️ Optional</td>
               <td style="padding: 8px; text-align: center;">✅ Required</td>
             </tr>
-            <tr style="border-bottom: 1px solid #e2e8f0;">
+            <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 8px;">Metrics Verification</td>
               <td style="padding: 8px; text-align: center;">❌ None (dev logging)</td>
               <td style="padding: 8px; text-align: center;">✅ HMAC-signed</td>
@@ -1153,7 +1153,7 @@ const app = await createApp({
         <h2 id="security">Security Model & Threat Assumptions</h2>
         
         <h3>Threat Model</h3>
-        <div class="card" style="background: linear-gradient(135deg, #fecaca 0%, #fee2e2 100%); border-color: #fca5a5;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(220,38,38,0.08) 0%, rgba(18,13,35,0.8) 100%); border-color: var(--danger);">
           <h4 style="margin-top: 0; color: #dc2626;">🎯 Attacker Capabilities (We Protect Against):</h4>
           <ul style="margin: 8px 0 0 0; padding-left: 20px;">
             <li><strong>Network-level attacker:</strong> Can read/modify all traffic (we use Signal Protocol for protection)</li>
@@ -1328,7 +1328,7 @@ node app.mjs</code></pre>
 
         <div class="success-box">
           <h4 style="margin: 0 0 12px 0; color: var(--success);">✅ Expected Output:</h4>
-          <pre style="background: #064e3b; margin: 0; padding: 16px;"><code>✅ Alice sent message
+          <pre style="background: var(--surface); margin: 0; padding: 16px;"><code>✅ Alice sent message
 ✅ Bob sent message
 📩 [Bob] from alice@example.com: Hello Bob! This is E2EE! 🔐
 📩 [Alice] from bob@example.com: Hi Alice! Got it! 🎉</code></pre>
@@ -1351,7 +1351,7 @@ node app.mjs</code></pre>
 
         <!-- THREAT MODEL CONTINUED -->
         <h2 id="threat-model">Implementation Threat Model</h2>
-        <div class="card" style="background: linear-gradient(135deg, #dbeafe 0%, #f0f9ff 100%); border-color: #7dd3fc;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(141,107,255,0.12) 0%, rgba(18,13,35,0.8) 100%); border-color: var(--primary);">
           <h4 style="margin-top: 0;">🔒 Key Security Properties</h4>
           <ul>
             <li><strong>Forward Secrecy:</strong> Old messages remain encrypted even if current root key is compromised</li>
@@ -1380,7 +1380,7 @@ node app.mjs</code></pre>
         <!-- LIMITATIONS -->
         <h2 id="limitations">When to Use (and When Not To)</h2>
         
-        <div class="card" style="background: linear-gradient(135deg, #dcfce7 0%, #e0f2fe 100%); border-color: #86efac;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(18,13,35,0.8) 100%); border-color: var(--success);">
           <h4 style="margin-top: 0; color: var(--success);">✅ Perfect For (v3.0):</h4>
           <ul style="margin-bottom: 0;">
             <li>Healthcare/Finance applications (production-grade E2EE)</li>
@@ -1391,7 +1391,7 @@ node app.mjs</code></pre>
           </ul>
         </div>
 
-        <div class="card" style="background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%); border-color: #fca5a5;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(220,38,38,0.08) 0%, rgba(18,13,35,0.8) 100%); border-color: var(--danger);">
           <h4 style="margin-top: 0; color: var(--danger);">❌ Not Suitable For (v3.0):</h4>
           <ul style="margin-bottom: 0;">
             <li>Browser/client-side JavaScript (Node.js only)</li>
@@ -1401,7 +1401,7 @@ node app.mjs</code></pre>
           </ul>
         </div>
 
-        <div class="card" style="background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%); border-color: #fde047;">
+        <div class="card" style="background: linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(18,13,35,0.8) 100%); border-color: var(--warning);">
           <h4 style="margin-top: 0;">📝 Architecture Notes</h4>
           <ul style="margin-bottom: 0;">
             <li>Cryptография: Node.js built-in crypto — ECDH P-256, ECDSA P-256, AES-256-GCM, HKDF-SHA256</li>

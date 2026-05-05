@@ -11,21 +11,21 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #0a0a0f;
-      --bg2:         #0f0f1a;
-      --bg3:         #16162a;
-      --bg4:         #1e1e35;
-      --border:      #2a2a4a;
-      --border2:     #3a3a5c;
-      --fg:          #f0f0ff;
-      --fg2:         #a0a0c0;
-      --fg3:         #6060a0;
-      --accent:      #7c3aed;
-      --accent2:     #9d5ff7;
-      --accent3:     #6025d1;
-      --accent-dim:  rgba(124,58,237,0.15);
-      --accent-dim2: rgba(124,58,237,0.07);
-      --purple-glow: rgba(124,58,237,0.3);
+      --bg:          #08060f;
+      --bg2:         #120d23;
+      --bg3:         #1c1636;
+      --bg4:         #241d48;
+      --border:      #3f2f72;
+      --border2:     #5c4eb0;
+      --fg:          #f8f5ff;
+      --fg2:         #d6cfff;
+      --fg3:         #9a85c9;
+      --accent:      #8d6bff;
+      --accent2:     #c4a5ff;
+      --accent3:     #7f56ff;
+      --accent-dim:  rgba(141,107,255,0.18);
+      --accent-dim2: rgba(141,107,255,0.10);
+      --purple-glow: rgba(141,107,255,0.35);
       --green:       #22c55e;
       --green-dim:   rgba(34,197,94,0.1);
       --mono: 'JetBrains Mono', monospace;
@@ -55,7 +55,7 @@
       transform: translateX(-50%);
       width: 800px;
       height: 600px;
-      background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(141,107,255,0.12) 0%, transparent 70%);
       pointer-events: none;
       z-index: 0;
     }
@@ -73,7 +73,7 @@
       border: 1px solid var(--border2);
       border-radius: 100px;
       padding: 4px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,58,237,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(141,107,255,0.10);
     }
 
     .mode-btn {
@@ -132,7 +132,7 @@
     .mc-section { margin-bottom: 40px; }
     .mc-h2  { color: var(--accent2); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
     .mc-code { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; white-space: pre; }
-    .mc-kw { color: #c4b5fd; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #52525b; }
+    .mc-kw { color: #d8c2ff; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #8f84bb; }
     .mc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
     .mc-table th { color: var(--fg3); font-size: 11px; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
     .mc-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg2); }
@@ -173,13 +173,13 @@
     }
 
     .nav-logo-text { color: var(--fg); }
-    .nav-logo-text span { color: var(--accent2); }
+    .nav-logo-text span { color: inherit; }
 
     .pqc-badge {
       display: inline-flex;
       align-items: center;
       background: var(--accent-dim);
-      border: 1px solid rgba(124,58,237,0.35);
+      border: 1px solid rgba(141,107,255,0.35);
       border-radius: 6px;
       padding: 3px 8px;
       font-size: 11px;
@@ -201,10 +201,10 @@
       font-size: 14px;
       font-weight: 600;
       transition: all 0.15s;
-      box-shadow: 0 0 20px rgba(124,58,237,0.3);
+      box-shadow: 0 0 20px rgba(141,107,255,0.3);
     }
 
-    .nav-btn:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(124,58,237,0.5); }
+    .nav-btn:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(141,107,255,0.5); }
 
     /* ── HERO ── */
     .hero {
@@ -219,7 +219,7 @@
       align-items: center;
       gap: 8px;
       background: var(--accent-dim);
-      border: 1px solid rgba(124,58,237,0.3);
+      border: 1px solid rgba(141,107,255,0.3);
       border-radius: 100px;
       padding: 6px 16px;
       font-size: 12px;
@@ -253,7 +253,7 @@
     }
 
     .hero h1 .purple { color: var(--accent2); }
-    .hero h1 .purple-light { color: #c4b5fd; }
+    .hero h1 .purple-light { color: #e3dbff; }
 
     .hero p {
       font-size: clamp(16px, 2vw, 19px);
@@ -280,12 +280,12 @@
       font-size: 15px;
       font-weight: 600;
       transition: all 0.2s;
-      box-shadow: 0 4px 24px rgba(124,58,237,0.4);
+      box-shadow: 0 4px 24px rgba(141,107,255,0.4);
     }
 
     .btn-primary:hover {
       background: var(--accent2);
-      box-shadow: 0 4px 32px rgba(124,58,237,0.6);
+      box-shadow: 0 4px 32px rgba(141,107,255,0.6);
       transform: translateY(-1px);
     }
 
@@ -338,7 +338,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(141,107,255,0.1);
     }
 
     .code-preview-bar {
@@ -366,7 +366,7 @@
       color: #e4e4e7;
     }
 
-    .kw { color: #c4b5fd; }
+    .kw { color: #d8c2ff; }
     .fn { color: #86efac; }
     .str { color: #fde68a; }
     .cm { color: #4a4a6a; }
@@ -413,7 +413,7 @@
     .feature-icon {
       width: 42px; height: 42px;
       background: var(--accent-dim);
-      border: 1px solid rgba(124,58,237,0.2);
+      border: 1px solid rgba(141,107,255,0.2);
       border-radius: 10px;
       display: flex;
       align-items: center;
@@ -448,8 +448,8 @@
     .cta-section { max-width: 860px; margin: 0 auto 80px; padding: 0 40px; }
 
     .cta-box {
-      background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, var(--bg2) 60%);
-      border: 1px solid rgba(124,58,237,0.3);
+      background: linear-gradient(135deg, rgba(141,107,255,0.15) 0%, var(--bg2) 60%);
+      border: 1px solid rgba(141,107,255,0.3);
       border-radius: 20px;
       padding: 64px 48px;
       text-align: center;
@@ -465,7 +465,7 @@
       transform: translateX(-50%);
       width: 400px;
       height: 300px;
-      background: radial-gradient(ellipse, rgba(124,58,237,0.15) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(141,107,255,0.15) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -476,7 +476,7 @@
     /* ── FOOTER ── */
     .footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
     .footer-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
-    .footer-logo span { color: var(--accent2); }
+    .footer-logo span { color: inherit; }
     .footer-links { display: flex; gap: 24px; }
     .footer-links a, .footer-links span { font-size: 13px; color: var(--fg3); transition: color 0.15s; cursor: pointer; }
     .footer-links a:hover, .footer-links span:hover { color: var(--fg2); }
@@ -517,7 +517,7 @@
 
     <nav class="nav">
       <div class="nav-logo">
-        <div class="nav-logo-text">ST<span>V</span>OR</div>
+        <div class="nav-logo-text">STVOR</div>
         <div class="pqc-badge">PQC</div>
       </div>
       <div class="nav-links">
@@ -682,7 +682,7 @@ alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</s
     </div>
 
     <footer class="footer">
-      <div class="footer-logo">ST<span>V</span>OR <div class="pqc-badge" style="font-size:10px;padding:2px 6px">PQC</div></div>
+      <div class="footer-logo">STVOR <div class="pqc-badge" style="font-size:10px;padding:2px 6px">PQC</div></div>
       <div class="footer-links">
         <a href="/docs">Docs</a>
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>

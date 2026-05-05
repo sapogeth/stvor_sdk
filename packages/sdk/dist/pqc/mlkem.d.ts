@@ -25,6 +25,9 @@ export interface MLKEMEncapsResult {
     ciphertext: Uint8Array;
     sharedSecret: Uint8Array;
 }
+export declare function shake128xof(seed: Uint8Array, i: number, j: number, outLen: number): Uint8Array;
+export declare function mlkemKeyGenFrom(d: Uint8Array, z: Uint8Array): MLKEMKeyPair;
 export declare function mlkemKeyGen(): MLKEMKeyPair;
+export declare function mlkemEncapsFrom(ek: Uint8Array, m: Uint8Array): MLKEMEncapsResult;
 export declare function mlkemEncaps(ek: Uint8Array): MLKEMEncapsResult;
 export declare function mlkemDecaps(ct: Uint8Array, dk: Uint8Array): Uint8Array;

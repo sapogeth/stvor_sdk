@@ -33,28 +33,26 @@ function sha3_256(data) {
 function sha3_512(data) {
     return new Uint8Array(nodeCrypto.createHash('sha3-512').update(data).digest());
 }
-// XOF using SHA3-256 in counter mode
-function xof(data, outLen) {
-    const out = new Uint8Array(outLen);
-    let pos = 0;
-    let counter = 0;
-    while (pos < outLen) {
-        const block = new Uint8Array(nodeCrypto.createHash('sha3-256')
-            .update(Buffer.from([counter & 0xff, (counter >> 8) & 0xff]))
-            .update(data)
-            .digest());
-        const take = Math.min(32, outLen - pos);
-        out.set(block.subarray(0, take), pos);
-        pos += take;
-        counter++;
-    }
-    return out;
-}
+// SHAKE-256 XOF — used as PRF (Algorithm 4 in FIPS 203)
+// PRF(seed, nonce) = SHAKE-256(seed ‖ nonce, outLen)
 function prf(seed, nonce, outLen) {
     const input = new Uint8Array(seed.length + 1);
     input.set(seed);
     input[seed.length] = nonce;
-    return xof(input, outLen);
+    return new Uint8Array(nodeCrypto.createHash('shake256', { outputLength: outLen })
+        .update(input)
+        .digest());
+}
+// SHAKE-128 XOF — used for SampleNTT / polyUniform (Algorithm 7 in FIPS 203)
+// XOF(rho, i, j) = SHAKE-128(rho ‖ i ‖ j, outLen)
+export function shake128xof(seed, i, j, outLen) {
+    const input = new Uint8Array(seed.length + 2);
+    input.set(seed);
+    input[seed.length] = i;
+    input[seed.length + 1] = j;
+    return new Uint8Array(nodeCrypto.createHash('shake128', { outputLength: outLen })
+        .update(input)
+        .digest());
 }
 // ── PolyVec helpers ───────────────────────────────────────────────────────────
 function pvecNew() {
@@ -107,13 +105,19 @@ function pvecDecompress(b, d) {
     return v;
 }
 // ── Matrix A ──────────────────────────────────────────────────────────────────
+// Generate matrix A from seed ρ.
+// FIPS 203 Algorithm 13: Â[i][j] = SampleNTT(XOF(ρ, j, i))
+// Note: XOF takes (j, i) — column index first, row index second.
+// For encapsulation we need Â^T, so Â^T[i][j] = SampleNTT(XOF(ρ, i, j)).
 function generateA(rho, transpose = false) {
     const A = Array.from({ length: K }, () => pvecNew());
     for (let i = 0; i < K; i++) {
         for (let j = 0; j < K; j++) {
+            // Normal: A[i][j] = XOF(ρ, j, i)
+            // Transpose: A^T[i][j] = A[j][i] = XOF(ρ, i, j)
             A[i][j] = transpose
-                ? polyUniform(rho, j, i)
-                : polyUniform(rho, i, j);
+                ? polyUniform(rho, i, j)
+                : polyUniform(rho, j, i);
         }
     }
     return A;
@@ -164,10 +168,23 @@ r) {
     return ct;
 }
 // ── ML-KEM Key Generation ─────────────────────────────────────────────────────
+// Deterministic keygen for NIST ACVTS testing — do not use in production
+export function mlkemKeyGenFrom(d, z) {
+    return _mlkemKeyGenInternal(d, z);
+}
 export function mlkemKeyGen() {
     const d = new Uint8Array(nodeCrypto.randomBytes(32));
     const z = new Uint8Array(nodeCrypto.randomBytes(32));
-    const G = sha3_512(d);
+    return _mlkemKeyGenInternal(d, z);
+}
+// ML-KEM-768 parameter byte (k=3, FIPS 203 §5.1)
+const ML_KEM_K_BYTE = 3;
+function _mlkemKeyGenInternal(d, z) {
+    // G(d ‖ k): FIPS 203 Algorithm 16, step 1
+    const d_k = new Uint8Array(33);
+    d_k.set(d);
+    d_k[32] = ML_KEM_K_BYTE;
+    const G = sha3_512(d_k);
     const rho = G.subarray(0, 32);
     const sigma = G.subarray(32, 64);
     const A = generateA(rho);
@@ -208,6 +225,18 @@ export function mlkemKeyGen() {
     return { ek, dk };
 }
 // ── ML-KEM Encapsulation ──────────────────────────────────────────────────────
+// Deterministic encaps for NIST ACVTS testing
+export function mlkemEncapsFrom(ek, m) {
+    if (ek.length !== EK_SIZE)
+        throw new Error(`Invalid ek size: ${ek.length}`);
+    const hek = sha3_256(ek);
+    const G_in = new Uint8Array(64);
+    G_in.set(m, 0);
+    G_in.set(hek, 32);
+    const G_out = sha3_512(G_in);
+    const ct = kyberEnc(ek, m, G_out.subarray(32, 64));
+    return { ciphertext: ct, sharedSecret: new Uint8Array(G_out.subarray(0, 32)) };
+}
 export function mlkemEncaps(ek) {
     if (ek.length !== EK_SIZE)
         throw new Error(`Invalid ek size: ${ek.length}`);
