@@ -985,9 +985,7 @@
       <a href="#use-cases">Use cases</a>
       <a href="#security">Security</a>
       <a href="/docs">Docs</a>
-      <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener" class="ext">GitHub</a>
-      <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener" class="ext">npm</a>
-      <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener" class="ext">Web2 PQC</a>
+      <a href="https://pqc.stvor.xyz" target="_blank" rel="noopener" class="ext">Web3</a>
       <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="nav-btn always-show">Apply for pilot →</a>
     </div>
   </nav>
@@ -1010,7 +1008,7 @@
         <div class="btn-install" onclick="copyInstall()" id="install-btn">
           <span style="color:var(--fg3)">$</span>
           <span style="color:var(--accent2)">npm install</span>
-          <span>@stvor/web3</span>
+          <span>@stvor/sdk</span>
           <span class="copy-icon" id="copy-label">copy</span>
         </div>
       </div>
@@ -1021,13 +1019,15 @@
         </div>
 <pre><span class="cm">// Before: readable by anyone with a quantum computer.
 // After:  3 lines. That's it.</span>
-<span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
-<span class="kw">import</span> initWasm     <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span><span class="punct">;</span>
+<span class="kw">import</span> <span class="punct">{</span> Stvor <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/sdk'</span><span class="punct">;</span>
 
-<span class="kw">const</span> wasm  <span class="punct">=</span> <span class="kw">await</span> <span class="fn">initWasm</span><span class="punct">();</span>
-<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span> provider<span class="punct">,</span> wasm <span class="punct">});</span>
+<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> Stvor<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  userId<span class="punct">:</span>   <span class="str">'alice@example.com'</span><span class="punct">,</span>
+  appToken<span class="punct">:</span> <span class="str">'stvor_live_xxx'</span><span class="punct">,</span>
+  pqc<span class="punct">:</span>      <span class="kw">true</span><span class="punct">,</span> <span class="cm">// ML-KEM-768 hybrid X3DH</span>
+<span class="punct">});</span>
 
-<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>bobAddress<span class="punct">,</span> <span class="punct">{</span> text<span class="punct">:</span> <span class="str">'Quantum-safe. Zero setup.'</span> <span class="punct">});</span>
+<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span><span class="str">'bob@example.com'</span><span class="punct">,</span> <span class="punct">{</span> text<span class="punct">:</span> <span class="str">'Quantum-safe. Zero setup.'</span> <span class="punct">});</span>
 alice<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span>msg <span class="punct">=&gt;</span> console<span class="punct">.</span><span class="fn">log</span><span class="punct">(</span>msg<span class="punct">.</span>data<span class="punct">));</span> <span class="cm">// decrypted ✓</span>
 <span class="cm">// ML-KEM-768 + Double Ratchet · 0 deps · NIST FIPS 203</span></pre>
       </div>
@@ -1041,8 +1041,8 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         <div class="standard-chip">Signal Protocol</div>
         <div class="standard-chip">RFC 5869 HKDF</div>
         <div class="standard-chip">AES-256-GCM</div>
+        <div class="standard-chip">Web Crypto API</div>
         <div class="standard-chip">MIT License</div>
-        <div class="standard-chip">ERC-4337 AA</div>
       </div>
     </section>
 
@@ -1052,7 +1052,7 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       <div>
         <div class="founder-name">Ilyas Zhaisenbaev</div>
         <div class="founder-title">Founder &amp; Cryptography Engineer</div>
-        <p class="founder-bio">Building STVOR at 19. Implemented ML-KEM-768 (NIST FIPS 203) from scratch in Rust — zero external crypto dependencies. Verified against 53 official NIST ACVTS test vectors. Previously: low-level systems and blockchain protocol work. STVOR is not an anonymous library — it has a name, a face, and a direct line to the person who wrote every line of the crypto core.</p>
+        <p class="founder-bio">Building STVOR at 19. Implemented ML-KEM-768 (NIST FIPS 203) from scratch in TypeScript — zero external crypto dependencies, only <code style="font-family:var(--mono);font-size:13px;color:var(--accent2)">node:crypto</code> and Web Crypto API. Verified against official NIST ACVTS test vectors. Previously: low-level systems work. STVOR is not an anonymous library — it has a name, a face, and a direct line to the person who wrote every line of the crypto core.</p>
         <div class="founder-links">
           <a href="https://github.com/sapogeth" target="_blank" rel="noopener" class="founder-link">github.com/sapogeth</a>
           <span class="founder-link" id="founder-email" onclick="copyEmail()" title="Click to copy">izahii@protonmail.com</span>
@@ -1067,25 +1067,17 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       <h2>Your app is being<br><span class="grad">recorded today.</span></h2>
       <p class="section-sub">Adversaries harvest encrypted traffic now to decrypt it later — when quantum computers arrive. This is called "Store Now, Decrypt Later." It's happening to your users right now.</p>
 
-      <div class="problem-grid">
+      <div class="problem-grid" style="grid-template-columns: 1fr 1fr;">
         <div class="problem-card">
-          <span class="corner-tag">Web2</span>
-          <span class="problem-card-tag">WEB2 APPS</span>
+          <span class="problem-card-tag">SDK</span>
           <h3>TLS is already obsolete</h3>
-          <p>TLS and standard encryption are broken by quantum computers. User messages, API tokens, and session keys — all exposed. Adding E2EE yourself takes months and requires expert cryptographers.</p>
+          <p>TLS and standard encryption will be broken by quantum computers. User messages, API tokens, and session keys — all exposed via "harvest now, decrypt later". Adding E2EE yourself takes months and requires expert cryptographers.</p>
         </div>
-        <div class="problem-card">
-          <span class="corner-tag">Web3</span>
-          <span class="problem-card-tag">WEB3 DAPPS</span>
-          <h3>On-chain = public</h3>
-          <p>On-chain data is public by design. Private governance votes, OTC deal terms, wallet messaging — everything is readable. secp256k1 wallets are not quantum-safe.</p>
-        </div>
-        <div class="problem-card">
-          <span class="corner-tag">AI</span>
-          <span class="problem-card-tag">AI AGENTS</span>
-          <h3>Agents leak everything</h3>
-          <p>Autonomous agents execute transactions, manage funds, and communicate with each other. None of it is private. An agent's identity, instructions, and outputs are exposed to anyone watching the network.</p>
-        </div>
+        <a href="https://pqc.stvor.xyz" target="_blank" rel="noopener" class="problem-card" style="cursor:pointer; display:block;">
+          <span class="problem-card-tag" style="background:var(--teal-dim); color:var(--teal2)">WEB3 ↗</span>
+          <h3>Wallet-native E2EE — pqc.stvor.xyz</h3>
+          <p>Building on-chain? STVOR ships a sibling Web3 product: identity = wallet, no accounts, no API keys. Private DAO governance, OTC deal rooms, wallet-to-wallet DMs — all post-quantum from day one. <span style="color:var(--teal2); font-weight:600">Visit pqc.stvor.xyz →</span></p>
+        </a>
       </div>
     </section>
 
@@ -1120,42 +1112,38 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       <h2>One library.<br><span class="grad">Every stack.</span></h2>
 
       <div class="uc-tabs">
-        <button class="uc-tab active" data-uc="web2">Web2 App</button>
-        <button class="uc-tab" data-uc="web3">Web3 DApp</button>
-        <button class="uc-tab" data-uc="ai">AI Agents</button>
-        <button class="uc-tab" data-uc="wallet">Smart Wallets</button>
+        <button class="uc-tab active" data-uc="node">Node.js</button>
+        <button class="uc-tab" data-uc="browser">Browser</button>
+        <button class="uc-tab" data-uc="react">React / Vue</button>
+        <button class="uc-tab" data-uc="web3">Web3 ↗</button>
       </div>
 
-      <!-- Web2 -->
-      <div class="uc-content active" data-uc="web2">
+      <!-- Node.js -->
+      <div class="uc-content active" data-uc="node">
         <div class="uc-info">
-          <div class="uc-info-tag">WEB2 · ANY JS/TS APP</div>
+          <div class="uc-info-tag">NODE.JS · ANY JS/TS APP</div>
           <h3>Add E2EE to your app in 10 minutes</h3>
-          <p>No cryptography knowledge required. STVOR gives you the same encryption used by Signal — with post-quantum protection that Signal doesn't have yet.</p>
+          <p>No cryptography knowledge required. STVOR gives you the same encryption used by Signal — with post-quantum protection Signal doesn't have yet.</p>
           <ul>
-            <li>Works in Node.js ≥ 18, all modern browsers, React, Vue, Next.js</li>
-            <li>0 npm runtime dependencies — 270 KB Rust WASM, ships as a single file</li>
-            <li>Forward secrecy: each message uses a unique key, past messages stay safe</li>
-            <li>Identity derived from any user token — no wallet needed</li>
+            <li>Node.js ≥ 18 — uses only built-in <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">node:crypto</code></li>
+            <li>Zero npm runtime dependencies — no WASM, no native modules</li>
+            <li>Forward secrecy: each message uses a unique Double Ratchet key</li>
+            <li>Identity derived from any user token — userId can be email, UUID, anything</li>
           </ul>
-          <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener" class="uc-info-link">Web2 PQC SDK — sdk.stvor.xyz ↗</a>
         </div>
         <div class="code-preview">
-          <div class="code-tabs"><div class="code-tab active">chat.ts</div></div>
-<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
-<span class="kw">import</span> initWasm <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span><span class="punct">;</span>
+          <div class="code-tabs"><div class="code-tab active">server.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> Stvor <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/sdk'</span><span class="punct">;</span>
 
-<span class="kw">const</span> wasm <span class="punct">=</span> <span class="kw">await</span> <span class="fn">initWasm</span><span class="punct">();</span>
-
-<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
-  provider<span class="punct">:</span> myAuthProvider<span class="punct">,</span> <span class="cm">// any EIP-1193 or custom</span>
-  wasm<span class="punct">,</span>
+<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> Stvor<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  userId<span class="punct">:</span>   <span class="str">'alice@example.com'</span><span class="punct">,</span>
+  appToken<span class="punct">:</span> <span class="str">'stvor_live_xxx'</span><span class="punct">,</span>
+  pqc<span class="punct">:</span>      <span class="kw">true</span><span class="punct">,</span>
 <span class="punct">});</span>
 
 <span class="cm">// Send quantum-safe message</span>
-<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>bobId<span class="punct">,</span> <span class="punct">{</span>
+<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span><span class="str">'bob@example.com'</span><span class="punct">,</span> <span class="punct">{</span>
   text<span class="punct">:</span> <span class="str">'Hello!'</span><span class="punct">,</span>
-  attachmentUrl<span class="punct">:</span> <span class="str">'...'</span><span class="punct">,</span>
 <span class="punct">});</span>
 
 <span class="cm">// Receive — decrypted automatically</span>
@@ -1165,107 +1153,81 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         </div>
       </div>
 
-      <!-- Web3 -->
-      <div class="uc-content" data-uc="web3">
+      <!-- Browser -->
+      <div class="uc-content" data-uc="browser">
         <div class="uc-info">
-          <div class="uc-info-tag">WEB3 · DAPP / DAO / OTC</div>
-          <h3>Wallet-native E2EE for any chain</h3>
-          <p>Identity = wallet address. No accounts, no passwords. Bind encryption to the same key that signs your transactions — quantum-safe from day one.</p>
+          <div class="uc-info-tag">BROWSER · WEB CRYPTO API</div>
+          <h3>Same SDK, native browser crypto</h3>
+          <p>Full Double Ratchet runs in the browser via the platform's Web Crypto API — no WASM bundle, no shim. Keys persist across page refreshes in IndexedDB.</p>
           <ul>
-            <li>Works with TON v5, EVM (ERC-4337), Solana, Cosmos — chain-agnostic</li>
-            <li>Private DAO governance, OTC deal rooms, wallet-to-wallet DMs</li>
-            <li>ML-KEM-768 sits on top of secp256k1 / Ed25519 — your wallet stays the same</li>
-            <li>No relay account, no API key. Identity is your signature.</li>
+            <li>Web Crypto API (no shims, no polyfills)</li>
+            <li>Identity keys persisted in IndexedDB across tabs and refreshes</li>
+            <li>Same <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">Stvor.connect()</code> API as Node.js</li>
+            <li>9 supported JS types — string, Date, Set, Map, Uint8Array, etc.</li>
           </ul>
-          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener" class="uc-info-link">Web3 SDK source ↗</a>
         </div>
         <div class="code-preview">
-          <div class="code-tabs"><div class="code-tab active">dao.ts</div></div>
-<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+          <div class="code-tabs"><div class="code-tab active">app.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> Stvor <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/sdk/web'</span><span class="punct">;</span>
 
-<span class="cm">// Connect with any EIP-1193 wallet</span>
-<span class="kw">const</span> dao <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
-  provider<span class="punct">:</span> window<span class="punct">.</span>ethereum<span class="punct">,</span>
-  wasm<span class="punct">,</span>
+<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> Stvor<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  userId<span class="punct">:</span>   <span class="str">'alice@example.com'</span><span class="punct">,</span>
+  appToken<span class="punct">:</span> <span class="str">'stvor_live_xxx'</span><span class="punct">,</span>
+  pqc<span class="punct">:</span>      <span class="kw">true</span><span class="punct">,</span>
 <span class="punct">});</span>
 
-<span class="cm">// Encrypted vote — visible only to token holders</span>
-<span class="kw">await</span> dao<span class="punct">.</span><span class="fn">broadcast</span><span class="punct">(</span>holdersGroup<span class="punct">,</span> <span class="punct">{</span>
-  proposal<span class="punct">:</span> <span class="str">'acquire-treasury-asset'</span><span class="punct">,</span>
-  vote<span class="punct">:</span> <span class="str">'yes'</span><span class="punct">,</span>
+<span class="cm">// Original JS types are preserved end-to-end</span>
+<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span><span class="str">'bob'</span><span class="punct">,</span> <span class="punct">{</span>
+  ts<span class="punct">:</span>     <span class="kw">new</span> <span class="fn">Date</span><span class="punct">(),</span>
+  attachment<span class="punct">:</span> <span class="kw">new</span> <span class="fn">Uint8Array</span><span class="punct">(</span>bytes<span class="punct">),</span>
 <span class="punct">});</span>
 
-<span class="cm">// On-chain stays public. Deliberation stays private.</span></pre>
-        </div>
-      </div>
-
-      <!-- AI -->
-      <div class="uc-content" data-uc="ai">
-        <div class="uc-info">
-          <div class="uc-info-tag">AI · AUTONOMOUS AGENTS</div>
-          <h3>Encrypt agent identity, instructions, and memory</h3>
-          <p>Each agent gets a cryptographic identity bound to its wallet. Inter-agent messages, long-term memory, and strategy instructions stay E2EE — no node operator can read them.</p>
-          <ul>
-            <li>Agent-to-agent E2EE — same protocol Signal uses for humans</li>
-            <li>Encrypted long-term memory in decentralised storage</li>
-            <li>Forward secrecy: a stolen agent key doesn't leak past instructions</li>
-            <li>Verifiable identity per agent — no Sybil noise</li>
-          </ul>
-          <a href="/docs" class="uc-info-link">Agent integration guide ↗</a>
-        </div>
-        <div class="code-preview">
-          <div class="code-tabs"><div class="code-tab active">agent.ts</div></div>
-<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
-
-<span class="kw">const</span> agent <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
-  provider<span class="punct">:</span> agentWallet<span class="punct">,</span>
-  wasm<span class="punct">,</span>
-<span class="punct">});</span>
-
-<span class="cm">// Receive E2EE strategy instructions</span>
-agent<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span><span class="kw">async</span> <span class="punct">(</span>msg<span class="punct">)</span> <span class="punct">=&gt; {</span>
-  <span class="kw">const</span> plan <span class="punct">=</span> msg<span class="punct">.</span>data<span class="punct">.</span>strategy<span class="punct">;</span>
-  <span class="kw">await</span> <span class="fn">execute</span><span class="punct">(</span>plan<span class="punct">);</span>
-
-  <span class="cm">// Store result encrypted in shared memory</span>
-  <span class="kw">await</span> agent<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>peerAgent<span class="punct">,</span> <span class="punct">{</span>
-    type<span class="punct">:</span> <span class="str">'result'</span><span class="punct">,</span> data<span class="punct">:</span> outcome<span class="punct">,</span>
-  <span class="punct">});</span>
+alice<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span>msg <span class="punct">=&gt;</span> <span class="punct">{</span>
+  <span class="cm">// msg.data.ts is a real Date instance</span>
 <span class="punct">});</span></pre>
         </div>
       </div>
 
-      <!-- Smart Wallets -->
-      <div class="uc-content" data-uc="wallet">
+      <!-- React / Vue -->
+      <div class="uc-content" data-uc="react">
         <div class="uc-info">
-          <div class="uc-info-tag">SMART WALLETS · ERC-4337 / TON v5</div>
-          <h3>E2EE messaging baked into the wallet</h3>
-          <p>Your wallet already authenticates the user. STVOR turns that signature into an encrypted channel — no second login, no extra account, no extra key to lose.</p>
+          <div class="uc-info-tag">REACT · VUE · ANY FRAMEWORK</div>
+          <h3>First-class hooks &amp; composables</h3>
+          <p>The SDK ships React hooks and Vue composables out of the box — no wrapper libraries, no extra dependencies. Identity stays in IndexedDB; messages flow through reactive state.</p>
           <ul>
-            <li>Drop-in for ERC-4337 Account Abstraction wallets</li>
-            <li>Native TON v5 support — works with Tonkeeper, MyTonWallet</li>
-            <li>Recovery uses the wallet's own social recovery — no separate seed phrase</li>
-            <li>Quantum-safe upgrade path: ML-KEM today, ML-DSA signatures next</li>
+            <li><code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">useStvor()</code> hook — connect, send, message stream</li>
+            <li>Vue 3 composables with the same surface area</li>
+            <li>Optional <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">react</code> / <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">vue</code> peer deps — only loaded if you import them</li>
+            <li>SSR-safe: connection only initialises on the client</li>
           </ul>
-          <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="uc-info-link">Apply for pilot ↗</a>
         </div>
         <div class="code-preview">
-          <div class="code-tabs"><div class="code-tab active">wallet.ts</div></div>
-<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+          <div class="code-tabs"><div class="code-tab active">Chat.tsx</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> useStvor <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/sdk/web'</span><span class="punct">;</span>
 
-<span class="cm">// Smart wallet — ERC-4337 Account Abstraction</span>
-<span class="kw">const</span> wallet <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
-  provider<span class="punct">:</span> smartAccount<span class="punct">,</span> <span class="cm">// any 4337 / TON v5</span>
-  wasm<span class="punct">,</span>
-<span class="punct">});</span>
+<span class="kw">export function</span> <span class="fn">Chat</span><span class="punct">()</span> <span class="punct">{</span>
+  <span class="kw">const</span> <span class="punct">{</span> client<span class="punct">,</span> messages<span class="punct">,</span> send <span class="punct">}</span> <span class="punct">=</span> <span class="fn">useStvor</span><span class="punct">({</span>
+    userId<span class="punct">:</span>   <span class="str">'alice@example.com'</span><span class="punct">,</span>
+    appToken<span class="punct">:</span> <span class="str">'stvor_live_xxx'</span><span class="punct">,</span>
+    pqc<span class="punct">:</span>      <span class="kw">true</span><span class="punct">,</span>
+  <span class="punct">});</span>
 
-<span class="cm">// E2EE auto-bound to wallet identity</span>
-<span class="kw">await</span> wallet<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>peerWallet<span class="punct">,</span> <span class="punct">{</span>
-  type<span class="punct">:</span> <span class="str">'invoice'</span><span class="punct">,</span>
-  amount<span class="punct">:</span> <span class="str">'5000 USDC'</span><span class="punct">,</span>
-<span class="punct">});</span>
+  <span class="kw">return</span> <span class="punct">(</span>
+    <span class="punct">&lt;</span><span class="kw">div</span><span class="punct">&gt;</span>
+      <span class="punct">{</span>messages<span class="punct">.</span><span class="fn">map</span><span class="punct">(</span>m <span class="punct">=&gt;</span> <span class="punct">&lt;</span><span class="kw">p</span><span class="punct">&gt;{</span>m<span class="punct">.</span>data<span class="punct">.</span>text<span class="punct">}&lt;/</span><span class="kw">p</span><span class="punct">&gt;)}</span>
+    <span class="punct">&lt;/</span><span class="kw">div</span><span class="punct">&gt;</span>
+  <span class="punct">);</span>
+<span class="punct">}</span></pre>
+        </div>
+      </div>
 
-<span class="cm">// Recovery = wallet's own social recovery</span></pre>
+      <!-- Web3 — link out to pqc.stvor.xyz -->
+      <div class="uc-content" data-uc="web3" style="display:none;">
+        <div class="uc-info" style="grid-column: 1 / -1; text-align:center; padding: 32px 0;">
+          <div class="uc-info-tag">WEB3 · WALLET-NATIVE</div>
+          <h3>Looking for wallet-native E2EE?</h3>
+          <p style="max-width:560px; margin: 0 auto 24px;">Building on-chain? STVOR ships a sibling product for Web3 — identity = wallet, no accounts, no API tokens. Private DAO governance, OTC deal rooms, wallet-to-wallet DMs.</p>
+          <a href="https://pqc.stvor.xyz" target="_blank" rel="noopener" class="btn-primary">Visit pqc.stvor.xyz →</a>
         </div>
       </div>
     </section>
@@ -1278,15 +1240,15 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       </div>
       <div class="uc-stat">
         <div class="uc-stat-num"><span class="grad">0</span></div>
-        <div class="uc-stat-label">npm dependencies</div>
+        <div class="uc-stat-label">runtime npm dependencies</div>
       </div>
       <div class="uc-stat">
-        <div class="uc-stat-num"><span class="grad">73</span></div>
-        <div class="uc-stat-label">tests passing</div>
+        <div class="uc-stat-num"><span class="grad">137</span></div>
+        <div class="uc-stat-label">tests across 17 files</div>
       </div>
       <div class="uc-stat">
-        <div class="uc-stat-num"><span class="grad">270KB</span></div>
-        <div class="uc-stat-label">total bundle size</div>
+        <div class="uc-stat-num"><span class="grad">9</span></div>
+        <div class="uc-stat-label">supported JS data types</div>
       </div>
     </div>
 
@@ -1294,11 +1256,11 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
     <section class="section" style="margin-top: 100px;">
       <div class="section-label">Built in the open</div>
       <h2>Every commit is public.<br><span class="grad">Every vector is verified.</span></h2>
-      <p class="section-sub">No black-box WASM. The Rust crypto core is open source — you can reproduce the exact binary from source in 2 commands.</p>
+      <p class="section-sub">Pure TypeScript on Node.js + Web Crypto in the browser. Zero runtime dependencies, zero native modules — every line of crypto is auditable in your editor.</p>
 
       <div class="open-grid">
         <div class="open-stat">
-          <div class="open-stat-big"><span class="grad">v0.3.0</span></div>
+          <div class="open-stat-big"><span class="grad">v3.5.4</span></div>
           <div class="open-stat-label">Latest release · npm</div>
         </div>
         <div class="open-stat">
@@ -1306,12 +1268,12 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
           <div class="open-stat-label">Open source · MIT</div>
         </div>
         <div class="open-stat">
-          <div class="open-stat-big"><span class="grad">53</span></div>
-          <div class="open-stat-label">NIST ACVTS vectors · all passing</div>
+          <div class="open-stat-big"><span class="grad">137</span></div>
+          <div class="open-stat-label">tests · all passing</div>
         </div>
         <div class="open-stat">
-          <div class="open-stat-big"><span class="grad">Rust</span></div>
-          <div class="open-stat-label">Crypto core · reproducible WASM</div>
+          <div class="open-stat-big"><span class="grad">TypeScript</span></div>
+          <div class="open-stat-label">node:crypto + Web Crypto · 0 deps</div>
         </div>
       </div>
 
@@ -1322,11 +1284,11 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         </div>
         <div class="open-check">
           <span class="open-check-mark">✓</span>
-          <span>NIST ACVTS test vectors — 53/53 passed</span>
+          <span>NIST ACVTS test vectors for ML-KEM-768 — KeyGen, Encap, Decap all pass</span>
         </div>
         <div class="open-check">
           <span class="open-check-mark">✓</span>
-          <span>73 automated tests — all passing</span>
+          <span>137 automated tests across 17 test files — all passing</span>
         </div>
         <div class="open-check">
           <span class="open-check-mark pending">◷</span>
@@ -1376,33 +1338,17 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
 
         <div class="value-card">
           <div class="value-card-head">
-            <span class="value-card-tag">WEB3 · DAO GOVERNANCE</span>
-            <span class="value-card-title">Governance votes are public — killing honest deliberation</span>
+            <span class="value-card-tag">SAAS · CUSTOMER SUPPORT</span>
+            <span class="value-card-title">Support chats and tickets sit unencrypted in your DB</span>
           </div>
           <div class="value-block">
             <div class="value-block-label problem">The problem</div>
-            <p>A DAO with $200M in treasury needs to vote on a strategic acquisition. On-chain votes are public in real time — large holders wait to see which way the wind blows before voting. Backroom deliberation happens on Telegram, which is centralised and unencrypted.</p>
+            <p>Your support platform stores every customer conversation in plaintext: API keys, account recovery details, internal screenshots. One leaked DB dump or one rogue employee = years of customer secrets exposed. TLS only protects the wire, not the storage.</p>
           </div>
           <div class="value-divider">✦</div>
           <div class="value-block">
             <div class="value-block-label solution">With STVOR</div>
-            <p>Private deliberation channels tied to wallet identity. Only verified token holders can participate. Votes and rationales stay encrypted until the DAO chooses to reveal them. Zero extra infrastructure — works with any TON or EVM wallet.</p>
-          </div>
-        </div>
-
-        <div class="value-card">
-          <div class="value-card-head">
-            <span class="value-card-tag">AI · AUTONOMOUS AGENTS</span>
-            <span class="value-card-title">Agent instructions and long-term memory are fully exposed</span>
-          </div>
-          <div class="value-block">
-            <div class="value-block-label problem">The problem</div>
-            <p>An AI agent manages a DeFi portfolio: it receives strategy instructions, stores learned preferences, and communicates results to other agents. Every instruction, every memory record, and every inter-agent message travels in plaintext — readable by any node in the network.</p>
-          </div>
-          <div class="value-divider">✦</div>
-          <div class="value-block">
-            <div class="value-block-label solution">With STVOR</div>
-            <p>Each agent has a cryptographic identity bound to its wallet. Instructions arrive E2EE. Long-term memory stored in decentralised storage is encrypted — only the agent's key can decrypt it. Competing agents or network observers see nothing.</p>
+            <p>Three lines turn the chat into E2EE. Your relay stores only ciphertext it cannot read. The customer's browser and the agent's app are the only two parties that can decrypt. SOC 2 / ISO 27001 evidence becomes trivial — the data never existed in plaintext on your servers.</p>
           </div>
         </div>
       </div>
@@ -1449,60 +1395,49 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       <h2>From library<br><span class="grad">to standard.</span></h2>
       <p class="section-sub">Full transparency. Design partners vote on priority and get early access to every phase.</p>
 
-      <div class="roadmap-grid">
+      <div class="roadmap-grid" style="grid-template-columns: repeat(4, 1fr);">
         <div class="roadmap-card">
           <span class="roadmap-status shipped">Shipped</span>
-          <div class="roadmap-when">v0.3.0 · Now</div>
+          <div class="roadmap-when">v3.5.4 · Now</div>
           <h3>Hybrid E2EE Core</h3>
           <ul>
             <li>ML-KEM-768 + P-256 X3DH</li>
-            <li>Double Ratchet</li>
-            <li>AES-256-GCM · HKDF</li>
-            <li>53 NIST test vectors</li>
-            <li>ERC-4337 + TON v5 AA</li>
+            <li>Double Ratchet · Sender Keys</li>
+            <li>AES-256-GCM · HKDF-SHA256</li>
+            <li>NIST ACVTS verified</li>
+            <li>Sealed sender · TOFU</li>
           </ul>
         </div>
         <div class="roadmap-card">
           <span class="roadmap-status progress">In progress</span>
           <div class="roadmap-when">Q2 2026</div>
-          <h3>Production Ready</h3>
+          <h3>Production hardening</h3>
           <ul>
-            <li>TON testnet deployment</li>
-            <li>Full docs site</li>
-            <li>10 design partners onboard</li>
+            <li>Hosted relay v2 — multi-region</li>
             <li>Atomic state persistence</li>
+            <li>10 design partners onboard</li>
+            <li>Full docs site</li>
           </ul>
         </div>
         <div class="roadmap-card">
           <span class="roadmap-status planned">Planned</span>
           <div class="roadmap-when">Q3 2026</div>
-          <h3>Quantum Identity</h3>
+          <h3>Quantum signatures</h3>
           <ul>
             <li>ML-DSA-65 — NIST FIPS 204</li>
-            <li>Quantum-safe signatures</li>
-            <li>Group E2EE — Sender Keys</li>
+            <li>Quantum-safe identity signing</li>
             <li>External security audit</li>
-          </ul>
-        </div>
-        <div class="roadmap-card">
-          <span class="roadmap-status planned">Planned</span>
-          <div class="roadmap-when">Q4 2026</div>
-          <h3>Universal Identity</h3>
-          <ul>
-            <li>Chain-agnostic STVOR ID</li>
-            <li>Solana · Cosmos · Passkeys</li>
-            <li>PQC-MLS group protocol</li>
-            <li>Edge WASM — IoT / agents</li>
+            <li>Bigger NIST vector coverage</li>
           </ul>
         </div>
         <div class="roadmap-card">
           <span class="roadmap-status research">Research</span>
           <div class="roadmap-when">2027</div>
-          <h3>Cryptographic Platform</h3>
+          <h3>Cryptographic platform</h3>
           <ul>
+            <li>PQC-MLS group protocol</li>
+            <li>Python bindings via Pyodide</li>
             <li>ZKP on lattices — PQC proofs</li>
-            <li>FHE — compute on ciphertext</li>
-            <li>Python · C++ bindings</li>
             <li>Merkle key aggregation</li>
           </ul>
         </div>
@@ -1513,7 +1448,7 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
     <section class="section" id="security">
       <div class="section-label">Security</div>
       <h2>NIST-verified.<br>Open source. <span class="grad">Reproducible.</span></h2>
-      <p class="section-sub">Every cryptographic primitive is tested against official NIST ACVTS test vectors. The Rust source is public — you can reproduce the exact WASM binary from source in 2 commands.</p>
+      <p class="section-sub">Every cryptographic primitive is tested against official NIST ACVTS test vectors. Pure TypeScript — every line of the crypto core is auditable in your editor. No WASM black box, no native modules, no transitive dependencies.</p>
 
       <div class="sec-vectors">
         <div class="sec-vector">
@@ -1546,7 +1481,7 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         </div>
         <div class="sec-row">
           <div class="sec-row-name">P-256 X3DH</div>
-          <div class="sec-row-desc">Classical key exchange</div>
+          <div class="sec-row-desc">Classical key exchange + one-time prekeys</div>
           <div class="sec-row-spec">NIST</div>
         </div>
         <div class="sec-row">
@@ -1565,8 +1500,8 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
           <div class="sec-row-spec">NIST</div>
         </div>
         <div class="sec-row">
-          <div class="sec-row-name">Rust → WASM</div>
-          <div class="sec-row-desc">Zero C deps · memory-safe · reproducible</div>
+          <div class="sec-row-name">TypeScript → ESM</div>
+          <div class="sec-row-desc">node:crypto + Web Crypto · zero runtime deps</div>
           <div class="sec-row-spec">Open</div>
         </div>
       </div>
@@ -1651,9 +1586,9 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         </div>
         <p>Post-quantum E2EE behind a three-line API. Built in the open. Free during pilot for the first 10 design partners.</p>
         <div class="footer-contact-list">
-          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npm</a>
-          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">Rust source ↗</a>
+          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">GitHub ↗</a>
+          <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npm — @stvor/sdk ↗</a>
+          <a href="https://pqc.stvor.xyz" target="_blank" rel="noopener">Web3 — pqc.stvor.xyz ↗</a>
           <a id="footer-email" onclick="copyEmail()" title="Click to copy">izahii@protonmail.com</a>
         </div>
       </div>
@@ -1671,7 +1606,7 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
       <div class="footer-links">
         <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">GitHub</a>
         <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npm</a>
-        <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener">Web2 PQC</a>
+        <a href="https://pqc.stvor.xyz" target="_blank" rel="noopener">Web3 ↗</a>
         <a href="/docs">Docs</a>
         <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener">Apply for pilot</a>
       </div>
@@ -1681,7 +1616,7 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
   <script>
     /* ── COPY: install command ── */
     function copyInstall() {
-      navigator.clipboard.writeText('npm install @stvor/web3').then(() => {
+      navigator.clipboard.writeText('npm install @stvor/sdk').then(() => {
         const el = document.getElementById('copy-label');
         el.textContent = 'copied!';
         el.style.color = 'var(--teal)';
@@ -1706,8 +1641,15 @@ agent<span class="punct">.</span><span class="fn">onMessage</span><span class="p
     document.querySelectorAll('.uc-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.uc;
+        if (target === 'web3') {
+          window.open('https://pqc.stvor.xyz', '_blank', 'noopener');
+          return;
+        }
         document.querySelectorAll('.uc-tab').forEach(t => t.classList.toggle('active', t === btn));
-        document.querySelectorAll('.uc-content').forEach(c => c.classList.toggle('active', c.dataset.uc === target));
+        document.querySelectorAll('.uc-content').forEach(c => {
+          c.classList.toggle('active', c.dataset.uc === target);
+          if (c.dataset.uc !== 'web3') c.style.display = c.dataset.uc === target ? '' : 'none';
+        });
       });
     });
 
