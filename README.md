@@ -483,7 +483,7 @@ const text = ref('');
 - ⚠️ **Not yet independently audited** (roadmap Q3 2026)
 - ✓ Production-ready cryptography (NIST standards)
 - ✓ Continuously reviewed by security community
-- ✓ Responsible disclosure: security@stvor.xyz
+- ✓ Responsible disclosure: izahii@protonmail.com
 
 ---
 
@@ -497,7 +497,7 @@ MIT
 
 Open issues and pull requests on [GitHub](https://github.com/sapogeth/stvor_sdk).
 
-For security issues, email security@stvor.xyz.
+For security issues, email izahii@protonmail.com.
 
 ---
 

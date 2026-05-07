@@ -371,7 +371,7 @@ Recovery:
 
 ## Vulnerability Disclosure
 
-**Security Issues**: Email security@stvor.xyz
+**Security Issues**: Email izahii@protonmail.com
 
 **Response Timeline**:
 - Day 0: Acknowledge receipt

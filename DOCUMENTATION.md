@@ -308,7 +308,7 @@ Report errors, suggest improvements:
 - Email: docs@stvor.xyz
 
 ### Security Questions
-- Email: security@stvor.xyz
+- Email: izahii@protonmail.com
 - GPG Key: Available on website
 
 ### General Questions

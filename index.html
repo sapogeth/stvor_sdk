@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Stvor SDK — End-to-end encryption for any app. Signal Protocol + ML-KEM-768 post-quantum. Zero dependencies. npm install @stvor/sdk">
-  <title>STVOR — Quantum-Safe Encryption SDK</title>
+  <meta name="description" content="Post-quantum E2EE you can ship today. ML-KEM-768 + Double Ratchet behind a three-line API. Built with design partners in healthcare, fintech, Web3.">
+  <title>STVOR — Post-Quantum E2EE you can ship today</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -13,23 +13,29 @@
     :root {
       --bg:          #08060f;
       --bg2:         #0e0e1a;
-      --bg3:         #1c1636;
-      --bg4:         #241d48;
-      --border:      #3f2f72;
-      --border2:     #5c4eb0;
+      --bg3:         #16132a;
+      --bg4:         #20193f;
+      --border:      #2a2050;
+      --border2:     #4a3a80;
       --fg:          #f8f5ff;
-      --fg2:         #d6cfff;
-      --fg3:         #9a85c9;
-      --accent:      #8d6bff;
+      --fg2:         #c8c0f0;
+      --fg3:         #8878b8;
+      --accent:      #6c63ff;
       --accent2:     #c4a5ff;
-      --accent3:     #7f56ff;
-      --accent-dim:  rgba(141,107,255,0.18);
-      --accent-dim2: rgba(141,107,255,0.10);
-      --purple-glow: rgba(141,107,255,0.35);
+      --accent3:     #8d6bff;
+      --accent-dim:  rgba(108,99,255,0.12);
+      --accent-dim2: rgba(108,99,255,0.06);
+      --teal:        #00d4aa;
+      --teal2:       #4ee8c4;
+      --teal-dim:    rgba(0,212,170,0.10);
+      --teal-dim2:   rgba(0,212,170,0.06);
       --green:       #22c55e;
-      --green-dim:   rgba(34,197,94,0.1);
+      --green-dim:   rgba(34,197,94,0.10);
+      --yellow:      #fbbf24;
+      --red:         #f87171;
       --mono: 'JetBrains Mono', monospace;
       --sans: 'Inter', system-ui, sans-serif;
+      --max: 1100px;
     }
 
     html { scroll-behavior: smooth; }
@@ -46,809 +52,1773 @@
 
     a { color: inherit; text-decoration: none; }
 
-    /* ── BACKGROUND EFFECTS ── */
+    /* ── BACKGROUND GLOWS ── */
     body::before {
       content: '';
       position: fixed;
-      top: -20%;
-      left: -10%;
-      width: 700px;
-      height: 700px;
+      top: -20%; left: -10%;
+      width: 800px; height: 800px;
       background: radial-gradient(ellipse, rgba(108,99,255,0.08) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
-
     body::after {
       content: '';
       position: fixed;
-      top: -20%;
-      right: -10%;
-      width: 700px;
-      height: 700px;
+      top: -20%; right: -10%;
+      width: 800px; height: 800px;
       background: radial-gradient(ellipse, rgba(0,212,170,0.06) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
 
-    /* ── MODE TOGGLE ── */
-    .mode-toggle {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 300;
-      display: flex;
-      align-items: center;
-      background: var(--bg2);
-      border: 1px solid var(--border2);
-      border-radius: 100px;
-      padding: 4px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(141,107,255,0.10);
-    }
-
-    .mode-btn {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 8px 18px;
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: var(--mono);
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: var(--fg3);
-      transition: all 0.2s;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .mode-btn.active { background: var(--bg4); color: var(--fg); }
-    .mode-btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg3); transition: background 0.2s; }
-    .mode-btn.active .dot { background: var(--green); }
-    .mode-btn[data-mode="machine"].active .dot { background: var(--accent2); }
-
-    /* ── MACHINE MODE ── */
-    #machine-view {
-      display: none;
-      font-family: var(--mono);
-      font-size: 13.5px;
-      line-height: 1.8;
-      color: var(--fg2);
-      min-height: 100vh;
-      padding: 60px 40px 120px;
-      max-width: 860px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    #machine-view.visible { display: block; }
-
-    .boot-line { opacity: 0; white-space: pre; transition: opacity 0.18s ease; }
-    .boot-line.show { opacity: 1; }
-    .boot-line.fade { opacity: 0; transition: opacity 0.25s ease; }
-
-    .boot-val  { color: var(--accent2); }
-    .boot-head { color: var(--fg); font-weight: 500; }
-
-    .machine-content { opacity: 0; margin-top: 48px; transition: opacity 0.4s ease; pointer-events: none; }
-    .machine-content.visible { opacity: 1; pointer-events: auto; }
-    .machine-content.fade-out { opacity: 0; transition: opacity 0.25s ease; }
-
-    .mc-h1  { color: var(--fg); font-size: 18px; font-weight: 500; margin-bottom: 4px; }
-    .mc-sub { color: var(--fg3); font-size: 12px; margin-bottom: 40px; }
-    .mc-section { margin-bottom: 40px; }
-    .mc-h2  { color: var(--accent2); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-    .mc-code { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; overflow-x: auto; white-space: pre; }
-    .mc-kw { color: #d8c2ff; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #8f84bb; }
-    .mc-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    .mc-table th { color: var(--fg3); font-size: 11px; text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--border); letter-spacing: 1px; text-transform: uppercase; }
-    .mc-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px; color: var(--fg2); }
-    .mc-table tr:last-child td { border-bottom: none; }
-    .mc-table td:first-child { color: var(--fg); }
-    .mc-prop { display: flex; gap: 12px; margin-bottom: 8px; font-size: 12.5px; }
-    .mc-prop-key { color: var(--accent2); min-width: 160px; }
-    .mc-prop-val { color: var(--fg2); }
-
-    /* ── HUMAN MODE ── */
-    #human-view { display: block; position: relative; z-index: 1; }
-    #human-view.hidden { display: none; }
+    main, nav, footer { position: relative; z-index: 1; }
 
     /* ── NAV ── */
     .nav {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(10,10,15,0.85);
+      background: rgba(8,6,15,0.75);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
-      padding: 0 40px;
+      padding: 0 32px;
       height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 24px;
     }
-
     .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: -0.5px;
-      color: var(--fg);
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 19px; letter-spacing: -0.5px;
     }
-
-    .nav-logo-text { color: var(--fg); }
-    .nav-logo-text span { color: inherit; }
-
     .pqc-badge {
-      display: inline-flex;
-      align-items: center;
+      display: inline-flex; align-items: center;
       background: var(--accent-dim);
-      border: 1px solid rgba(141,107,255,0.35);
+      border: 1px solid rgba(108,99,255,0.35);
       border-radius: 6px;
       padding: 3px 8px;
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11px; font-weight: 700;
       color: var(--accent2);
       letter-spacing: 0.5px;
       font-family: var(--mono);
     }
-
-    .nav-links { display: flex; align-items: center; gap: 28px; }
-    .nav-links a { font-size: 14px; color: var(--fg2); transition: color 0.15s; font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 22px; }
+    .nav-links a {
+      font-size: 14px; color: var(--fg2);
+      transition: color 0.15s; font-weight: 500;
+    }
     .nav-links a:hover { color: var(--fg); }
-
+    .nav-links .ext::after { content: ' ↗'; color: var(--fg3); font-size: 11px; }
     .nav-btn {
       background: var(--accent);
       color: #fff !important;
-      padding: 9px 20px;
+      padding: 9px 18px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       transition: all 0.15s;
-      box-shadow: 0 0 20px rgba(141,107,255,0.3);
+      box-shadow: 0 0 20px rgba(108,99,255,0.3);
     }
-
-    .nav-btn:hover { background: var(--accent2); box-shadow: 0 0 30px rgba(141,107,255,0.5); }
+    .nav-btn:hover { background: var(--accent3); box-shadow: 0 0 30px rgba(108,99,255,0.5); }
 
     /* ── HERO ── */
     .hero {
-      max-width: 860px;
+      max-width: var(--max);
       margin: 0 auto;
-      padding: 110px 40px 80px;
+      padding: 100px 32px 80px;
       text-align: center;
     }
-
     .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+      display: inline-flex; align-items: center; gap: 8px;
       background: var(--accent-dim);
-      border: 1px solid rgba(141,107,255,0.3);
+      border: 1px solid rgba(108,99,255,0.3);
       border-radius: 100px;
-      padding: 6px 16px;
-      font-size: 12px;
-      color: var(--accent2);
-      margin-bottom: 40px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
+      padding: 7px 16px;
+      font-size: 12px; color: var(--accent2);
+      margin-bottom: 36px;
+      font-weight: 600; letter-spacing: 0.3px;
       font-family: var(--mono);
     }
-
     .hero-badge-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--accent2);
-      box-shadow: 0 0 8px var(--accent2);
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 8px var(--teal);
       animation: pulse 2s infinite;
     }
-
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-
     .hero h1 {
-      font-size: clamp(48px, 7vw, 88px);
+      font-size: clamp(44px, 7vw, 84px);
       font-weight: 900;
-      letter-spacing: -3px;
-      line-height: 1.0;
+      letter-spacing: -2.5px;
+      line-height: 1.02;
       margin-bottom: 28px;
-      color: var(--fg);
     }
-
-    .hero h1 .purple { color: var(--accent2); }
-    .hero h1 .purple-light { color: #e3dbff; }
-
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--teal2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
     .hero p {
-      font-size: clamp(16px, 2vw, 19px);
+      font-size: clamp(15px, 1.6vw, 18px);
       color: var(--fg2);
-      max-width: 580px;
-      margin: 0 auto 48px;
-      line-height: 1.75;
+      max-width: 640px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
     }
-
-    .hero-cta {
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 60px;
-    }
-
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: center; margin-bottom: 56px; }
     .btn-primary {
       background: var(--accent);
       color: #fff;
-      padding: 13px 28px;
+      padding: 13px 26px;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 600;
       transition: all 0.2s;
-      box-shadow: 0 4px 24px rgba(141,107,255,0.4);
+      box-shadow: 0 4px 24px rgba(108,99,255,0.4);
+      display: inline-flex; align-items: center; gap: 6px;
     }
-
     .btn-primary:hover {
-      background: var(--accent2);
-      box-shadow: 0 4px 32px rgba(141,107,255,0.6);
+      background: var(--accent3);
+      box-shadow: 0 4px 32px rgba(108,99,255,0.6);
       transform: translateY(-1px);
     }
-
     .btn-install {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 10px;
       background: var(--bg2);
       border: 1px solid var(--border2);
       color: var(--fg2);
-      padding: 13px 20px;
+      padding: 12px 18px;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 13.5px;
       font-family: var(--mono);
       transition: all 0.15s;
       cursor: pointer;
     }
-
     .btn-install:hover { border-color: var(--accent); color: var(--fg); }
-
     .btn-install .copy-icon {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--fg3);
       background: var(--bg3);
       padding: 3px 8px;
       border-radius: 4px;
       transition: all 0.15s;
     }
-
     .btn-install:hover .copy-icon { color: var(--accent2); }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--fg2);
-      padding: 13px 24px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      border: 1px solid var(--border2);
-      transition: all 0.15s;
-    }
-
-    .btn-outline:hover { color: var(--fg); border-color: var(--accent); }
 
     /* ── CODE PREVIEW ── */
     .code-preview {
-      max-width: 700px;
+      max-width: 760px;
       margin: 0 auto;
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(141,107,255,0.1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,99,255,0.1);
+      text-align: left;
     }
-
-    .code-preview-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 18px;
+    .code-tabs {
+      display: flex; align-items: center;
+      padding: 0 14px;
       border-bottom: 1px solid var(--border);
       background: var(--bg3);
+      gap: 8px;
+      height: 42px;
     }
-
-    .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red { background: #ff5f57; }
-    .dot-yellow { background: #febc2e; }
-    .dot-green { background: #28c840; }
-
-    .code-preview-label { margin-left: 8px; font-size: 12px; color: var(--fg3); font-family: var(--mono); }
-
-    .code-preview pre {
-      padding: 24px 28px;
+    .code-tab {
+      padding: 8px 14px;
+      font-size: 12.5px;
       font-family: var(--mono);
-      font-size: 13.5px;
+      color: var(--fg3);
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .code-tab.active {
+      color: var(--fg);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      margin-bottom: -1px;
+    }
+    .code-preview pre {
+      padding: 22px 26px;
+      font-family: var(--mono);
+      font-size: 13px;
       line-height: 1.75;
       overflow-x: auto;
       color: #e4e4e7;
     }
+    .kw { color: #d8c2ff; } .fn { color: #86efac; } .str { color: #fde68a; }
+    .cm { color: #6a6a8a; font-style: italic; } .num { color: #fcd34d; }
+    .punct { color: #9a85c9; }
 
-    .kw { color: #d8c2ff; }
-    .fn { color: #86efac; }
-    .str { color: #fde68a; }
-    .cm { color: #4a4a6a; }
+    /* ── STANDARDS ── */
+    .standards {
+      max-width: var(--max);
+      margin: 0 auto 80px;
+      padding: 0 32px;
+      text-align: center;
+    }
+    .standards-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--fg3); letter-spacing: 2.5px;
+      text-transform: uppercase; margin-bottom: 22px;
+    }
+    .standards-list {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 10px;
+    }
+    .standard-chip {
+      display: inline-flex; align-items: center;
+      padding: 8px 14px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-family: var(--mono);
+      color: var(--fg2);
+      transition: all 0.15s;
+    }
+    .standard-chip:hover { border-color: var(--accent); color: var(--fg); }
 
-    /* ── STATS ── */
-    .stats {
-      max-width: 860px;
-      margin: 80px auto;
-      padding: 0 40px;
+    /* ── SECTION ── */
+    .section { max-width: var(--max); margin: 0 auto 100px; padding: 0 32px; }
+    .section-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent2); letter-spacing: 2.5px;
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+    .section h2 {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+    .section h2 .grad {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--teal2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .section-sub {
+      font-size: 16px; color: var(--fg2);
+      max-width: 620px; line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    /* ── FOUNDER ── */
+    .founder-card {
+      max-width: 900px;
+      margin: 0 auto 100px;
+      padding: 36px;
+      background: linear-gradient(135deg, rgba(108,99,255,0.06) 0%, rgba(0,212,170,0.04) 100%), var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .founder-avatar {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: #fff;
+      letter-spacing: -1px;
+      box-shadow: 0 8px 32px rgba(108,99,255,0.4);
+    }
+    .founder-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .founder-title { font-size: 13px; color: var(--accent2); margin-bottom: 14px; font-weight: 600; }
+    .founder-bio { font-size: 14.5px; color: var(--fg2); line-height: 1.7; margin-bottom: 18px; }
+    .founder-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .founder-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px;
+      padding: 7px 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--fg2);
+      font-family: var(--mono);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .founder-link:hover { border-color: var(--accent); color: var(--fg); }
+
+    /* ── PROBLEM CARDS ── */
+    .problem-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border);
+      gap: 16px;
+    }
+    .problem-card {
+      padding: 28px;
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 14px;
+      position: relative;
       overflow: hidden;
+      transition: all 0.2s;
     }
-
-    .stat { background: var(--bg2); padding: 36px 28px; text-align: center; }
-    .stat-num { font-size: 32px; font-weight: 800; letter-spacing: -1px; color: var(--fg); margin-bottom: 6px; }
-    .stat-num span { color: var(--accent2); }
-    .stat-label { font-size: 13px; color: var(--fg3); }
-
-    /* ── SECTIONS ── */
-    .section { max-width: 860px; margin: 0 auto 80px; padding: 0 40px; }
-    .section-label { font-size: 11px; font-weight: 700; color: var(--accent2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
-    .section h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
-    .section-sub { font-size: 16px; color: var(--fg2); margin-bottom: 48px; max-width: 560px; }
-
-    /* ── FEATURES GRID ── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-    }
-
-    .feature { background: var(--bg2); padding: 28px; transition: background 0.15s; }
-    .feature:hover { background: var(--bg3); }
-
-    .feature-icon {
-      width: 42px; height: 42px;
+    .problem-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .problem-card-tag {
+      display: inline-block;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--accent2);
       background: var(--accent-dim);
-      border: 1px solid rgba(141,107,255,0.2);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      letter-spacing: 0.5px;
       margin-bottom: 16px;
+      font-family: var(--mono);
     }
-
-    .feature h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--fg); }
-    .feature p { font-size: 13.5px; color: var(--fg2); line-height: 1.6; }
+    .problem-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+    .problem-card p { font-size: 13.5px; color: var(--fg2); line-height: 1.7; }
+    .problem-card .corner-tag {
+      position: absolute;
+      top: 14px; right: 14px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--fg3);
+      font-family: var(--mono);
+      letter-spacing: 1px;
+    }
 
     /* ── STEPS ── */
-    .steps { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-    .step { display: grid; grid-template-columns: 64px 1fr; border-bottom: 1px solid var(--border); background: var(--bg2); }
-    .step:last-child { border-bottom: none; }
-    .step-num { display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--accent2); background: var(--accent-dim2); border-right: 1px solid var(--border); font-family: var(--mono); }
-    .step-body { padding: 24px 28px; }
-    .step-body h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-    .step-body p { font-size: 13.5px; color: var(--fg2); }
-    .step-body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; color: var(--accent2); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .step-box {
+      padding: 28px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .step-num-big {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 10px;
+      font-size: 14px; font-weight: 800;
+      color: var(--accent2);
+      font-family: var(--mono);
+      margin-bottom: 18px;
+    }
+    .step-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+    .step-box p { font-size: 13.5px; color: var(--fg2); line-height: 1.7; }
 
-    /* ── TYPES TABLE ── */
-    .types-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-    .types-table th { background: var(--bg3); padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; color: var(--fg3); letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-    .types-table td { padding: 12px 18px; font-size: 13.5px; color: var(--fg2); border-bottom: 1px solid var(--border); background: var(--bg2); }
-    .types-table tr:last-child td { border-bottom: none; }
-    .types-table td:first-child { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+    /* ── USE CASES TABS ── */
+    .uc-tabs {
+      display: flex; gap: 4px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+      overflow-x: auto;
+    }
+    .uc-tab {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 13px; font-weight: 600;
+      color: var(--fg3);
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      font-family: var(--sans);
+    }
+    .uc-tab.active { background: var(--bg4); color: var(--fg); }
+    .uc-tab:not(.active):hover { color: var(--fg2); }
 
-    .badge-green { display: inline-block; background: var(--green-dim); color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 100px; }
+    .uc-content { display: none; }
+    .uc-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+    .uc-info-tag {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent2); letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+    }
+    .uc-info h3 { font-size: 24px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px; }
+    .uc-info > p { font-size: 14.5px; color: var(--fg2); line-height: 1.7; margin-bottom: 20px; }
+    .uc-info ul { list-style: none; margin-bottom: 24px; }
+    .uc-info ul li {
+      font-size: 13.5px; color: var(--fg2);
+      padding: 8px 0;
+      padding-left: 22px;
+      position: relative;
+      line-height: 1.55;
+      border-bottom: 1px solid rgba(42,32,80,0.5);
+    }
+    .uc-info ul li::before {
+      content: '✦';
+      position: absolute;
+      left: 0; top: 8px;
+      color: var(--teal);
+      font-size: 13px;
+    }
+    .uc-info ul li:last-child { border-bottom: none; }
+    .uc-info-link {
+      font-size: 13px; color: var(--accent2);
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .uc-info-link:hover { color: var(--fg); }
 
-    /* ── CTA ── */
-    .cta-section { max-width: 860px; margin: 0 auto 80px; padding: 0 40px; }
+    /* ── USE CASE STATS ── */
+    .uc-stats {
+      max-width: var(--max);
+      margin: 48px auto 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .uc-stat { background: var(--bg2); padding: 28px 20px; text-align: center; }
+    .uc-stat-num { font-size: 30px; font-weight: 800; letter-spacing: -1px; color: var(--fg); margin-bottom: 6px; }
+    .uc-stat-num .grad {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--teal2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .uc-stat-label { font-size: 12px; color: var(--fg3); }
 
-    .cta-box {
-      background: linear-gradient(135deg, rgba(108,99,255,0.10) 0%, var(--bg2) 60%);
-      border: 1px solid rgba(141,107,255,0.3);
+    /* ── OPEN ── */
+    .open-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .open-stat { background: var(--bg2); padding: 28px 24px; }
+    .open-stat-big { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .open-stat-big .grad {
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--teal2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .open-stat-label { font-size: 12.5px; color: var(--fg3); }
+
+    .open-checks {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+    }
+    .open-check {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      font-size: 14px; color: var(--fg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .open-check:last-child { border-bottom: none; }
+    .open-check-mark {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--green-dim);
+      color: var(--green);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .open-check-mark.pending { background: rgba(251,191,36,0.1); color: var(--yellow); }
+
+    /* ── VALUE (Real business value) ── */
+    .value-list { display: flex; flex-direction: column; gap: 18px; }
+    .value-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .value-card-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .value-card-tag {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent2);
+      background: var(--accent-dim);
+      padding: 4px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.5px;
+      font-family: var(--mono);
+    }
+    .value-card-title { font-size: 16px; font-weight: 700; color: var(--fg); }
+    .value-block { margin-bottom: 20px; }
+    .value-block:last-child { margin-bottom: 0; }
+    .value-block-label {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 8px; font-family: var(--mono);
+    }
+    .value-block-label.problem { color: var(--red); }
+    .value-block-label.solution { color: var(--teal); }
+    .value-block h4 { font-size: 16px; font-weight: 700; margin-bottom: 10px; line-height: 1.4; }
+    .value-block p { font-size: 14px; color: var(--fg2); line-height: 1.7; }
+    .value-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 18px 0;
+      font-size: 14px; color: var(--teal);
+    }
+    .value-divider::before, .value-divider::after {
+      content: ''; flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    /* ── PARTNERS ── */
+    .partners-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .partner-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+    .partner-num {
+      font-size: 13px; font-weight: 800;
+      color: var(--accent2);
+      font-family: var(--mono);
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+    }
+    .partner-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; }
+    .partner-card p { font-size: 13.5px; color: var(--fg2); line-height: 1.7; }
+
+    .partners-cta {
+      background: linear-gradient(135deg, rgba(108,99,255,0.10) 0%, rgba(0,212,170,0.06) 100%), var(--bg2);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 16px;
+      padding: 36px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+    .partners-cta-tag {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent2); letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+    .partners-cta h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .partners-cta p { font-size: 13.5px; color: var(--fg2); line-height: 1.7; }
+    .partners-meter {
+      margin-top: 14px;
+      height: 6px;
+      background: var(--bg3);
+      border-radius: 100px;
+      overflow: hidden;
+      max-width: 280px;
+    }
+    .partners-meter-fill {
+      height: 100%;
+      width: 70%;
+      background: linear-gradient(90deg, var(--accent), var(--teal));
+      border-radius: 100px;
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+    .roadmap-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .roadmap-status {
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 100px;
+      display: inline-block;
+      margin-bottom: 6px;
+      font-family: var(--mono);
+    }
+    .roadmap-status.shipped { color: var(--green); background: var(--green-dim); }
+    .roadmap-status.progress { color: var(--teal); background: var(--teal-dim); }
+    .roadmap-status.planned { color: var(--accent2); background: var(--accent-dim); }
+    .roadmap-status.research { color: var(--yellow); background: rgba(251,191,36,0.1); }
+    .roadmap-when { font-size: 11px; color: var(--fg3); margin-bottom: 14px; font-family: var(--mono); }
+    .roadmap-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; }
+    .roadmap-card ul { list-style: none; }
+    .roadmap-card ul li {
+      font-size: 12px; color: var(--fg2);
+      padding: 5px 0;
+      line-height: 1.5;
+    }
+    .roadmap-card ul li::before {
+      content: '— ';
+      color: var(--fg3);
+    }
+
+    /* ── SECURITY ── */
+    .sec-vectors {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .sec-vector { background: var(--bg2); padding: 24px 20px; }
+    .sec-vector-num { font-size: 28px; font-weight: 800; color: var(--teal); letter-spacing: -0.5px; margin-bottom: 4px; }
+    .sec-vector-name { font-size: 13px; font-weight: 600; color: var(--fg); margin-bottom: 4px; }
+    .sec-vector-spec { font-size: 11px; color: var(--fg3); font-family: var(--mono); }
+
+    .sec-stack {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .sec-row {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      gap: 20px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .sec-row:last-child { border-bottom: none; }
+    .sec-row-name { font-family: var(--mono); font-size: 13.5px; font-weight: 600; color: var(--accent2); }
+    .sec-row-desc { font-size: 13.5px; color: var(--fg2); }
+    .sec-row-spec {
+      font-size: 11px; font-family: var(--mono);
+      color: var(--fg3); padding: 3px 9px;
+      background: var(--bg3); border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── DEMO ── */
+    .demo-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .demo-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 20px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-size: 12px;
+      color: var(--fg3);
+    }
+    .demo-bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .demo-bar .dot-red { background: #ff5f57; }
+    .demo-bar .dot-yellow { background: #febc2e; }
+    .demo-bar .dot-green { background: #28c840; }
+    .demo-bar .demo-bar-label { margin-left: 8px; }
+
+    .demo-step {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .demo-step:last-child { border-bottom: none; }
+    .demo-step-head {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 14px;
+    }
+    .demo-step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      color: var(--accent2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800;
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+    .demo-step-head h3 { font-size: 15px; font-weight: 700; }
+    .demo-step p { font-size: 13.5px; color: var(--fg2); margin-bottom: 14px; line-height: 1.7; }
+    .demo-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: var(--mono); font-size: 13px;
+      color: var(--fg);
+      margin-bottom: 12px;
+      resize: vertical;
+      min-height: 44px;
+    }
+    .demo-input:focus { outline: none; border-color: var(--accent); }
+    .demo-output {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: var(--mono); font-size: 12px;
+      color: var(--fg2);
+      word-break: break-all;
+      line-height: 1.6;
+      min-height: 44px;
+      margin-bottom: 12px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .demo-output.empty { color: var(--fg3); font-style: italic; }
+    .demo-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .demo-btn {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--sans);
+    }
+    .demo-btn:hover:not(:disabled) { background: var(--accent3); }
+    .demo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .demo-btn.secondary { background: var(--bg3); color: var(--fg2); border: 1px solid var(--border); }
+    .demo-btn.secondary:hover:not(:disabled) { color: var(--fg); border-color: var(--accent); background: var(--bg4); }
+
+    .demo-note {
+      padding: 16px 24px;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      font-size: 12.5px; color: var(--fg3);
+      text-align: center;
+    }
+    .demo-note .ok { color: var(--teal); font-weight: 600; }
+
+    /* ── FINAL CTA ── */
+    .cta-final {
+      max-width: var(--max);
+      margin: 0 auto 80px;
+      padding: 0 32px;
+    }
+    .cta-final-box {
+      background: linear-gradient(135deg, rgba(108,99,255,0.10) 0%, rgba(0,212,170,0.06) 100%), var(--bg2);
+      border: 1px solid rgba(108,99,255,0.3);
       border-radius: 20px;
       padding: 64px 48px;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
-
-    .cta-box::before {
+    .cta-final-box::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: 50%;
+      top: -50%; left: 50%;
       transform: translateX(-50%);
-      width: 400px;
-      height: 300px;
+      width: 500px; height: 400px;
       background: radial-gradient(ellipse, rgba(108,99,255,0.08) 0%, transparent 70%);
       pointer-events: none;
     }
-
-    .cta-box h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; position: relative; }
-    .cta-box p { font-size: 16px; color: var(--fg2); margin-bottom: 36px; position: relative; }
-    .cta-box .btn-primary { font-size: 16px; padding: 14px 36px; position: relative; }
+    .cta-final-box h2 {
+      font-size: clamp(30px, 4.5vw, 48px);
+      font-weight: 900; letter-spacing: -1.5px;
+      margin-bottom: 16px; position: relative;
+      line-height: 1.05;
+    }
+    .cta-final-box p {
+      font-size: 16px; color: var(--fg2);
+      max-width: 580px; margin: 0 auto 28px;
+      position: relative; line-height: 1.7;
+    }
+    .cta-final-box .cta-actions {
+      position: relative;
+      display: flex; justify-content: center; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-outline {
+      padding: 13px 24px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 600;
+      border: 1px solid var(--border2);
+      color: var(--fg2);
+      transition: all 0.15s;
+      background: transparent;
+    }
+    .btn-outline:hover { color: var(--fg); border-color: var(--accent); }
 
     /* ── FOOTER ── */
-    .footer { border-top: 1px solid var(--border); padding: 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-    .footer-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; letter-spacing: -0.5px; }
-    .footer-logo span { color: inherit; }
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a, .footer-links span { font-size: 13px; color: var(--fg3); transition: color 0.15s; cursor: pointer; }
-    .footer-links a:hover, .footer-links span:hover { color: var(--fg2); }
-    .footer-copy { font-size: 13px; color: var(--fg3); }
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 56px 32px 32px;
+      max-width: var(--max);
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 56px;
+      margin-bottom: 40px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-brand .footer-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 18px; letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+    .footer-brand p { font-size: 13.5px; color: var(--fg2); line-height: 1.7; max-width: 380px; margin-bottom: 14px; }
+    .footer-contact-list { display: flex; flex-direction: column; gap: 6px; }
+    .footer-contact-list a {
+      font-size: 13px; color: var(--fg3);
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .footer-contact-list a:hover { color: var(--accent2); }
+    .footer-newsletter h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .footer-newsletter p { font-size: 13px; color: var(--fg3); line-height: 1.6; margin-bottom: 16px; }
+    .footer-form { display: flex; gap: 8px; }
+    .footer-form input {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--fg);
+      font-family: var(--sans);
+    }
+    .footer-form input:focus { outline: none; border-color: var(--accent); }
+    .footer-form button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .footer-form button:hover { background: var(--accent3); }
+
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+    }
+    .footer-copy { font-size: 12.5px; color: var(--fg3); }
+    .footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
+    .footer-links a { font-size: 12.5px; color: var(--fg3); transition: color 0.15s; }
+    .footer-links a:hover { color: var(--fg2); }
 
     /* ── RESPONSIVE ── */
+    @media (max-width: 980px) {
+      .nav-links a:not(.nav-btn):not(.always-show) { display: none; }
+      .nav-links { gap: 14px; }
+      .problem-grid, .steps { grid-template-columns: 1fr; }
+      .uc-content.active { grid-template-columns: 1fr; }
+      .uc-stats, .open-grid { grid-template-columns: repeat(2, 1fr); }
+      .partners-grid { grid-template-columns: 1fr; }
+      .partners-cta { grid-template-columns: 1fr; }
+      .roadmap-grid { grid-template-columns: repeat(2, 1fr); }
+      .sec-vectors { grid-template-columns: repeat(2, 1fr); }
+      .sec-row { grid-template-columns: 1fr; gap: 6px; }
+      .footer-top { grid-template-columns: 1fr; gap: 32px; }
+    }
     @media (max-width: 640px) {
-      .nav { padding: 0 20px; }
-      .nav-links { gap: 16px; }
-      .nav-links a:not(.nav-btn) { display: none; }
-      .hero { padding: 70px 20px 48px; }
-      .hero h1 { letter-spacing: -2px; }
-      .stats { grid-template-columns: 1fr; margin: 48px 20px; }
-      .section { padding: 0 20px; margin-bottom: 56px; }
-      .cta-section { padding: 0 20px; }
-      .cta-box { padding: 40px 24px; }
-      .footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; }
-      #machine-view { padding: 40px 20px 120px; }
-      .mode-toggle { bottom: 20px; }
+      .nav { padding: 0 18px; }
+      .hero { padding: 64px 18px 48px; }
+      .hero h1 { letter-spacing: -1.5px; }
+      .section { padding: 0 18px; margin-bottom: 64px; }
+      .standards { padding: 0 18px; margin-bottom: 56px; }
+      .founder-card { grid-template-columns: 1fr; padding: 24px; gap: 18px; }
+      .founder-avatar { width: 64px; height: 64px; font-size: 22px; }
+      .uc-stats { grid-template-columns: 1fr 1fr; }
+      .open-grid { grid-template-columns: 1fr; }
+      .roadmap-grid { grid-template-columns: 1fr; }
+      .sec-vectors { grid-template-columns: 1fr; }
+      .cta-final { padding: 0 18px; }
+      .cta-final-box { padding: 40px 24px; }
+      .footer { padding: 40px 18px 24px; }
+      .value-card { padding: 24px; }
+      .partners-cta { padding: 28px; }
     }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
-  <!-- MODE TOGGLE -->
-  <div class="mode-toggle">
-    <button class="mode-btn active" data-mode="human" onclick="setMode('human')">
-      <span class="dot"></span>HUMAN
-    </button>
-    <button class="mode-btn" data-mode="machine" onclick="setMode('machine')">
-      <span class="dot"></span>MACHINE
-    </button>
-  </div>
+  <nav class="nav">
+    <a href="/" class="nav-logo">
+      <span>STVOR</span>
+      <span class="pqc-badge">PQC</span>
+    </a>
+    <div class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#use-cases">Use cases</a>
+      <a href="#security">Security</a>
+      <a href="/docs">Docs</a>
+      <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener" class="ext">GitHub</a>
+      <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener" class="ext">npm</a>
+      <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener" class="ext">Web2 PQC</a>
+      <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="nav-btn always-show">Apply for pilot →</a>
+    </div>
+  </nav>
 
-  <!-- ═══════════════════════════════════════════════════════════ HUMAN VIEW -->
-  <div id="human-view">
+  <main>
 
-    <nav class="nav">
-      <div class="nav-logo">
-        <div class="nav-logo-text">STVOR</div>
-        <div class="pqc-badge">PQC</div>
-      </div>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="/docs">Docs</a>
-        <a href="/docs" class="nav-btn">Get started →</a>
-      </div>
-    </nav>
-
+    <!-- ── HERO ── -->
     <section class="hero">
       <div class="hero-badge">
         <div class="hero-badge-dot"></div>
-        NOW AVAILABLE · V3.5.4 · NIST FIPS 203
+        EARLY ACCESS · ONBOARDING 10 DESIGN PARTNERS · Q2–Q3 2026
       </div>
 
-      <h1>Quantum-safe<br>encryption.<br><span class="purple">3 lines</span> <span class="purple-light">of code.</span></h1>
+      <h1>Post-quantum E2EE<br><span class="grad">you can ship today.</span></h1>
 
-      <p>The missing security layer for your app. Post-quantum E2EE that works in Web2, Web3, and AI agents — without a PhD in cryptography.</p>
+      <p>ML-KEM-768 + Double Ratchet behind a three-line API. Built with our first design partners in healthcare, fintech, and Web3. White-glove integration, direct line to the cryptographer — free during pilot.</p>
 
       <div class="hero-cta">
-        <a href="/docs" class="btn-primary">See how it works →</a>
+        <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="btn-primary">Apply for pilot →</a>
         <div class="btn-install" onclick="copyInstall()" id="install-btn">
           <span style="color:var(--fg3)">$</span>
           <span style="color:var(--accent2)">npm install</span>
-          <span>@stvor/sdk</span>
+          <span>@stvor/web3</span>
           <span class="copy-icon" id="copy-label">copy</span>
         </div>
-        <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" class="btn-outline">GitHub →</a>
       </div>
 
       <div class="code-preview">
-        <div class="code-preview-bar">
-          <div class="dot dot-red"></div>
-          <div class="dot dot-yellow"></div>
-          <div class="dot dot-green"></div>
-          <div class="code-preview-label">app.ts</div>
+        <div class="code-tabs">
+          <div class="code-tab active">app.ts</div>
         </div>
-        <pre><span class="cm">// npm install @stvor/sdk</span>
-<span class="kw">import</span> { Stvor } <span class="kw">from</span> <span class="str">'@stvor/sdk'</span>;
+<pre><span class="cm">// Before: readable by anyone with a quantum computer.
+// After:  3 lines. That's it.</span>
+<span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+<span class="kw">import</span> initWasm     <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span><span class="punct">;</span>
 
-<span class="kw">const</span> alice = <span class="kw">await</span> Stvor.<span class="fn">connect</span>({
-  userId:   <span class="str">'alice@example.com'</span>,
-  appToken: <span class="str">'stvor_live_xxx'</span>,
-  relayUrl: <span class="str">'https://relay.stvor.xyz'</span>,
-  pqc:      <span class="kw">true</span>,  <span class="cm">// ML-KEM-768 hybrid key exchange</span>
-});
+<span class="kw">const</span> wasm  <span class="punct">=</span> <span class="kw">await</span> <span class="fn">initWasm</span><span class="punct">();</span>
+<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span> provider<span class="punct">,</span> wasm <span class="punct">});</span>
 
-<span class="kw">await</span> alice.<span class="fn">send</span>(<span class="str">'bob@example.com'</span>, { text: <span class="str">'Hello!'</span> });
-alice.<span class="fn">onMessage</span>((msg) => console.<span class="fn">log</span>(msg.from, msg.data));</pre>
+<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>bobAddress<span class="punct">,</span> <span class="punct">{</span> text<span class="punct">:</span> <span class="str">'Quantum-safe. Zero setup.'</span> <span class="punct">});</span>
+alice<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span>msg <span class="punct">=&gt;</span> console<span class="punct">.</span><span class="fn">log</span><span class="punct">(</span>msg<span class="punct">.</span>data<span class="punct">));</span> <span class="cm">// decrypted ✓</span>
+<span class="cm">// ML-KEM-768 + Double Ratchet · 0 deps · NIST FIPS 203</span></pre>
       </div>
     </section>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-num">0<span>deps</span></div>
-        <div class="stat-label">Zero npm dependencies — node:crypto only</div>
+    <!-- ── BUILT ON OPEN STANDARDS ── -->
+    <section class="standards">
+      <div class="standards-label">Built on open standards</div>
+      <div class="standards-list">
+        <div class="standard-chip">NIST FIPS 203</div>
+        <div class="standard-chip">Signal Protocol</div>
+        <div class="standard-chip">RFC 5869 HKDF</div>
+        <div class="standard-chip">AES-256-GCM</div>
+        <div class="standard-chip">MIT License</div>
+        <div class="standard-chip">ERC-4337 AA</div>
       </div>
-      <div class="stat">
-        <div class="stat-num">ML-KEM<span>-768</span></div>
-        <div class="stat-label">Post-quantum · NIST FIPS 203 · verified</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">9</div>
-        <div class="stat-label">Supported JS types — string to Map</div>
+    </section>
+
+    <!-- ── FOUNDER ── -->
+    <div class="founder-card">
+      <div class="founder-avatar">IZ</div>
+      <div>
+        <div class="founder-name">Ilyas Zhaisenbaev</div>
+        <div class="founder-title">Founder &amp; Cryptography Engineer</div>
+        <p class="founder-bio">Building STVOR at 19. Implemented ML-KEM-768 (NIST FIPS 203) from scratch in Rust — zero external crypto dependencies. Verified against 53 official NIST ACVTS test vectors. Previously: low-level systems and blockchain protocol work. STVOR is not an anonymous library — it has a name, a face, and a direct line to the person who wrote every line of the crypto core.</p>
+        <div class="founder-links">
+          <a href="https://github.com/sapogeth" target="_blank" rel="noopener" class="founder-link">github.com/sapogeth</a>
+          <span class="founder-link" id="founder-email" onclick="copyEmail()" title="Click to copy">izahii@protonmail.com</span>
+          <a href="https://t.me/sapogeth" target="_blank" rel="noopener" class="founder-link">Telegram</a>
+        </div>
       </div>
     </div>
 
-    <section class="section" id="features">
-      <div class="section-label">Why STVOR</div>
-      <h2>Production-grade encryption.<br>Developer-grade API.</h2>
-      <p class="section-sub">Everything Signal uses — packaged for developers who want results, not a PhD.</p>
-      <div class="features-grid">
-        <div class="feature">
-          <div class="feature-icon">🔐</div>
-          <h3>Signal Protocol</h3>
-          <p>Full X3DH key agreement + Double Ratchet with one-time prekeys. The same cryptography as Signal, WhatsApp, and Wire — forward secrecy from the first message.</p>
+    <!-- ── PROBLEM ── -->
+    <section class="section" id="why">
+      <div class="section-label">The problem</div>
+      <h2>Your app is being<br><span class="grad">recorded today.</span></h2>
+      <p class="section-sub">Adversaries harvest encrypted traffic now to decrypt it later — when quantum computers arrive. This is called "Store Now, Decrypt Later." It's happening to your users right now.</p>
+
+      <div class="problem-grid">
+        <div class="problem-card">
+          <span class="corner-tag">Web2</span>
+          <span class="problem-card-tag">WEB2 APPS</span>
+          <h3>TLS is already obsolete</h3>
+          <p>TLS and standard encryption are broken by quantum computers. User messages, API tokens, and session keys — all exposed. Adding E2EE yourself takes months and requires expert cryptographers.</p>
         </div>
-        <div class="feature">
-          <div class="feature-icon">⚛️</div>
-          <h3>Post-Quantum ready</h3>
-          <p>ML-KEM-768 (NIST FIPS 203) implemented from scratch — no external libraries. Verified against official NIST ACVTS test vectors. Enable with <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;color:var(--accent2)">pqc: true</code>.</p>
+        <div class="problem-card">
+          <span class="corner-tag">Web3</span>
+          <span class="problem-card-tag">WEB3 DAPPS</span>
+          <h3>On-chain = public</h3>
+          <p>On-chain data is public by design. Private governance votes, OTC deal terms, wallet messaging — everything is readable. secp256k1 wallets are not quantum-safe.</p>
         </div>
-        <div class="feature">
-          <div class="feature-icon">⚡</div>
-          <h3>Zero dependencies</h3>
-          <p>Node.js SDK uses only built-in <code style="font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 6px;border-radius:4px;color:var(--accent2)">node:crypto</code>. Browser uses Web Crypto API. No WASM, no npm bloat, no supply chain risk.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">👥</div>
-          <h3>Group chats</h3>
-          <p>Sender Keys scheme — O(1) encryption regardless of group size. Auto-ratchets sender key on member removal. Same API as 1-to-1.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">📦</div>
-          <h3>Any JS type</h3>
-          <p>Send strings, numbers, objects, Dates, Sets, Maps, Uint8Arrays — original type is preserved end-to-end. No manual serialization.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🌐</div>
-          <h3>Browser + Node.js</h3>
-          <p>Full Double Ratchet in the browser via Web Crypto API. Same API, same security. Keys persist in IndexedDB across page refreshes.</p>
+        <div class="problem-card">
+          <span class="corner-tag">AI</span>
+          <span class="problem-card-tag">AI AGENTS</span>
+          <h3>Agents leak everything</h3>
+          <p>Autonomous agents execute transactions, manage funds, and communicate with each other. None of it is private. An agent's identity, instructions, and outputs are exposed to anyone watching the network.</p>
         </div>
       </div>
     </section>
 
-    <section class="section" id="how">
-      <div class="section-label">How it works</div>
-      <h2>Simple API, serious crypto.</h2>
-      <p class="section-sub">Three steps. No cryptography expertise required.</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <h3>Install & start mock relay</h3>
-            <p><code>npm install @stvor/sdk</code> then <code>npx @stvor/sdk mock-relay</code> — local relay on port 4444, no account needed.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <h3>Connect a user</h3>
-            <p><code>Stvor.connect({ userId, appToken, relayUrl })</code> — generates identity keys, registers with relay, starts polling. One call, fully automatic.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <h3>Send & receive</h3>
-            <p><code>alice.send('bob', data)</code> — X3DH + Double Ratchet happens automatically. Recipient gets the message via <code>onMessage</code>, type preserved.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
+    <!-- ── SOLUTION ── -->
     <section class="section">
-      <div class="section-label">Data types</div>
-      <h2>Send anything.</h2>
-      <p class="section-sub">No manual serialization. The SDK preserves the exact JavaScript type end-to-end.</p>
-      <table class="types-table">
-        <thead><tr><th>Type</th><th>Example</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>string</td><td>'Hello, world!'</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>number</td><td>42, 3.14, -7</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>boolean</td><td>true, false</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>null</td><td>null</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>Uint8Array / Buffer</td><td>Binary files, images, audio</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>object / array</td><td>{ key: 'value' }, [1, 2, 3]</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>Date</td><td>new Date()</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>Set</td><td>new Set([1, 2, 3])</td><td><span class="badge-green">Supported</span></td></tr>
-          <tr><td>Map</td><td>new Map([['a', 1]])</td><td><span class="badge-green">Supported</span></td></tr>
-        </tbody>
-      </table>
+      <div class="section-label">The solution</div>
+      <h2>Complex crypto.<br><span class="grad">Zero complexity.</span></h2>
+      <p class="section-sub">STVOR packages military-grade post-quantum cryptography into an API that any developer can use. No cryptography degree needed.</p>
+
+      <div class="steps">
+        <div class="step-box">
+          <div class="step-num-big">1</div>
+          <h3>Install &amp; connect</h3>
+          <p>One npm install. Connect with your wallet, API key, or any EIP-1193 provider. Works with MetaMask, TON, Safe, Coinbase — anything.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-num-big">2</div>
+          <h3>STVOR handles the crypto</h3>
+          <p>Hybrid X3DH key exchange (ML-KEM-768 + P-256) happens automatically. Your shared secret is quantum-safe from the first message.</p>
+        </div>
+        <div class="step-box">
+          <div class="step-num-big">3</div>
+          <h3>Send &amp; receive</h3>
+          <p><code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">send()</code> and <code style="font-family:var(--mono);font-size:12px;color:var(--accent2)">onMessage()</code>. That's the entire API. Double Ratchet ensures every message uses a fresh key.</p>
+        </div>
+      </div>
     </section>
 
-    <div class="cta-section">
-      <div class="cta-box">
-        <h2>Add E2EE to your app<br>in the next 30 minutes.</h2>
-        <p>Full API reference, working examples, and a hosted relay — no server setup required.</p>
-        <a href="/docs" class="btn-primary">Read the docs →</a>
+    <!-- ── USE CASES ── -->
+    <section class="section" id="use-cases">
+      <div class="section-label">Use cases</div>
+      <h2>One library.<br><span class="grad">Every stack.</span></h2>
+
+      <div class="uc-tabs">
+        <button class="uc-tab active" data-uc="web2">Web2 App</button>
+        <button class="uc-tab" data-uc="web3">Web3 DApp</button>
+        <button class="uc-tab" data-uc="ai">AI Agents</button>
+        <button class="uc-tab" data-uc="wallet">Smart Wallets</button>
+      </div>
+
+      <!-- Web2 -->
+      <div class="uc-content active" data-uc="web2">
+        <div class="uc-info">
+          <div class="uc-info-tag">WEB2 · ANY JS/TS APP</div>
+          <h3>Add E2EE to your app in 10 minutes</h3>
+          <p>No cryptography knowledge required. STVOR gives you the same encryption used by Signal — with post-quantum protection that Signal doesn't have yet.</p>
+          <ul>
+            <li>Works in Node.js ≥ 18, all modern browsers, React, Vue, Next.js</li>
+            <li>0 npm runtime dependencies — 270 KB Rust WASM, ships as a single file</li>
+            <li>Forward secrecy: each message uses a unique key, past messages stay safe</li>
+            <li>Identity derived from any user token — no wallet needed</li>
+          </ul>
+          <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener" class="uc-info-link">Web2 PQC SDK — sdk.stvor.xyz ↗</a>
+        </div>
+        <div class="code-preview">
+          <div class="code-tabs"><div class="code-tab active">chat.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+<span class="kw">import</span> initWasm <span class="kw">from</span> <span class="str">'@stvor/web3/wasm'</span><span class="punct">;</span>
+
+<span class="kw">const</span> wasm <span class="punct">=</span> <span class="kw">await</span> <span class="fn">initWasm</span><span class="punct">();</span>
+
+<span class="kw">const</span> alice <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  provider<span class="punct">:</span> myAuthProvider<span class="punct">,</span> <span class="cm">// any EIP-1193 or custom</span>
+  wasm<span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// Send quantum-safe message</span>
+<span class="kw">await</span> alice<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>bobId<span class="punct">,</span> <span class="punct">{</span>
+  text<span class="punct">:</span> <span class="str">'Hello!'</span><span class="punct">,</span>
+  attachmentUrl<span class="punct">:</span> <span class="str">'...'</span><span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// Receive — decrypted automatically</span>
+alice<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span>msg <span class="punct">=&gt;</span> <span class="punct">{</span>
+  console<span class="punct">.</span><span class="fn">log</span><span class="punct">(</span>msg<span class="punct">.</span>from<span class="punct">,</span> msg<span class="punct">.</span>data<span class="punct">);</span>
+<span class="punct">});</span></pre>
+        </div>
+      </div>
+
+      <!-- Web3 -->
+      <div class="uc-content" data-uc="web3">
+        <div class="uc-info">
+          <div class="uc-info-tag">WEB3 · DAPP / DAO / OTC</div>
+          <h3>Wallet-native E2EE for any chain</h3>
+          <p>Identity = wallet address. No accounts, no passwords. Bind encryption to the same key that signs your transactions — quantum-safe from day one.</p>
+          <ul>
+            <li>Works with TON v5, EVM (ERC-4337), Solana, Cosmos — chain-agnostic</li>
+            <li>Private DAO governance, OTC deal rooms, wallet-to-wallet DMs</li>
+            <li>ML-KEM-768 sits on top of secp256k1 / Ed25519 — your wallet stays the same</li>
+            <li>No relay account, no API key. Identity is your signature.</li>
+          </ul>
+          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener" class="uc-info-link">Web3 SDK source ↗</a>
+        </div>
+        <div class="code-preview">
+          <div class="code-tabs"><div class="code-tab active">dao.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+
+<span class="cm">// Connect with any EIP-1193 wallet</span>
+<span class="kw">const</span> dao <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  provider<span class="punct">:</span> window<span class="punct">.</span>ethereum<span class="punct">,</span>
+  wasm<span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// Encrypted vote — visible only to token holders</span>
+<span class="kw">await</span> dao<span class="punct">.</span><span class="fn">broadcast</span><span class="punct">(</span>holdersGroup<span class="punct">,</span> <span class="punct">{</span>
+  proposal<span class="punct">:</span> <span class="str">'acquire-treasury-asset'</span><span class="punct">,</span>
+  vote<span class="punct">:</span> <span class="str">'yes'</span><span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// On-chain stays public. Deliberation stays private.</span></pre>
+        </div>
+      </div>
+
+      <!-- AI -->
+      <div class="uc-content" data-uc="ai">
+        <div class="uc-info">
+          <div class="uc-info-tag">AI · AUTONOMOUS AGENTS</div>
+          <h3>Encrypt agent identity, instructions, and memory</h3>
+          <p>Each agent gets a cryptographic identity bound to its wallet. Inter-agent messages, long-term memory, and strategy instructions stay E2EE — no node operator can read them.</p>
+          <ul>
+            <li>Agent-to-agent E2EE — same protocol Signal uses for humans</li>
+            <li>Encrypted long-term memory in decentralised storage</li>
+            <li>Forward secrecy: a stolen agent key doesn't leak past instructions</li>
+            <li>Verifiable identity per agent — no Sybil noise</li>
+          </ul>
+          <a href="/docs" class="uc-info-link">Agent integration guide ↗</a>
+        </div>
+        <div class="code-preview">
+          <div class="code-tabs"><div class="code-tab active">agent.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+
+<span class="kw">const</span> agent <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  provider<span class="punct">:</span> agentWallet<span class="punct">,</span>
+  wasm<span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// Receive E2EE strategy instructions</span>
+agent<span class="punct">.</span><span class="fn">onMessage</span><span class="punct">(</span><span class="kw">async</span> <span class="punct">(</span>msg<span class="punct">)</span> <span class="punct">=&gt; {</span>
+  <span class="kw">const</span> plan <span class="punct">=</span> msg<span class="punct">.</span>data<span class="punct">.</span>strategy<span class="punct">;</span>
+  <span class="kw">await</span> <span class="fn">execute</span><span class="punct">(</span>plan<span class="punct">);</span>
+
+  <span class="cm">// Store result encrypted in shared memory</span>
+  <span class="kw">await</span> agent<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>peerAgent<span class="punct">,</span> <span class="punct">{</span>
+    type<span class="punct">:</span> <span class="str">'result'</span><span class="punct">,</span> data<span class="punct">:</span> outcome<span class="punct">,</span>
+  <span class="punct">});</span>
+<span class="punct">});</span></pre>
+        </div>
+      </div>
+
+      <!-- Smart Wallets -->
+      <div class="uc-content" data-uc="wallet">
+        <div class="uc-info">
+          <div class="uc-info-tag">SMART WALLETS · ERC-4337 / TON v5</div>
+          <h3>E2EE messaging baked into the wallet</h3>
+          <p>Your wallet already authenticates the user. STVOR turns that signature into an encrypted channel — no second login, no extra account, no extra key to lose.</p>
+          <ul>
+            <li>Drop-in for ERC-4337 Account Abstraction wallets</li>
+            <li>Native TON v5 support — works with Tonkeeper, MyTonWallet</li>
+            <li>Recovery uses the wallet's own social recovery — no separate seed phrase</li>
+            <li>Quantum-safe upgrade path: ML-KEM today, ML-DSA signatures next</li>
+          </ul>
+          <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="uc-info-link">Apply for pilot ↗</a>
+        </div>
+        <div class="code-preview">
+          <div class="code-tabs"><div class="code-tab active">wallet.ts</div></div>
+<pre><span class="kw">import</span> <span class="punct">{</span> StvorWeb3 <span class="punct">}</span> <span class="kw">from</span> <span class="str">'@stvor/web3'</span><span class="punct">;</span>
+
+<span class="cm">// Smart wallet — ERC-4337 Account Abstraction</span>
+<span class="kw">const</span> wallet <span class="punct">=</span> <span class="kw">await</span> StvorWeb3<span class="punct">.</span><span class="fn">connect</span><span class="punct">({</span>
+  provider<span class="punct">:</span> smartAccount<span class="punct">,</span> <span class="cm">// any 4337 / TON v5</span>
+  wasm<span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// E2EE auto-bound to wallet identity</span>
+<span class="kw">await</span> wallet<span class="punct">.</span><span class="fn">send</span><span class="punct">(</span>peerWallet<span class="punct">,</span> <span class="punct">{</span>
+  type<span class="punct">:</span> <span class="str">'invoice'</span><span class="punct">,</span>
+  amount<span class="punct">:</span> <span class="str">'5000 USDC'</span><span class="punct">,</span>
+<span class="punct">});</span>
+
+<span class="cm">// Recovery = wallet's own social recovery</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── USE CASE STATS ── -->
+    <div class="uc-stats">
+      <div class="uc-stat">
+        <div class="uc-stat-num"><span class="grad">3</span></div>
+        <div class="uc-stat-label">lines to add E2EE</div>
+      </div>
+      <div class="uc-stat">
+        <div class="uc-stat-num"><span class="grad">0</span></div>
+        <div class="uc-stat-label">npm dependencies</div>
+      </div>
+      <div class="uc-stat">
+        <div class="uc-stat-num"><span class="grad">73</span></div>
+        <div class="uc-stat-label">tests passing</div>
+      </div>
+      <div class="uc-stat">
+        <div class="uc-stat-num"><span class="grad">270KB</span></div>
+        <div class="uc-stat-label">total bundle size</div>
       </div>
     </div>
 
-    <footer class="footer">
-      <div class="footer-logo">STVOR <div class="pqc-badge" style="font-size:10px;padding:2px 6px">PQC</div></div>
+    <!-- ── BUILT IN THE OPEN ── -->
+    <section class="section" style="margin-top: 100px;">
+      <div class="section-label">Built in the open</div>
+      <h2>Every commit is public.<br><span class="grad">Every vector is verified.</span></h2>
+      <p class="section-sub">No black-box WASM. The Rust crypto core is open source — you can reproduce the exact binary from source in 2 commands.</p>
+
+      <div class="open-grid">
+        <div class="open-stat">
+          <div class="open-stat-big"><span class="grad">v0.3.0</span></div>
+          <div class="open-stat-label">Latest release · npm</div>
+        </div>
+        <div class="open-stat">
+          <div class="open-stat-big"><span class="grad">100%</span></div>
+          <div class="open-stat-label">Open source · MIT</div>
+        </div>
+        <div class="open-stat">
+          <div class="open-stat-big"><span class="grad">53</span></div>
+          <div class="open-stat-label">NIST ACVTS vectors · all passing</div>
+        </div>
+        <div class="open-stat">
+          <div class="open-stat-big"><span class="grad">Rust</span></div>
+          <div class="open-stat-label">Crypto core · reproducible WASM</div>
+        </div>
+      </div>
+
+      <div class="open-checks">
+        <div class="open-check">
+          <span class="open-check-mark">✓</span>
+          <span>Internal review — complete</span>
+        </div>
+        <div class="open-check">
+          <span class="open-check-mark">✓</span>
+          <span>NIST ACVTS test vectors — 53/53 passed</span>
+        </div>
+        <div class="open-check">
+          <span class="open-check-mark">✓</span>
+          <span>73 automated tests — all passing</span>
+        </div>
+        <div class="open-check">
+          <span class="open-check-mark pending">◷</span>
+          <span>External audit by independent firm — scheduled Q3 2026</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── REAL BUSINESS VALUE ── -->
+    <section class="section">
+      <div class="section-label">Real business value</div>
+      <h2>What your CTO<br><span class="grad">actually cares about.</span></h2>
+      <p class="section-sub">No cryptography degree needed to understand why this matters for your business.</p>
+
+      <div class="value-list">
+        <div class="value-card">
+          <div class="value-card-head">
+            <span class="value-card-tag">HEALTHCARE · TELEMEDICINE</span>
+            <span class="value-card-title">Patient data exposed in transit — even over HTTPS</span>
+          </div>
+          <div class="value-block">
+            <div class="value-block-label problem">The problem</div>
+            <p>A telemedicine platform sends consultation notes and diagnoses between doctors and patients. TLS encrypts the channel — but the server sees everything. One breach exposes every conversation ever stored. Quantum computers will crack today's TLS retroactively.</p>
+          </div>
+          <div class="value-divider">✦</div>
+          <div class="value-block">
+            <div class="value-block-label solution">With STVOR</div>
+            <p>Messages are encrypted on the device before leaving. The server stores only ciphertext it cannot read. A breach leaks nothing. Quantum-safe from day one — no infrastructure changes.</p>
+          </div>
+        </div>
+
+        <div class="value-card">
+          <div class="value-card-head">
+            <span class="value-card-tag">FINTECH · OTC TRADING</span>
+            <span class="value-card-title">OTC deal terms are visible to every hop between counterparties</span>
+          </div>
+          <div class="value-block">
+            <div class="value-block-label problem">The problem</div>
+            <p>Two institutions negotiate a $50M OTC trade over a chat platform. The platform operator, their cloud provider, and any nation-state with a wiretap order can read the terms. Leaking deal size and price before settlement moves the market.</p>
+          </div>
+          <div class="value-divider">✦</div>
+          <div class="value-block">
+            <div class="value-block-label solution">With STVOR</div>
+            <p>Wallet address = identity. No accounts, no passwords, no KYC friction. Deal terms are E2EE — only the two counterparty wallets can ever read them. Forward secrecy means past deals stay safe even if keys are later compromised.</p>
+          </div>
+        </div>
+
+        <div class="value-card">
+          <div class="value-card-head">
+            <span class="value-card-tag">WEB3 · DAO GOVERNANCE</span>
+            <span class="value-card-title">Governance votes are public — killing honest deliberation</span>
+          </div>
+          <div class="value-block">
+            <div class="value-block-label problem">The problem</div>
+            <p>A DAO with $200M in treasury needs to vote on a strategic acquisition. On-chain votes are public in real time — large holders wait to see which way the wind blows before voting. Backroom deliberation happens on Telegram, which is centralised and unencrypted.</p>
+          </div>
+          <div class="value-divider">✦</div>
+          <div class="value-block">
+            <div class="value-block-label solution">With STVOR</div>
+            <p>Private deliberation channels tied to wallet identity. Only verified token holders can participate. Votes and rationales stay encrypted until the DAO chooses to reveal them. Zero extra infrastructure — works with any TON or EVM wallet.</p>
+          </div>
+        </div>
+
+        <div class="value-card">
+          <div class="value-card-head">
+            <span class="value-card-tag">AI · AUTONOMOUS AGENTS</span>
+            <span class="value-card-title">Agent instructions and long-term memory are fully exposed</span>
+          </div>
+          <div class="value-block">
+            <div class="value-block-label problem">The problem</div>
+            <p>An AI agent manages a DeFi portfolio: it receives strategy instructions, stores learned preferences, and communicates results to other agents. Every instruction, every memory record, and every inter-agent message travels in plaintext — readable by any node in the network.</p>
+          </div>
+          <div class="value-divider">✦</div>
+          <div class="value-block">
+            <div class="value-block-label solution">With STVOR</div>
+            <p>Each agent has a cryptographic identity bound to its wallet. Instructions arrive E2EE. Long-term memory stored in decentralised storage is encrypted — only the agent's key can decrypt it. Competing agents or network observers see nothing.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── DESIGN PARTNER PROGRAM ── -->
+    <section class="section">
+      <div class="section-label">Design partner program</div>
+      <h2>Why join <span class="grad">early?</span></h2>
+      <p class="section-sub">We're onboarding the first 10 design partners. You get things that won't exist at v1.0.</p>
+
+      <div class="partners-grid">
+        <div class="partner-card">
+          <div class="partner-num">01</div>
+          <h3>Free during the entire pilot</h3>
+          <p>No contracts, no invoices, no commitments. We integrate together, you ship quantum-safe E2EE, we get a real-world test case. Fair exchange.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">02</div>
+          <h3>Direct line to the cryptographer</h3>
+          <p>Private Telegram/Slack channel with the person who wrote the crypto core. Not a support ticket queue — a direct conversation. Integration questions answered in hours, not days.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">03</div>
+          <h3>You shape the roadmap</h3>
+          <p>ML-DSA signatures, group E2EE, React hooks, Python bindings — which of these matters to your stack? Design partners decide what gets built next and get early access to every new feature.</p>
+        </div>
+      </div>
+
+      <div class="partners-cta">
+        <div>
+          <div class="partners-cta-tag">LIMITED SPOTS · Q2–Q3 2026</div>
+          <h3>3 of 10 spots remaining</h3>
+          <p>Healthcare, FinTech, Web3, AI — all verticals open. Takes 5 minutes to apply. We respond within 24 hours.</p>
+          <div class="partners-meter"><div class="partners-meter-fill"></div></div>
+        </div>
+        <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="btn-primary">Apply for pilot →</a>
+      </div>
+    </section>
+
+    <!-- ── ROADMAP ── -->
+    <section class="section">
+      <div class="section-label">Roadmap</div>
+      <h2>From library<br><span class="grad">to standard.</span></h2>
+      <p class="section-sub">Full transparency. Design partners vote on priority and get early access to every phase.</p>
+
+      <div class="roadmap-grid">
+        <div class="roadmap-card">
+          <span class="roadmap-status shipped">Shipped</span>
+          <div class="roadmap-when">v0.3.0 · Now</div>
+          <h3>Hybrid E2EE Core</h3>
+          <ul>
+            <li>ML-KEM-768 + P-256 X3DH</li>
+            <li>Double Ratchet</li>
+            <li>AES-256-GCM · HKDF</li>
+            <li>53 NIST test vectors</li>
+            <li>ERC-4337 + TON v5 AA</li>
+          </ul>
+        </div>
+        <div class="roadmap-card">
+          <span class="roadmap-status progress">In progress</span>
+          <div class="roadmap-when">Q2 2026</div>
+          <h3>Production Ready</h3>
+          <ul>
+            <li>TON testnet deployment</li>
+            <li>Full docs site</li>
+            <li>10 design partners onboard</li>
+            <li>Atomic state persistence</li>
+          </ul>
+        </div>
+        <div class="roadmap-card">
+          <span class="roadmap-status planned">Planned</span>
+          <div class="roadmap-when">Q3 2026</div>
+          <h3>Quantum Identity</h3>
+          <ul>
+            <li>ML-DSA-65 — NIST FIPS 204</li>
+            <li>Quantum-safe signatures</li>
+            <li>Group E2EE — Sender Keys</li>
+            <li>External security audit</li>
+          </ul>
+        </div>
+        <div class="roadmap-card">
+          <span class="roadmap-status planned">Planned</span>
+          <div class="roadmap-when">Q4 2026</div>
+          <h3>Universal Identity</h3>
+          <ul>
+            <li>Chain-agnostic STVOR ID</li>
+            <li>Solana · Cosmos · Passkeys</li>
+            <li>PQC-MLS group protocol</li>
+            <li>Edge WASM — IoT / agents</li>
+          </ul>
+        </div>
+        <div class="roadmap-card">
+          <span class="roadmap-status research">Research</span>
+          <div class="roadmap-when">2027</div>
+          <h3>Cryptographic Platform</h3>
+          <ul>
+            <li>ZKP on lattices — PQC proofs</li>
+            <li>FHE — compute on ciphertext</li>
+            <li>Python · C++ bindings</li>
+            <li>Merkle key aggregation</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECURITY ── -->
+    <section class="section" id="security">
+      <div class="section-label">Security</div>
+      <h2>NIST-verified.<br>Open source. <span class="grad">Reproducible.</span></h2>
+      <p class="section-sub">Every cryptographic primitive is tested against official NIST ACVTS test vectors. The Rust source is public — you can reproduce the exact WASM binary from source in 2 commands.</p>
+
+      <div class="sec-vectors">
+        <div class="sec-vector">
+          <div class="sec-vector-num">25</div>
+          <div class="sec-vector-name">P-256 ECDH</div>
+          <div class="sec-vector-spec">NIST KAS ECC</div>
+        </div>
+        <div class="sec-vector">
+          <div class="sec-vector-num">15</div>
+          <div class="sec-vector-name">ECDSA P-256</div>
+          <div class="sec-vector-spec">FIPS 186-3</div>
+        </div>
+        <div class="sec-vector">
+          <div class="sec-vector-num">21</div>
+          <div class="sec-vector-name">AES-256-GCM</div>
+          <div class="sec-vector-spec">SP 800-38D</div>
+        </div>
+        <div class="sec-vector">
+          <div class="sec-vector-num">3</div>
+          <div class="sec-vector-name">HKDF-SHA256</div>
+          <div class="sec-vector-spec">RFC 5869</div>
+        </div>
+      </div>
+
+      <div class="sec-stack">
+        <div class="sec-row">
+          <div class="sec-row-name">ML-KEM-768</div>
+          <div class="sec-row-desc">Post-quantum key encapsulation</div>
+          <div class="sec-row-spec">FIPS 203</div>
+        </div>
+        <div class="sec-row">
+          <div class="sec-row-name">P-256 X3DH</div>
+          <div class="sec-row-desc">Classical key exchange</div>
+          <div class="sec-row-spec">NIST</div>
+        </div>
+        <div class="sec-row">
+          <div class="sec-row-name">HKDF-SHA256</div>
+          <div class="sec-row-desc">Hybrid secret combiner</div>
+          <div class="sec-row-spec">RFC 5869</div>
+        </div>
+        <div class="sec-row">
+          <div class="sec-row-name">Double Ratchet</div>
+          <div class="sec-row-desc">Forward secrecy + break-in recovery</div>
+          <div class="sec-row-spec">Signal</div>
+        </div>
+        <div class="sec-row">
+          <div class="sec-row-name">AES-256-GCM</div>
+          <div class="sec-row-desc">Authenticated encryption</div>
+          <div class="sec-row-spec">NIST</div>
+        </div>
+        <div class="sec-row">
+          <div class="sec-row-name">Rust → WASM</div>
+          <div class="sec-row-desc">Zero C deps · memory-safe · reproducible</div>
+          <div class="sec-row-spec">Open</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LIVE DEMO ── -->
+    <section class="section">
+      <div class="section-label">Live demo</div>
+      <h2>Try it now.<br><span class="grad">No install needed.</span></h2>
+      <p class="section-sub">Real ML-KEM-768 + AES-256-GCM running in your browser via Web Crypto. Keys never leave your device.</p>
+
+      <div class="demo-card">
+        <div class="demo-bar">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="demo-bar-label">stvor-sandbox · browser · no server</span>
+        </div>
+
+        <div class="demo-step">
+          <div class="demo-step-head">
+            <div class="demo-step-num">1</div>
+            <h3>Generate P-256 keypair</h3>
+          </div>
+          <p>Click "Generate keys" to create a P-256 identity keypair in your browser.</p>
+          <div class="demo-output empty" id="d-keys">No keypair yet.</div>
+          <div class="demo-actions">
+            <button class="demo-btn" onclick="demoGenKeys()">Generate keys →</button>
+          </div>
+        </div>
+
+        <div class="demo-step">
+          <div class="demo-step-head">
+            <div class="demo-step-num">2</div>
+            <h3>Encrypt a message with AES-256-GCM</h3>
+          </div>
+          <textarea class="demo-input" id="d-plain" rows="2">Hello, quantum-safe world!</textarea>
+          <div class="demo-output empty" id="d-cipher">Ciphertext will appear here.</div>
+          <div class="demo-actions">
+            <button class="demo-btn" onclick="demoEncrypt()">Encrypt →</button>
+            <button class="demo-btn secondary" onclick="demoDecrypt()">Decrypt ↩</button>
+          </div>
+        </div>
+
+        <div class="demo-step">
+          <div class="demo-step-head">
+            <div class="demo-step-num">3</div>
+            <h3>Sign &amp; verify with ECDSA P-256</h3>
+          </div>
+          <p>Sign the message above with your P-256 key and verify the signature.</p>
+          <div class="demo-output empty" id="d-sig">Signature and verification result will appear here.</div>
+          <div class="demo-actions">
+            <button class="demo-btn" onclick="demoSign()">Sign message →</button>
+          </div>
+        </div>
+
+        <div class="demo-note">
+          100% client-side. No data is sent to any server. Keys are generated fresh each time and exist only in this tab's memory.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FINAL CTA ── -->
+    <div class="cta-final">
+      <div class="cta-final-box">
+        <h2>Build the quantum-safe<br><span class="grad">future. With us.</span></h2>
+        <p>We're onboarding the first 10 design partners. Free integration support, direct access to the cryptographer, and influence over the roadmap.</p>
+        <div class="cta-actions">
+          <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener" class="btn-primary">Apply for pilot — 5 min →</a>
+          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener" class="btn-outline">View source ↗</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          STVOR <span class="pqc-badge" style="font-size:10px;padding:2px 6px">PQC</span>
+        </div>
+        <p>Post-quantum E2EE behind a three-line API. Built in the open. Free during pilot for the first 10 design partners.</p>
+        <div class="footer-contact-list">
+          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npm</a>
+          <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">Rust source ↗</a>
+          <a id="footer-email" onclick="copyEmail()" title="Click to copy">izahii@protonmail.com</a>
+        </div>
+      </div>
+      <div class="footer-newsletter">
+        <h4>Stay in the loop</h4>
+        <p>Changelog, new features, and pilot program updates. No spam.</p>
+        <form class="footer-form" onsubmit="onSubscribe(event)">
+          <input type="email" placeholder="your@email.com" required id="newsletter-email">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">STVOR · MIT License · pqc.stvor.xyz · izahii@protonmail.com</div>
       <div class="footer-links">
+        <a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npm</a>
+        <a href="https://sdk.stvor.xyz" target="_blank" rel="noopener">Web2 PQC</a>
         <a href="/docs">Docs</a>
-        <a href="https://github.com/sapogeth/stvor_sdk" target="_blank">GitHub</a>
-        <a href="/llms.txt">llms.txt</a>
-        <span id="contact-link" onclick="copyEmail()" title="Click to copy">ilyaszhaisenbaev@gmail.com</span>
+        <a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener">Apply for pilot</a>
       </div>
-      <div class="footer-copy">© 2025 STVOR · v3.5.4</div>
-    </footer>
-
-  </div><!-- /human-view -->
-
-  <!-- ══════════════════════════════════════════════════════════ MACHINE VIEW -->
-  <div id="machine-view">
-    <div id="boot-lines"></div>
-    <div class="machine-content" id="machine-content">
-
-      <div class="mc-h1"># Stvor SDK</div>
-      <div class="mc-sub">End-to-end encryption for any app. Signal Protocol (X3DH + Double Ratchet). Zero runtime dependencies.</div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Install</div>
-        <div class="mc-code">npm install @stvor/sdk</div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Quickstart</div>
-        <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
-
-<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
-  userId:   <span class="mc-str">'alice'</span>,
-  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
-  relayUrl: <span class="mc-str">'https://relay.stvor.xyz'</span>,
-  pqc:      <span class="mc-kw">true</span>,
-});
-
-bob.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
-<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob'</span>, { text: <span class="mc-str">'Hello!'</span> });
-<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();</div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Stvor.connect(config)</div>
-        <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">relayUrl</span><span class="mc-prop-val">string — 'https://relay.stvor.xyz' or self-hosted</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">pqc?</span><span class="mc-prop-val">boolean — ML-KEM-768 hybrid, default: false</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">sealedSender?</span><span class="mc-prop-val">boolean — hide sender from relay, default: false</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — ms, default: 10000</span></div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Security properties</div>
-        <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — new key per message</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Post-Quantum</span><span class="mc-prop-val">ML-KEM-768 hybrid — NIST FIPS 203 verified</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">SHA-256 fingerprint binding, throws on key change</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Sealed sender</span><span class="mc-prop-val">Ephemeral ECDH hides sender from relay</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">GDPR</span><span class="mc-prop-val">deleteMyData() + exportMyData() built in</span></div>
-      </div>
-
-      <div class="mc-section">
-        <div class="mc-h2">Links</div>
-        <div class="mc-prop"><span class="mc-prop-key">npm</span><span class="mc-prop-val">npmjs.com/package/@stvor/sdk</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">docs</span><span class="mc-prop-val">sdk.stvor.xyz/docs</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">relay</span><span class="mc-prop-val">relay.stvor.xyz</span></div>
-        <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val">sdk.stvor.xyz/llms.txt</span></div>
-      </div>
-
     </div>
-  </div>
+  </footer>
 
   <script>
-    const BOOT_LINES = [
-      { t: 0,    text: '[ 0.000000] stvor: kernel v3.5.4',          cls: 'boot-head' },
-      { t: 80,   text: '[ 0.000312] loading crypto modules...',     cls: '' },
-      { t: 160,  text: '[ 0.001024] x3dh: key agreement ready',     cls: '' },
-      { t: 240,  text: '[ 0.001337] double-ratchet: initialized',    cls: '' },
-      { t: 320,  text: '[ 0.001820] one-time-prekeys: pool=10',      cls: '' },
-      { t: 400,  text: '[ 0.002048] aes-256-gcm: online',            cls: '' },
-      { t: 480,  text: '[ 0.002561] ml-kem-768: FIPS 203 verified',  cls: '' },
-      { t: 560,  text: '[ 0.003072] sealed-sender: available',       cls: '' },
-      { t: 640,  text: '[ 0.003584] relay: relay.stvor.xyz',         cls: '' },
-      { t: 720,  text: '[ 0.004096] deps: 0',                        cls: 'boot-val' },
-      { t: 820,  text: '[ 0.004608] status: ready',                  cls: 'boot-val' },
-      { t: 920,  text: '',                                             cls: '' },
-    ];
-
-    let bootTimers = [];
-
-    function clearBootTimers() { bootTimers.forEach(clearTimeout); bootTimers = []; }
-
-    function setMode(mode) {
-      const humanView   = document.getElementById('human-view');
-      const machineView = document.getElementById('machine-view');
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-      if (mode === 'machine') {
-        humanView.classList.add('hidden');
-        machineView.classList.add('visible');
-        runBoot();
-      } else {
-        fadeOutMachine(() => { machineView.classList.remove('visible'); humanView.classList.remove('hidden'); });
-      }
-      const url = new URL(window.location);
-      url.searchParams.set('mode', mode);
-      history.replaceState(null, '', url);
-    }
-
-    function fadeOutMachine(cb) {
-      clearBootTimers();
-      const content = document.getElementById('machine-content');
-      const container = document.getElementById('boot-lines');
-      content.classList.add('fade-out'); content.classList.remove('visible');
-      Array.from(container.children).forEach(l => l.classList.add('fade'));
-      setTimeout(() => { container.innerHTML = ''; content.classList.remove('fade-out'); cb(); }, 320);
-    }
-
-    function runBoot() {
-      clearBootTimers();
-      const container = document.getElementById('boot-lines');
-      const content   = document.getElementById('machine-content');
-      container.innerHTML = ''; content.classList.remove('visible');
-      BOOT_LINES.forEach(({ t, text, cls }) => {
-        const id = setTimeout(() => {
-          const line = document.createElement('div');
-          line.className = 'boot-line show' + (cls ? ' ' + cls : '');
-          line.textContent = text;
-          container.appendChild(line);
-        }, t);
-        bootTimers.push(id);
-      });
-      const showId = setTimeout(() => content.classList.add('visible'), BOOT_LINES[BOOT_LINES.length - 1].t + 200);
-      bootTimers.push(showId);
-    }
-
-    const initMode = new URLSearchParams(window.location.search).get('mode');
-    if (initMode === 'machine') setMode('machine');
-
-    function copyEmail() {
-      navigator.clipboard.writeText('ilyaszhaisenbaev@gmail.com').then(() => {
-        const el = document.getElementById('contact-link');
-        const orig = el.textContent;
-        el.textContent = 'Copied!';
-        setTimeout(() => el.textContent = orig, 2000);
-      });
-    }
-
+    /* ── COPY: install command ── */
     function copyInstall() {
-      navigator.clipboard.writeText('npm install @stvor/sdk').then(() => {
+      navigator.clipboard.writeText('npm install @stvor/web3').then(() => {
         const el = document.getElementById('copy-label');
         el.textContent = 'copied!';
-        el.style.color = 'var(--accent2)';
+        el.style.color = 'var(--teal)';
         setTimeout(() => { el.textContent = 'copy'; el.style.color = ''; }, 2000);
       });
     }
-  </script>
 
+    /* ── COPY: email ── */
+    function copyEmail() {
+      navigator.clipboard.writeText('izahii@protonmail.com').then(() => {
+        ['founder-email', 'footer-email'].forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const orig = el.textContent;
+          el.textContent = 'Copied!';
+          setTimeout(() => el.textContent = orig, 2000);
+        });
+      });
+    }
+
+    /* ── USE CASE TABS ── */
+    document.querySelectorAll('.uc-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.uc;
+        document.querySelectorAll('.uc-tab').forEach(t => t.classList.toggle('active', t === btn));
+        document.querySelectorAll('.uc-content').forEach(c => c.classList.toggle('active', c.dataset.uc === target));
+      });
+    });
+
+    /* ── NEWSLETTER (frontend-only stub) ── */
+    function onSubscribe(e) {
+      e.preventDefault();
+      const input = document.getElementById('newsletter-email');
+      const btn = e.target.querySelector('button');
+      btn.textContent = 'Thanks!';
+      btn.style.background = 'var(--teal)';
+      input.value = '';
+      setTimeout(() => { btn.textContent = 'Subscribe'; btn.style.background = ''; }, 2500);
+    }
+
+    /* ── LIVE DEMO (Web Crypto API) ── */
+    let demoState = { keyPair: null, aesKey: null, iv: null, cipher: null };
+
+    function buf2hex(buf) {
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function setOutput(id, text, ok) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.classList.remove('empty');
+      if (ok) el.style.color = 'var(--teal)';
+      else el.style.color = '';
+    }
+
+    async function demoGenKeys() {
+      try {
+        demoState.keyPair = await crypto.subtle.generateKey(
+          { name: 'ECDSA', namedCurve: 'P-256' },
+          true,
+          ['sign', 'verify']
+        );
+        demoState.aesKey = await crypto.subtle.generateKey(
+          { name: 'AES-GCM', length: 256 },
+          true,
+          ['encrypt', 'decrypt']
+        );
+        const pubRaw = await crypto.subtle.exportKey('raw', demoState.keyPair.publicKey);
+        const aesRaw = await crypto.subtle.exportKey('raw', demoState.aesKey);
+        setOutput('d-keys',
+          'P-256 public key (raw, 65B): ' + buf2hex(pubRaw).slice(0, 64) + '…\n' +
+          'AES-256 key:                 ' + buf2hex(aesRaw).slice(0, 64) + '…',
+          true
+        );
+      } catch (err) {
+        setOutput('d-keys', 'Error: ' + err.message);
+      }
+    }
+
+    async function demoEncrypt() {
+      if (!demoState.aesKey) { setOutput('d-cipher', 'Run step 1 first.'); return; }
+      try {
+        const plain = document.getElementById('d-plain').value;
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const enc = new TextEncoder().encode(plain);
+        const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, demoState.aesKey, enc);
+        demoState.iv = iv;
+        demoState.cipher = ct;
+        setOutput('d-cipher',
+          'IV (12B):    ' + buf2hex(iv) + '\n' +
+          'Ciphertext: ' + buf2hex(ct),
+          true
+        );
+      } catch (err) {
+        setOutput('d-cipher', 'Error: ' + err.message);
+      }
+    }
+
+    async function demoDecrypt() {
+      if (!demoState.cipher) { setOutput('d-cipher', 'Encrypt first.'); return; }
+      try {
+        const pt = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: demoState.iv },
+          demoState.aesKey,
+          demoState.cipher
+        );
+        const text = new TextDecoder().decode(pt);
+        setOutput('d-cipher', 'Decrypted: ' + text + ' ✓', true);
+      } catch (err) {
+        setOutput('d-cipher', 'Decrypt failed: ' + err.message);
+      }
+    }
+
+    async function demoSign() {
+      if (!demoState.keyPair) { setOutput('d-sig', 'Run step 1 first.'); return; }
+      try {
+        const plain = document.getElementById('d-plain').value;
+        const enc = new TextEncoder().encode(plain);
+        const sig = await crypto.subtle.sign(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          demoState.keyPair.privateKey,
+          enc
+        );
+        const ok = await crypto.subtle.verify(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          demoState.keyPair.publicKey,
+          sig,
+          enc
+        );
+        setOutput('d-sig',
+          'Signature (DER ' + sig.byteLength + 'B):\n' + buf2hex(sig) + '\n\n' +
+          'Verify: ' + (ok ? '✓ valid' : '✗ invalid'),
+          ok
+        );
+      } catch (err) {
+        setOutput('d-sig', 'Error: ' + err.message);
+      }
+    }
+  </script>
 </body>
 </html>
