@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Post-quantum E2EE you can ship today. ML-KEM-768 + Double Ratchet behind a three-line API. Built with design partners in healthcare, fintech, Web3.">
   <title>STVOR — Post-Quantum E2EE you can ship today</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -71,6 +72,92 @@
     }
 
     main, nav, footer { position: relative; z-index: 1; }
+
+    /* ── MODE TOGGLE ── */
+    .mode-toggle {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      background: rgba(14,14,26,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.10);
+    }
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: 100px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: var(--mono);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--fg3);
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .mode-btn.active { background: var(--bg4); color: var(--fg); }
+    .mode-btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg3); transition: background 0.2s; }
+    .mode-btn.active .dot { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+    .mode-btn[data-mode="machine"].active .dot { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+    /* ── MACHINE VIEW ── */
+    #machine-view {
+      display: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--fg2);
+      min-height: 100vh;
+      padding: 56px 32px 120px;
+      max-width: 880px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    #machine-view.visible { display: block; }
+    #human-view.hidden { display: none; }
+
+    .boot-line { opacity: 0; white-space: pre; transition: opacity 0.18s ease; }
+    .boot-line.show { opacity: 1; }
+    .boot-line.fade { opacity: 0; transition: opacity 0.25s ease; }
+    .boot-val  { color: var(--accent2); }
+    .boot-head { color: var(--fg); font-weight: 500; }
+    .boot-ok   { color: var(--teal); }
+
+    .machine-content { opacity: 0; margin-top: 40px; transition: opacity 0.4s ease; pointer-events: none; }
+    .machine-content.visible { opacity: 1; pointer-events: auto; }
+    .machine-content.fade-out { opacity: 0; transition: opacity 0.25s ease; }
+
+    .mc-h1  { color: var(--fg); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .mc-sub { color: var(--fg3); font-size: 12px; margin-bottom: 36px; line-height: 1.7; }
+    .mc-section { margin-bottom: 36px; }
+    .mc-h2  { color: var(--accent2); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .mc-code { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-bottom: 14px; overflow-x: auto; white-space: pre; font-size: 12.5px; }
+    .mc-kw { color: #d8c2ff; } .mc-fn { color: #86efac; } .mc-str { color: #fde68a; } .mc-cm { color: #6a6a8a; }
+    .mc-prop { display: flex; gap: 12px; margin-bottom: 6px; font-size: 12.5px; padding: 2px 0; }
+    .mc-prop-key { color: var(--accent2); min-width: 180px; }
+    .mc-prop-val { color: var(--fg2); }
+    .mc-prop a { color: var(--teal2); }
+    .mc-prop a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      #machine-view { padding: 40px 18px 120px; font-size: 12px; }
+      .mc-prop { flex-direction: column; gap: 0; }
+      .mc-prop-key { min-width: 0; }
+      .mode-toggle { bottom: 18px; }
+    }
 
     /* ── NAV ── */
     .nav {
@@ -975,6 +1062,18 @@
 </head>
 <body>
 
+  <!-- MODE TOGGLE -->
+  <div class="mode-toggle" role="tablist" aria-label="View mode">
+    <button class="mode-btn active" data-mode="human" onclick="setMode('human')" role="tab" aria-selected="true">
+      <span class="dot"></span>HUMAN
+    </button>
+    <button class="mode-btn" data-mode="machine" onclick="setMode('machine')" role="tab" aria-selected="false">
+      <span class="dot"></span>MACHINE
+    </button>
+  </div>
+
+  <div id="human-view">
+
   <nav class="nav">
     <a href="/" class="nav-logo">
       <span>STVOR</span>
@@ -1292,7 +1391,7 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
         </div>
         <div class="open-check">
           <span class="open-check-mark pending">◷</span>
-          <span>External audit by independent firm — scheduled Q3 2026</span>
+          <span>External audit — planned</span>
         </div>
       </div>
     </section>
@@ -1613,7 +1712,176 @@ alice<span class="punct">.</span><span class="fn">onMessage</span><span class="p
     </div>
   </footer>
 
+  </div><!-- /#human-view -->
+
+  <!-- ═══════════════ MACHINE VIEW (for LLMs / agents) ═══════════════ -->
+  <div id="machine-view" aria-label="Machine-readable view">
+    <div id="boot-lines"></div>
+    <div class="machine-content" id="machine-content">
+
+      <div class="mc-h1"># @stvor/sdk</div>
+      <div class="mc-sub">End-to-end encryption SDK for Node.js + browsers. Signal Protocol (X3DH + Double Ratchet). ML-KEM-768 hybrid PQC. Zero runtime npm dependencies — node:crypto + Web Crypto API only. MIT licence.</div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Install</div>
+        <div class="mc-code">npm install @stvor/sdk</div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Quickstart</div>
+        <div class="mc-code"><span class="mc-kw">import</span> { Stvor } <span class="mc-kw">from</span> <span class="mc-str">'@stvor/sdk'</span>;
+
+<span class="mc-kw">const</span> alice = <span class="mc-kw">await</span> Stvor.<span class="mc-fn">connect</span>({
+  userId:   <span class="mc-str">'alice@example.com'</span>,
+  appToken: <span class="mc-str">'stvor_live_xxx'</span>,
+  pqc:      <span class="mc-kw">true</span>,   <span class="mc-cm">// ML-KEM-768 hybrid X3DH</span>
+});
+
+<span class="mc-kw">await</span> alice.<span class="mc-fn">send</span>(<span class="mc-str">'bob@example.com'</span>, { text: <span class="mc-str">'Hello!'</span> });
+alice.<span class="mc-fn">onMessage</span>(msg =&gt; console.<span class="mc-fn">log</span>(msg.from, msg.data));
+<span class="mc-kw">await</span> alice.<span class="mc-fn">disconnect</span>();</div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Stvor.connect(config)</div>
+        <div class="mc-prop"><span class="mc-prop-key">userId</span><span class="mc-prop-val">string — any unique identifier (email, UUID, username)</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">appToken</span><span class="mc-prop-val">string — must start with 'stvor_'</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">relayUrl?</span><span class="mc-prop-val">string — defaults to https://relay.stvor.xyz (hosted)</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">pqc?</span><span class="mc-prop-val">boolean — enable ML-KEM-768 hybrid X3DH, default: false</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">sealedSender?</span><span class="mc-prop-val">boolean — hide sender from relay, default: false</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">timeout?</span><span class="mc-prop-val">number — milliseconds, default: 10000</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Security properties</div>
+        <div class="mc-prop"><span class="mc-prop-key">Forward Secrecy</span><span class="mc-prop-val">Double Ratchet — fresh symmetric key per message</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Post-Quantum</span><span class="mc-prop-val">ML-KEM-768 hybrid — NIST FIPS 203, ACVTS verified</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">TOFU</span><span class="mc-prop-val">SHA-256 fingerprint binding, throws on key change</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Sealed Sender</span><span class="mc-prop-val">Ephemeral ECDH hides sender from relay</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Zero-knowledge relay</span><span class="mc-prop-val">Server only stores ciphertext, never sees plaintext or keys</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">GDPR</span><span class="mc-prop-val">deleteMyData() + exportMyData() built-in</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Numbers</div>
+        <div class="mc-prop"><span class="mc-prop-key">Version</span><span class="mc-prop-val">v3.5.4</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Tests</span><span class="mc-prop-val">137 across 17 test files — all passing</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Runtime deps</span><span class="mc-prop-val">0 (zero) — node:crypto + Web Crypto only</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">JS data types</span><span class="mc-prop-val">9 — string, number, boolean, null, Uint8Array, object, Date, Set, Map</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">NIST ACVTS</span><span class="mc-prop-val">ML-KEM-768 KeyGen / Encap / Decap — all pass</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Licence</span><span class="mc-prop-val">MIT</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Runtime targets</div>
+        <div class="mc-prop"><span class="mc-prop-key">Node.js</span><span class="mc-prop-val">≥ 18 — uses node:crypto</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Browsers</span><span class="mc-prop-val">All modern — uses Web Crypto API + IndexedDB</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">React</span><span class="mc-prop-val">useStvor() hook — optional peer dep</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Vue 3</span><span class="mc-prop-val">composables — optional peer dep</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Crypto stack</div>
+        <div class="mc-prop"><span class="mc-prop-key">ML-KEM-768</span><span class="mc-prop-val">Post-quantum KEM — FIPS 203</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">P-256 X3DH</span><span class="mc-prop-val">Classical key agreement + one-time prekeys — NIST</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">HKDF-SHA256</span><span class="mc-prop-val">Hybrid secret combiner — RFC 5869</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Double Ratchet</span><span class="mc-prop-val">Forward secrecy + break-in recovery — Signal</span></div>
+        <div class="mc-prop"><span class="mc-prop-key">AES-256-GCM</span><span class="mc-prop-val">Authenticated encryption — NIST SP 800-38D</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Sibling product</div>
+        <div class="mc-prop"><span class="mc-prop-key">Web3 (wallet-native)</span><span class="mc-prop-val"><a href="https://pqc.stvor.xyz" target="_blank" rel="noopener">https://pqc.stvor.xyz</a> — separate site &amp; product</span></div>
+      </div>
+
+      <div class="mc-section">
+        <div class="mc-h2">Links</div>
+        <div class="mc-prop"><span class="mc-prop-key">npm</span><span class="mc-prop-val"><a href="https://www.npmjs.com/package/@stvor/sdk" target="_blank" rel="noopener">npmjs.com/package/@stvor/sdk</a></span></div>
+        <div class="mc-prop"><span class="mc-prop-key">GitHub</span><span class="mc-prop-val"><a href="https://github.com/sapogeth/stvor_sdk" target="_blank" rel="noopener">github.com/sapogeth/stvor_sdk</a></span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Docs</span><span class="mc-prop-val"><a href="/docs">/docs</a></span></div>
+        <div class="mc-prop"><span class="mc-prop-key">llms.txt</span><span class="mc-prop-val"><a href="/llms.txt">/llms.txt</a></span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Pilot</span><span class="mc-prop-val"><a href="https://tally.so/r/Me80kk" target="_blank" rel="noopener">tally.so/r/Me80kk</a></span></div>
+        <div class="mc-prop"><span class="mc-prop-key">Contact</span><span class="mc-prop-val">izahii@protonmail.com</span></div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
+    /* ── MODE TOGGLE (HUMAN / MACHINE) ── */
+    const BOOT_LINES = [
+      { t: 0,    text: '[ 0.000000] stvor: kernel v3.5.4',                      cls: 'boot-head' },
+      { t: 80,   text: '[ 0.000312] loading crypto modules...',                 cls: '' },
+      { t: 160,  text: '[ 0.001024] x3dh: P-256 key agreement ready',           cls: '' },
+      { t: 240,  text: '[ 0.001337] double-ratchet: initialized',               cls: '' },
+      { t: 320,  text: '[ 0.001820] one-time-prekeys: pool=10',                 cls: '' },
+      { t: 400,  text: '[ 0.002048] aes-256-gcm: online',                       cls: '' },
+      { t: 480,  text: '[ 0.002561] ml-kem-768: NIST FIPS 203 verified',        cls: '' },
+      { t: 560,  text: '[ 0.003072] sealed-sender: available',                  cls: '' },
+      { t: 640,  text: '[ 0.003584] relay: relay.stvor.xyz',                    cls: '' },
+      { t: 720,  text: '[ 0.004096] runtime deps: 0',                           cls: 'boot-val' },
+      { t: 800,  text: '[ 0.004608] tests: 137 / 17 files passing',             cls: 'boot-val' },
+      { t: 900,  text: '[ 0.005120] status: ready',                             cls: 'boot-ok' },
+      { t: 1000, text: '',                                                      cls: '' },
+    ];
+
+    let bootTimers = [];
+    function clearBootTimers() { bootTimers.forEach(clearTimeout); bootTimers = []; }
+
+    function setMode(mode) {
+      const human   = document.getElementById('human-view');
+      const machine = document.getElementById('machine-view');
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        const on = b.dataset.mode === mode;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      if (mode === 'machine') {
+        human.classList.add('hidden');
+        machine.classList.add('visible');
+        runBoot();
+      } else {
+        fadeOutMachine(() => {
+          machine.classList.remove('visible');
+          human.classList.remove('hidden');
+        });
+      }
+      const url = new URL(window.location);
+      url.searchParams.set('mode', mode);
+      history.replaceState(null, '', url);
+    }
+
+    function fadeOutMachine(cb) {
+      clearBootTimers();
+      const content = document.getElementById('machine-content');
+      const container = document.getElementById('boot-lines');
+      content.classList.add('fade-out'); content.classList.remove('visible');
+      Array.from(container.children).forEach(l => l.classList.add('fade'));
+      setTimeout(() => { container.innerHTML = ''; content.classList.remove('fade-out'); cb(); }, 320);
+    }
+
+    function runBoot() {
+      clearBootTimers();
+      const container = document.getElementById('boot-lines');
+      const content   = document.getElementById('machine-content');
+      container.innerHTML = ''; content.classList.remove('visible');
+      BOOT_LINES.forEach(({ t, text, cls }) => {
+        const id = setTimeout(() => {
+          const line = document.createElement('div');
+          line.className = 'boot-line show' + (cls ? ' ' + cls : '');
+          line.textContent = text;
+          container.appendChild(line);
+        }, t);
+        bootTimers.push(id);
+      });
+      const showId = setTimeout(() => content.classList.add('visible'), BOOT_LINES[BOOT_LINES.length - 1].t + 200);
+      bootTimers.push(showId);
+    }
+
+    /* Init from ?mode=machine */
+    const initMode = new URLSearchParams(window.location.search).get('mode');
+    if (initMode === 'machine') setMode('machine');
+
     /* ── COPY: install command ── */
     function copyInstall() {
       navigator.clipboard.writeText('npm install @stvor/sdk').then(() => {
