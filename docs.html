@@ -11,7 +11,7 @@
 
     :root {
       --bg: #08060f;
-      --bg2: #120d23;
+      --bg2: #0e0e1a;
       --bg3: #1c1636;
       --border: #3f2f72;
       --border2: #5c4eb0;
@@ -39,6 +39,30 @@
       font-size: 15px;
       line-height: 1.7;
       -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: -10%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(108,99,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      right: -10%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(0,212,170,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     a { text-decoration: none; color: inherit; }
